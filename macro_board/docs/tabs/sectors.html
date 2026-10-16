@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sectors and market psychology · Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ol>
+    <li><a href="#why">Why sectors show the crowd's mood</a></li>
+    <li><a href="#ideas">Four ideas you need</a></li>
+    <li><a href="#flows">Reading money flow</a></li>
+    <li><a href="#mood">The market's mood now</a></li>
+    <li><a href="#sectors">The 11 sectors, one by one</a></li>
+    <li><a href="#industries">Key industries</a></li>
+    <li><a href="#matrix">How sectors move together</a></li>
+    <li><a href="#seesaw">The seesaw: relative moves</a></li>
+    <li><a href="#changes">Correlation changes</a></li>
+    <li><a href="#apply">Using it in a trade</a></li>
+  </ol>
+  <p class="tabs-list"><a href="../ETF_Macro_Board_Manual.html">← Back to the guide</a></p>
+</nav>
+<main>
+<p class="crumbs"><a href="../ETF_Macro_Board_Manual.html">Guide</a> › Sectors and market psychology</p>
+<header class="cover">
+  <p class="eyebrow">Guide · background</p>
+  <h1>Sectors, correlation and market psychology</h1>
+  <p class="lede">Prices move because people move money. Watching where money goes between sectors, and how sectors move together, is how you read what the crowd is feeling: confident, nervous, or hiding.</p>
+  <p class="meta">Measured on the board's price store: daily returns for the 250 sessions from 17 Oct 2025 to 15 Oct 2026, unless stated. Holdings from the issuer files. These numbers change; the method stays the same.</p>
+</header>
+
+<h2 id="why">Why sectors show the crowd's mood</h2>
+<p>Every day, big investors decide where to keep their money. They rarely leave the market completely. Instead they <b>move between sectors</b>, depending on what they hope for or fear:</p>
+<ul>
+  <li><b>Confident</b> about growth: money goes to technology, consumer spending, industrials and banks.</li>
+  <li><b>Nervous</b>: money moves to sectors whose profits hold up in any economy (staples, health care, utilities).</li>
+  <li><b>Afraid of inflation or a supply shock</b>: money goes to energy and materials.</li>
+  <li><b>Expecting lower interest rates</b>: money goes to real estate, utilities and homebuilders.</li>
+</ul>
+<p>So a sector's move against SPY is a footprint of a decision. Read enough footprints and you can see the crowd's mood before it shows up in the index.</p>
+<div class="callout coach"><strong>Coach's note</strong>
+AVSHUNTER's edge is to enter before the crowd and sell into it. Sector flows are where the crowd's movement first becomes visible. But the board also measures whether a flow kept going after the same read in the past, and many did not. Psychology gives you the story; the measurement tells you whether to trust it.</div>
+
+<h2 id="ideas">Four ideas you need</h2>
+<div class="grid2">
+  <div class="box"><h4>Correlation</h4><p>How closely two things move together day to day, from <b>+1</b> (always together) through <b>0</b> (no link) to <b>−1</b> (always opposite). 0.8 is a strong link; below 0.3 is weak.</p></div>
+  <div class="box"><h4>Beta</h4><p>How much a sector moves for each 1% move in SPY. Beta 1.75 means about 1.75% when SPY moves 1%. Beta near 0 means it ignores SPY; negative beta means it tends to go the other way.</p></div>
+  <div class="box"><h4>Worst-day and best-day capture</h4><p>What the sector did on SPY's 10% worst and 10% best days, as a multiple of SPY's move. On SPY's worst days SPY fell -1.44% on average; a capture of 0.5 means the sector fell half as much. A negative worst-day capture means it rose. That is where money hides.</p></div>
+  <div class="box"><h4>Relative correlation</h4><p>Correlation of a sector's move <i>against SPY</i> with something else, such as oil. It strips out the market and shows what drives a sector to beat or trail it.</p></div>
+</div>
+
+<h2 id="flows">Reading money flow: the four flow labels</h2>
+<p>The Day story tab gives each sector a flow label from its return against SPY over the last 5 sessions (about a week) and 20 sessions (about a month).</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Label</th><th>What the numbers say</th><th>What the crowd is doing</th><th>Example (13 Oct 2026)</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag up">Money in</span></td><td>Beating SPY this week, and not trailing over the month</td><td>Steady buying: the crowd already likes this sector and is adding.</td><td>None on 13 Oct: every sector beating SPY that week had trailed it over the month.</td></tr>
+    <tr><td><span class="tag up">Turning in</span></td><td>Beating SPY this week after trailing over the month</td><td>Buyers coming back to something the crowd had abandoned. A possible early turn, or a short bounce.</td><td>XLP +3.06 pts this week after −2.17 over the month; XLE +5.55 after −0.80.</td></tr>
+    <tr><td><span class="tag down">Money out</span></td><td>Trailing SPY this week and not leading over the month</td><td>Steady selling: the crowd is leaving and has been.</td><td>KBE −1.38 this week after −10.10 over the month.</td></tr>
+    <tr><td><span class="tag down">Leaving a leader</span></td><td>Trailing SPY this week after leading over the month</td><td>Profit-taking or doubt in a favourite. Sometimes the start of a rotation out, often a pause.</td><td>XLK −2.69 this week after +4.10; SMH −6.88 after +5.76.</td></tr>
+    <tr><td><span class="tag flat">No clear flow</span></td><td>Within a small band of SPY this week</td><td>The crowd is not choosing this sector either way.</td><td>XLB, IGV.</td></tr>
+  </tbody>
+</table></div>
+<div class="callout warn"><strong>Turning points are where traders get hurt</strong>
+"Turning in" and "Leaving a leader" are the most tempting labels: they look like the start of something new. Always read <b>After this read</b> on the Day story tab. It shows what followed the same label in history. On 13 Oct, "Leaving a leader" on XLK had more often reversed (XLK went on to beat SPY by 0.39 pts over the next 5 sessions on average) than continued.</div>
+<h3>Common rotation patterns and what they usually mean</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>Money moves from…</th><th>…to</th><th>The usual reading</th><th>Check on the board</th></tr></thead>
+  <tbody>
+    <tr><td>XLK, XLY, XLC (growth)</td><td>XLP, XLV, XLU (defensives)</td><td>Risk-off: investors want safety.</td><td>Breadth, credit (HYG), VIX on Overview</td></tr>
+    <tr><td>Defensives</td><td>XLK, XLY, XLF</td><td>Risk-on: confidence returning.</td><td>SPY trend and breadth improving</td></tr>
+    <tr><td>Most sectors</td><td>XLE, XLB</td><td>Inflation or supply-shock fear.</td><td>Oil condition, USO move, yields</td></tr>
+    <tr><td>XLK</td><td>XLF, XLI, XLB, IWM</td><td>"Broadening": the rally spreads beyond big tech.</td><td>RSP vs SPY on the Daily review</td></tr>
+    <tr><td>XLF, XLE</td><td>XLRE, XLU, XHB</td><td>Investors expect lower interest rates.</td><td>Yields and curve conditions, TLT</td></tr>
+  </tbody>
+</table></div>
+<p>These are the textbook readings. Use them as questions, not answers: the board's measurements below show that in 2026 several of these links have weakened.</p>
+
+<h2 id="mood">The market's mood now</h2>
+<p>The single best measure of whether the crowd is moving as one is the <b>average correlation between sectors</b>. When fear or euphoria takes over, everything moves together and this number rises. When investors pick and choose, it falls.</p>
+<div class="tablewrap"><table><tbody>
+  <tr><td>Average correlation between the 11 sectors, last 60 sessions</td><td class="num">0.16</td></tr>
+  <tr><td>Same measure over the last 250 sessions</td><td class="num">0.23</td></tr>
+  <tr><td>Its range since 2021 (60-session windows)</td><td class="num">low 0.11 · median 0.46 · high 0.78</td></tr>
+  <tr><td>Where today sits</td><td class="num">lower than 96% of its history</td></tr>
+</tbody></table></div>
+<div class="callout coach"><strong>What this tells you</strong>
+Sectors are moving on their own stories, not as one crowd. Technology still moves with SPY (correlation 0.84), but staples, utilities, health care and energy have largely stopped doing so. In this kind of market, the index can look calm while money moves hard underneath it. Picking the right sector matters more than calling the market. When this number jumps back up, the crowd is moving together again, usually on fear.</div>
+
+<h2 id="sectors">The 11 sectors, one by one</h2>
+<p>Each card gives the usual description, then what the board's own data measured over the last 250 sessions. Where the two disagree, trust the measurement for today, and remember that it can change.</p>
+<div class="example" id="xlk">
+  <div class="head"><b>XLK · Technology</b><span class="tag flat">Amplifier: it moves more than the market both ways</span></div>
+  <p><b>What it holds:</b> Chip makers, software and hardware. Largest holdings (2026-10-14): NVDA 15.4%, AAPL 14.4%, MSFT 11.4%, AMD 4.8%.</p>
+  <p><b>What usually drives it:</b> Growth expectations, AI spending, interest rates (future profits are worth less when rates rise).</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.84 over 250 sessions · 0.78 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">1.75 (a 1% SPY move came with about 1.75% in XLK)</td></tr>
+    <tr><td>Volatility</td><td class="num">26.3% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">1.66× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">1.71× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: high-yield credit (HYG, correlation 0.24). When HYG rises, this sector usually rises against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> The market's engine. When money pours in, investors are confident and chasing growth; when it leaves, they are taking profits or getting nervous about valuations.</p>
+</div><div class="example" id="xlf">
+  <div class="head"><b>XLF · Financials</b><span class="tag flat">Partial: it follows the market at reduced strength</span></div>
+  <p><b>What it holds:</b> Banks, payment networks, insurers and Berkshire Hathaway. Largest holdings (2026-10-14): BRK.B 12.8%, JPM 11.6%, V 8.7%, MA 6.4%.</p>
+  <p><b>What usually drives it:</b> The shape of interest rates (banks earn the gap between short and long rates), credit quality and the economy.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.53 over 250 sessions · 0.53 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.60 (a 1% SPY move came with about 0.60% in XLF)</td></tr>
+    <tr><td>Volatility</td><td class="num">14.4% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.58× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.53× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>No outside asset has a strong link to its moves against SPY (all correlations below 0.2).</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Money into banks says investors expect a healthy economy and safe credit; money out often means worry about loans going bad.</p>
+</div><div class="example" id="xle">
+  <div class="head"><b>XLE · Energy</b><span class="tag flat">Hedge: it has tended to rise when the market falls</span></div>
+  <p><b>What it holds:</b> Oil majors, producers and refiners. Largest holdings (2026-10-14): XOM 23.8%, CVX 17.9%, COP 7.0%, MPC 5.2%.</p>
+  <p><b>What usually drives it:</b> The oil price above all; supply shocks, OPEC decisions and geopolitics.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">-0.23 over 250 sessions · -0.29 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">-0.40 (a 1% SPY move came with about 0.40% in XLE, in the opposite direction)</td></tr>
+    <tr><td>Volatility</td><td class="num">22.0% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">-0.15× SPY's move (it rose on average)</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">-0.47× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: oil (USO, correlation 0.67). When USO rises, this sector usually rises against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Energy buying during market stress is usually a bet on, or a hedge against, an oil shock: an inflation fear more than optimism.</p>
+</div><div class="example" id="xlv">
+  <div class="head"><b>XLV · Health care</b><span class="tag flat">Defensive: it barely follows the market</span></div>
+  <p><b>What it holds:</b> Drug makers, insurers and medical devices. Largest holdings (2026-10-14): LLY 15.3%, JNJ 9.7%, ABBV 7.9%, MRK 5.8%.</p>
+  <p><b>What usually drives it:</b> Steady demand regardless of the economy; drug news and government policy.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.19 over 250 sessions · -0.00 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.25 (a 1% SPY move came with about 0.25% in XLV)</td></tr>
+    <tr><td>Volatility</td><td class="num">16.1% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.15× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.41× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: high-yield credit (HYG, correlation -0.20). When HYG rises, this sector usually falls against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> A classic shelter. Money moving in while the market wobbles is investors seeking earnings that hold up in any economy.</p>
+</div><div class="example" id="xly">
+  <div class="head"><b>XLY · Consumer discretionary</b><span class="tag flat">Market-like</span></div>
+  <p><b>What it holds:</b> Things people want but don't need: online retail, cars, home improvement, restaurants. Largest holdings (2026-10-14): AMZN 23.3%, TSLA 17.9%, HD 5.1%, TJX 4.3%.</p>
+  <p><b>What usually drives it:</b> Consumer confidence, jobs, wages and borrowing costs.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.77 over 250 sessions · 0.65 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">1.16 (a 1% SPY move came with about 1.16% in XLY)</td></tr>
+    <tr><td>Volatility</td><td class="num">19.2% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">1.33× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">1.09× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: oil (USO, correlation -0.28). When USO rises, this sector usually falls against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Money in says investors trust the consumer to keep spending; money out is an early worry about the economy.</p>
+</div><div class="example" id="xlp">
+  <div class="head"><b>XLP · Consumer staples</b><span class="tag flat">Hedge: it has tended to rise when the market falls</span></div>
+  <p><b>What it holds:</b> Things people buy whatever happens: groceries, household goods, drinks, tobacco. Largest holdings (2026-10-14): WMT 10.9%, COST 9.2%, PG 7.6%, KO 7.5%.</p>
+  <p><b>What usually drives it:</b> Steady demand; input costs; it barely depends on the economy.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">-0.06 over 250 sessions · -0.05 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">-0.07 (a 1% SPY move came with about 0.07% in XLP, in the opposite direction)</td></tr>
+    <tr><td>Volatility</td><td class="num">14.9% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">-0.14× SPY's move (it rose on average)</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.00× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: high-yield credit (HYG, correlation -0.31). When HYG rises, this sector usually falls against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> The purest defensive. Money flowing here while tech falls is fear: investors trading growth for safety.</p>
+</div><div class="example" id="xli">
+  <div class="head"><b>XLI · Industrials</b><span class="tag flat">Market-like</span></div>
+  <p><b>What it holds:</b> Machinery, aerospace and defence, railroads, electrical equipment. Largest holdings (2026-10-14): CAT 6.5%, GE 6.0%, RTX 4.7%, GEV 4.7%.</p>
+  <p><b>What usually drives it:</b> Manufacturing, infrastructure and defence spending, the business cycle.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.70 over 250 sessions · 0.60 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.95 (a 1% SPY move came with about 0.95% in XLI)</td></tr>
+    <tr><td>Volatility</td><td class="num">17.2% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.92× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.94× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>No outside asset has a strong link to its moves against SPY (all correlations below 0.2).</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Money in signals confidence in real-economy growth; it often follows a pickup in manufacturing data.</p>
+</div><div class="example" id="xlb">
+  <div class="head"><b>XLB · Materials</b><span class="tag flat">Partial: it follows the market at reduced strength</span></div>
+  <p><b>What it holds:</b> Chemicals, gold and copper miners, paints and packaging. Largest holdings (2026-10-14): LIN 13.1%, NEM 6.8%, FCX 5.8%, ECL 5.1%.</p>
+  <p><b>What usually drives it:</b> Commodity prices, global growth (China), the dollar.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.52 over 250 sessions · 0.38 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.72 (a 1% SPY move came with about 0.72% in XLB)</td></tr>
+    <tr><td>Volatility</td><td class="num">17.8% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.78× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.63× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: gold (GLD, correlation 0.27). When GLD rises, this sector usually rises against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Money in can mean either strong global growth or a hunt for real assets against inflation; check gold and copper.</p>
+</div><div class="example" id="xlu">
+  <div class="head"><b>XLU · Utilities</b><span class="tag flat">Defensive: it barely follows the market</span></div>
+  <p><b>What it holds:</b> Electricity and gas companies, including power for data centres. Largest holdings (2026-10-14): NEE 12.5%, SO 7.8%, DUK 7.1%, CEG 7.0%.</p>
+  <p><b>What usually drives it:</b> Interest rates (they behave like bonds), regulated returns and power demand.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.12 over 250 sessions · 0.18 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.14 (a 1% SPY move came with about 0.14% in XLU)</td></tr>
+    <tr><td>Volatility</td><td class="num">15.4% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.27× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.07× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>Strongest link: high-yield credit (HYG, correlation -0.22). When HYG rises, this sector usually falls against SPY.</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Traditionally a shelter. Recently also a power-demand story, so money in can be defensive or AI-driven.</p>
+</div><div class="example" id="xlre">
+  <div class="head"><b>XLRE · Real estate</b><span class="tag flat">Defensive: it barely follows the market</span></div>
+  <p><b>What it holds:</b> Property trusts: healthcare buildings, warehouses, data centres, cell towers, storage. Largest holdings (2026-10-14): WELL 11.6%, PLD 8.6%, EQIX 6.8%, AMT 5.8%.</p>
+  <p><b>What usually drives it:</b> Interest rates and borrowing costs above all.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.25 over 250 sessions · 0.29 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.28 (a 1% SPY move came with about 0.28% in XLRE)</td></tr>
+    <tr><td>Volatility</td><td class="num">14.2% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.37× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.33× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>No outside asset has a strong link to its moves against SPY (all correlations below 0.2).</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Very sensitive to rates. Money in usually means investors expect rates to fall or want steady income.</p>
+</div><div class="example" id="xlc">
+  <div class="head"><b>XLC · Communication services</b><span class="tag flat">Partial: it follows the market at reduced strength</span></div>
+  <p><b>What it holds:</b> Social media, search, streaming, games and telecoms. Largest holdings (2026-10-14): META 23.8%, GOOGL 12.4%, GOOG 9.9%, DIS 4.9%.</p>
+  <p><b>What usually drives it:</b> Advertising spending, user growth; behaves partly like big tech.</p>
+  <div class="tablewrap"><table><tbody>
+    <tr><td>Correlation with SPY</td><td class="num">0.54 over 250 sessions · 0.39 over the last 60</td></tr>
+    <tr><td>Beta to SPY</td><td class="num">0.68 (a 1% SPY move came with about 0.68% in XLC)</td></tr>
+    <tr><td>Volatility</td><td class="num">16.1% a year</td></tr>
+    <tr><td>On SPY's worst days</td><td class="num">0.84× SPY's move</td></tr>
+    <tr><td>On SPY's best days</td><td class="num">0.67× SPY's move</td></tr>
+    <tr><td>What moves it against SPY</td><td>No outside asset has a strong link to its moves against SPY (all correlations below 0.2).</td></tr>
+  </tbody></table></div>
+  <p><b>The psychology:</b> Moves with the growth crowd; money out together with XLK and XLY is a broad step back from growth.</p>
+</div>
+
+<h2 id="industries">Key industries</h2>
+<p>Industry ETFs are narrower slices of a sector. They move more and often show a story before the whole sector does.</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>ETF</th><th>Holds</th><th>Correlation with SPY</th><th>Beta</th><th>Volatility</th><th>What moves it against SPY</th></tr></thead>
+  <tbody><tr><td><b>SMH</b></td><td>Chip makers (semiconductors)</td><td class="num">0.76</td><td class="num">2.36</td><td class="num">40%</td><td>Strongest link: high-yield credit (HYG, correlation 0.32). When HYG rises, this sector usually rises against SPY.</td></tr><tr><td><b>KRE</b></td><td>Regional banks</td><td class="num">0.40</td><td class="num">0.64</td><td class="num">20%</td><td>No outside asset has a strong link to its moves against SPY (all correlations below 0.2).</td></tr><tr><td><b>XOP</b></td><td>Oil and gas producers</td><td class="num">-0.21</td><td class="num">-0.48</td><td class="num">29%</td><td>Strongest link: oil (USO, correlation 0.72). When USO rises, this sector usually rises against SPY.</td></tr><tr><td><b>XHB</b></td><td>Homebuilders and home products</td><td class="num">0.53</td><td class="num">1.17</td><td class="num">28%</td><td>Strongest link: long Treasuries (falling rates) (TLT, correlation 0.44). When TLT rises, this sector usually rises against SPY.</td></tr><tr><td><b>JETS</b></td><td>Airlines</td><td class="num">0.62</td><td class="num">1.60</td><td class="num">33%</td><td>Strongest link: oil (USO, correlation -0.58). When USO rises, this sector usually falls against SPY.</td></tr><tr><td><b>GDX</b></td><td>Gold miners</td><td class="num">0.48</td><td class="num">1.94</td><td class="num">51%</td><td>Strongest link: gold (GLD, correlation 0.85). When GLD rises, this sector usually rises against SPY.</td></tr><tr><td><b>XBI</b></td><td>Small biotech</td><td class="num">0.47</td><td class="num">1.06</td><td class="num">29%</td><td>Strongest link: high-yield credit (HYG, correlation 0.23). When HYG rises, this sector usually rises against SPY.</td></tr><tr><td><b>IGV</b></td><td>Software</td><td class="num">0.49</td><td class="num">1.23</td><td class="num">32%</td><td>No outside asset has a strong link to its moves against SPY (all correlations below 0.2).</td></tr></tbody>
+</table></div>
+
+<h2 id="matrix">How sectors move together</h2>
+<p>Correlation of daily returns between each pair of sectors, last 250 sessions. Blue = they move together, red = they move apart, pale = little link.</p>
+<div class="tablewrap"><table class="matrix"><thead><tr><th></th><th>XLK</th><th>XLF</th><th>XLE</th><th>XLV</th><th>XLY</th><th>XLP</th><th>XLI</th><th>XLB</th><th>XLU</th><th>XLRE</th><th>XLC</th></tr></thead><tbody><tr><th>XLK</th><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 14%,transparent)">0.19</td><td class="num" style="background:color-mix(in oklab,var(--down) 16%,transparent)">-0.22</td><td class="num" style="background:color-mix(in oklab,var(--down) 11%,transparent)">-0.15</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.46</td><td class="num" style="background:color-mix(in oklab,var(--down) 27%,transparent)">-0.39</td><td class="num" style="background:color-mix(in oklab,var(--up) 37%,transparent)">0.53</td><td class="num" style="background:color-mix(in oklab,var(--up) 20%,transparent)">0.29</td><td class="num" style="background:color-mix(in oklab,var(--down) 3%,transparent)">-0.04</td><td class="num" style="background:color-mix(in oklab,var(--down) 5%,transparent)">-0.07</td><td class="num" style="background:color-mix(in oklab,var(--up) 13%,transparent)">0.18</td></tr><tr><th>XLF</th><td class="num" style="background:color-mix(in oklab,var(--up) 14%,transparent)">0.19</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--down) 7%,transparent)">-0.11</td><td class="num" style="background:color-mix(in oklab,var(--up) 26%,transparent)">0.37</td><td class="num" style="background:color-mix(in oklab,var(--up) 35%,transparent)">0.51</td><td class="num" style="background:color-mix(in oklab,var(--up) 11%,transparent)">0.16</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.48</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.43</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.07</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.48</td></tr><tr><th>XLE</th><td class="num" style="background:color-mix(in oklab,var(--down) 16%,transparent)">-0.22</td><td class="num" style="background:color-mix(in oklab,var(--down) 7%,transparent)">-0.11</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--down) 5%,transparent)">-0.08</td><td class="num" style="background:color-mix(in oklab,var(--down) 20%,transparent)">-0.29</td><td class="num" style="background:color-mix(in oklab,var(--up) 9%,transparent)">0.12</td><td class="num" style="background:color-mix(in oklab,var(--down) 12%,transparent)">-0.18</td><td class="num" style="background:color-mix(in oklab,var(--down) 2%,transparent)">-0.02</td><td class="num" style="background:color-mix(in oklab,var(--up) 4%,transparent)">0.05</td><td class="num" style="background:color-mix(in oklab,var(--down) 1%,transparent)">-0.02</td><td class="num" style="background:color-mix(in oklab,var(--down) 13%,transparent)">-0.19</td></tr><tr><th>XLV</th><td class="num" style="background:color-mix(in oklab,var(--down) 11%,transparent)">-0.15</td><td class="num" style="background:color-mix(in oklab,var(--up) 26%,transparent)">0.37</td><td class="num" style="background:color-mix(in oklab,var(--down) 5%,transparent)">-0.08</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 20%,transparent)">0.28</td><td class="num" style="background:color-mix(in oklab,var(--up) 34%,transparent)">0.49</td><td class="num" style="background:color-mix(in oklab,var(--up) 17%,transparent)">0.24</td><td class="num" style="background:color-mix(in oklab,var(--up) 27%,transparent)">0.38</td><td class="num" style="background:color-mix(in oklab,var(--up) 14%,transparent)">0.20</td><td class="num" style="background:color-mix(in oklab,var(--up) 32%,transparent)">0.46</td><td class="num" style="background:color-mix(in oklab,var(--up) 19%,transparent)">0.27</td></tr><tr><th>XLY</th><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.46</td><td class="num" style="background:color-mix(in oklab,var(--up) 35%,transparent)">0.51</td><td class="num" style="background:color-mix(in oklab,var(--down) 20%,transparent)">-0.29</td><td class="num" style="background:color-mix(in oklab,var(--up) 20%,transparent)">0.28</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 12%,transparent)">0.18</td><td class="num" style="background:color-mix(in oklab,var(--up) 36%,transparent)">0.51</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.47</td><td class="num" style="background:color-mix(in oklab,var(--up) 7%,transparent)">0.10</td><td class="num" style="background:color-mix(in oklab,var(--up) 23%,transparent)">0.33</td><td class="num" style="background:color-mix(in oklab,var(--up) 45%,transparent)">0.64</td></tr><tr><th>XLP</th><td class="num" style="background:color-mix(in oklab,var(--down) 27%,transparent)">-0.39</td><td class="num" style="background:color-mix(in oklab,var(--up) 11%,transparent)">0.16</td><td class="num" style="background:color-mix(in oklab,var(--up) 9%,transparent)">0.12</td><td class="num" style="background:color-mix(in oklab,var(--up) 34%,transparent)">0.49</td><td class="num" style="background:color-mix(in oklab,var(--up) 12%,transparent)">0.18</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.07</td><td class="num" style="background:color-mix(in oklab,var(--up) 24%,transparent)">0.34</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.35</td><td class="num" style="background:color-mix(in oklab,var(--up) 37%,transparent)">0.53</td><td class="num" style="background:color-mix(in oklab,var(--up) 16%,transparent)">0.23</td></tr><tr><th>XLI</th><td class="num" style="background:color-mix(in oklab,var(--up) 37%,transparent)">0.53</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.48</td><td class="num" style="background:color-mix(in oklab,var(--down) 12%,transparent)">-0.18</td><td class="num" style="background:color-mix(in oklab,var(--up) 17%,transparent)">0.24</td><td class="num" style="background:color-mix(in oklab,var(--up) 36%,transparent)">0.51</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.07</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 44%,transparent)">0.63</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.32</td><td class="num" style="background:color-mix(in oklab,var(--up) 26%,transparent)">0.37</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td></tr><tr><th>XLB</th><td class="num" style="background:color-mix(in oklab,var(--up) 20%,transparent)">0.29</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.43</td><td class="num" style="background:color-mix(in oklab,var(--down) 2%,transparent)">-0.02</td><td class="num" style="background:color-mix(in oklab,var(--up) 27%,transparent)">0.38</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.47</td><td class="num" style="background:color-mix(in oklab,var(--up) 24%,transparent)">0.34</td><td class="num" style="background:color-mix(in oklab,var(--up) 44%,transparent)">0.63</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.31</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num" style="background:color-mix(in oklab,var(--up) 20%,transparent)">0.28</td></tr><tr><th>XLU</th><td class="num" style="background:color-mix(in oklab,var(--down) 3%,transparent)">-0.04</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.07</td><td class="num" style="background:color-mix(in oklab,var(--up) 4%,transparent)">0.05</td><td class="num" style="background:color-mix(in oklab,var(--up) 14%,transparent)">0.20</td><td class="num" style="background:color-mix(in oklab,var(--up) 7%,transparent)">0.10</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.35</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.32</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.31</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 39%,transparent)">0.56</td><td class="num" style="background:color-mix(in oklab,var(--up) 1%,transparent)">0.02</td></tr><tr><th>XLRE</th><td class="num" style="background:color-mix(in oklab,var(--down) 5%,transparent)">-0.07</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num" style="background:color-mix(in oklab,var(--down) 1%,transparent)">-0.02</td><td class="num" style="background:color-mix(in oklab,var(--up) 32%,transparent)">0.46</td><td class="num" style="background:color-mix(in oklab,var(--up) 23%,transparent)">0.33</td><td class="num" style="background:color-mix(in oklab,var(--up) 37%,transparent)">0.53</td><td class="num" style="background:color-mix(in oklab,var(--up) 26%,transparent)">0.37</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num" style="background:color-mix(in oklab,var(--up) 39%,transparent)">0.56</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 24%,transparent)">0.35</td></tr><tr><th>XLC</th><td class="num" style="background:color-mix(in oklab,var(--up) 13%,transparent)">0.18</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.48</td><td class="num" style="background:color-mix(in oklab,var(--down) 13%,transparent)">-0.19</td><td class="num" style="background:color-mix(in oklab,var(--up) 19%,transparent)">0.27</td><td class="num" style="background:color-mix(in oklab,var(--up) 45%,transparent)">0.64</td><td class="num" style="background:color-mix(in oklab,var(--up) 16%,transparent)">0.23</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td><td class="num" style="background:color-mix(in oklab,var(--up) 20%,transparent)">0.28</td><td class="num" style="background:color-mix(in oklab,var(--up) 1%,transparent)">0.02</td><td class="num" style="background:color-mix(in oklab,var(--up) 24%,transparent)">0.35</td><td class="num">·</td></tr></tbody></table></div>
+<h3>How to read it</h3>
+<ul>
+  <li><b>Families:</b> industrials and materials (0.63), consumer discretionary and communication (0.64), utilities and real estate (0.56), staples and real estate (0.53). Owning two from the same family is close to one bigger bet.</li>
+  <li><b>Opposites:</b> technology and staples (-0.39), energy and consumer discretionary (-0.29), energy and technology (-0.22). These pairs are where money moves <i>between</i> when the mood changes.</li>
+</ul>
+
+<h2 id="seesaw">The seesaw: relative moves</h2>
+<p>This table removes the market's own move and asks: when one sector beats SPY, which others also beat it? This is the cleanest picture of rotation.</p>
+<div class="tablewrap"><table class="matrix"><thead><tr><th></th><th>XLK</th><th>XLF</th><th>XLE</th><th>XLV</th><th>XLY</th><th>XLP</th><th>XLI</th><th>XLB</th><th>XLU</th><th>XLRE</th><th>XLC</th></tr></thead><tbody><tr><th>XLK</th><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--down) 45%,transparent)">-0.64</td><td class="num" style="background:color-mix(in oklab,var(--down) 28%,transparent)">-0.39</td><td class="num" style="background:color-mix(in oklab,var(--down) 50%,transparent)">-0.72</td><td class="num" style="background:color-mix(in oklab,var(--down) 24%,transparent)">-0.34</td><td class="num" style="background:color-mix(in oklab,var(--down) 54%,transparent)">-0.77</td><td class="num" style="background:color-mix(in oklab,var(--down) 11%,transparent)">-0.15</td><td class="num" style="background:color-mix(in oklab,var(--down) 27%,transparent)">-0.39</td><td class="num" style="background:color-mix(in oklab,var(--down) 35%,transparent)">-0.50</td><td class="num" style="background:color-mix(in oklab,var(--down) 48%,transparent)">-0.69</td><td class="num" style="background:color-mix(in oklab,var(--down) 45%,transparent)">-0.64</td></tr><tr><th>XLF</th><td class="num" style="background:color-mix(in oklab,var(--down) 45%,transparent)">-0.64</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.45</td><td class="num" style="background:color-mix(in oklab,var(--up) 7%,transparent)">0.11</td><td class="num" style="background:color-mix(in oklab,var(--up) 29%,transparent)">0.41</td><td class="num" style="background:color-mix(in oklab,var(--up) 13%,transparent)">0.19</td><td class="num" style="background:color-mix(in oklab,var(--up) 19%,transparent)">0.28</td><td class="num" style="background:color-mix(in oklab,var(--up) 16%,transparent)">0.23</td><td class="num" style="background:color-mix(in oklab,var(--up) 35%,transparent)">0.50</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.35</td></tr><tr><th>XLE</th><td class="num" style="background:color-mix(in oklab,var(--down) 28%,transparent)">-0.39</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.31</td><td class="num" style="background:color-mix(in oklab,var(--down) 17%,transparent)">-0.24</td><td class="num" style="background:color-mix(in oklab,var(--up) 35%,transparent)">0.50</td><td class="num" style="background:color-mix(in oklab,var(--up) 1%,transparent)">0.02</td><td class="num" style="background:color-mix(in oklab,var(--up) 16%,transparent)">0.23</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.42</td><td class="num" style="background:color-mix(in oklab,var(--up) 27%,transparent)">0.38</td><td class="num" style="background:color-mix(in oklab,var(--up) 9%,transparent)">0.13</td></tr><tr><th>XLV</th><td class="num" style="background:color-mix(in oklab,var(--down) 50%,transparent)">-0.72</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.45</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.31</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 6%,transparent)">0.09</td><td class="num" style="background:color-mix(in oklab,var(--up) 47%,transparent)">0.67</td><td class="num" style="background:color-mix(in oklab,var(--up) 11%,transparent)">0.16</td><td class="num" style="background:color-mix(in oklab,var(--up) 28%,transparent)">0.40</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.43</td><td class="num" style="background:color-mix(in oklab,var(--up) 42%,transparent)">0.60</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.32</td></tr><tr><th>XLY</th><td class="num" style="background:color-mix(in oklab,var(--down) 24%,transparent)">-0.34</td><td class="num" style="background:color-mix(in oklab,var(--up) 7%,transparent)">0.11</td><td class="num" style="background:color-mix(in oklab,var(--down) 17%,transparent)">-0.24</td><td class="num" style="background:color-mix(in oklab,var(--up) 6%,transparent)">0.09</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 10%,transparent)">0.14</td><td class="num" style="background:color-mix(in oklab,var(--down) 4%,transparent)">-0.06</td><td class="num" style="background:color-mix(in oklab,var(--up) 7%,transparent)">0.10</td><td class="num" style="background:color-mix(in oklab,var(--down) 6%,transparent)">-0.09</td><td class="num" style="background:color-mix(in oklab,var(--up) 6%,transparent)">0.08</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.36</td></tr><tr><th>XLP</th><td class="num" style="background:color-mix(in oklab,var(--down) 54%,transparent)">-0.77</td><td class="num" style="background:color-mix(in oklab,var(--up) 29%,transparent)">0.41</td><td class="num" style="background:color-mix(in oklab,var(--up) 35%,transparent)">0.50</td><td class="num" style="background:color-mix(in oklab,var(--up) 47%,transparent)">0.67</td><td class="num" style="background:color-mix(in oklab,var(--up) 10%,transparent)">0.14</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 11%,transparent)">0.15</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.47</td><td class="num" style="background:color-mix(in oklab,var(--up) 43%,transparent)">0.61</td><td class="num" style="background:color-mix(in oklab,var(--up) 50%,transparent)">0.72</td><td class="num" style="background:color-mix(in oklab,var(--up) 29%,transparent)">0.41</td></tr><tr><th>XLI</th><td class="num" style="background:color-mix(in oklab,var(--down) 11%,transparent)">-0.15</td><td class="num" style="background:color-mix(in oklab,var(--up) 13%,transparent)">0.19</td><td class="num" style="background:color-mix(in oklab,var(--up) 1%,transparent)">0.02</td><td class="num" style="background:color-mix(in oklab,var(--up) 11%,transparent)">0.16</td><td class="num" style="background:color-mix(in oklab,var(--down) 4%,transparent)">-0.06</td><td class="num" style="background:color-mix(in oklab,var(--up) 11%,transparent)">0.15</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num" style="background:color-mix(in oklab,var(--up) 21%,transparent)">0.30</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td><td class="num" style="background:color-mix(in oklab,var(--down) 12%,transparent)">-0.17</td></tr><tr><th>XLB</th><td class="num" style="background:color-mix(in oklab,var(--down) 27%,transparent)">-0.39</td><td class="num" style="background:color-mix(in oklab,var(--up) 19%,transparent)">0.28</td><td class="num" style="background:color-mix(in oklab,var(--up) 16%,transparent)">0.23</td><td class="num" style="background:color-mix(in oklab,var(--up) 28%,transparent)">0.40</td><td class="num" style="background:color-mix(in oklab,var(--up) 7%,transparent)">0.10</td><td class="num" style="background:color-mix(in oklab,var(--up) 33%,transparent)">0.47</td><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.36</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.43</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.07</td></tr><tr><th>XLU</th><td class="num" style="background:color-mix(in oklab,var(--down) 35%,transparent)">-0.50</td><td class="num" style="background:color-mix(in oklab,var(--up) 16%,transparent)">0.23</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.42</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.43</td><td class="num" style="background:color-mix(in oklab,var(--down) 6%,transparent)">-0.09</td><td class="num" style="background:color-mix(in oklab,var(--up) 43%,transparent)">0.61</td><td class="num" style="background:color-mix(in oklab,var(--up) 21%,transparent)">0.30</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.36</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 49%,transparent)">0.70</td><td class="num" style="background:color-mix(in oklab,var(--up) 9%,transparent)">0.13</td></tr><tr><th>XLRE</th><td class="num" style="background:color-mix(in oklab,var(--down) 48%,transparent)">-0.69</td><td class="num" style="background:color-mix(in oklab,var(--up) 35%,transparent)">0.50</td><td class="num" style="background:color-mix(in oklab,var(--up) 27%,transparent)">0.38</td><td class="num" style="background:color-mix(in oklab,var(--up) 42%,transparent)">0.60</td><td class="num" style="background:color-mix(in oklab,var(--up) 6%,transparent)">0.08</td><td class="num" style="background:color-mix(in oklab,var(--up) 50%,transparent)">0.72</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.43</td><td class="num" style="background:color-mix(in oklab,var(--up) 49%,transparent)">0.70</td><td class="num">·</td><td class="num" style="background:color-mix(in oklab,var(--up) 26%,transparent)">0.37</td></tr><tr><th>XLC</th><td class="num" style="background:color-mix(in oklab,var(--down) 45%,transparent)">-0.64</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.35</td><td class="num" style="background:color-mix(in oklab,var(--up) 9%,transparent)">0.13</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.32</td><td class="num" style="background:color-mix(in oklab,var(--up) 25%,transparent)">0.36</td><td class="num" style="background:color-mix(in oklab,var(--up) 29%,transparent)">0.41</td><td class="num" style="background:color-mix(in oklab,var(--down) 12%,transparent)">-0.17</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.07</td><td class="num" style="background:color-mix(in oklab,var(--up) 9%,transparent)">0.13</td><td class="num" style="background:color-mix(in oklab,var(--up) 26%,transparent)">0.37</td><td class="num">·</td></tr></tbody></table></div>
+<div class="callout"><strong>The big seesaw</strong>
+Technology sits at one end and almost everything else at the other: XLK's relative move has a correlation of -0.77 with staples, -0.72 with health care and -0.69 with real estate. When money leaves technology, it mostly goes to the defensives, and the reverse. The defensives move as one block: staples with real estate 0.72, utilities with real estate 0.70, staples with health care 0.67.</div>
+<p>In practice: if you see XLK "Leaving a leader" and XLP, XLV or XLRE "Turning in" on the same day, that is one rotation seen from both ends, not several separate signals.</p>
+
+<h2 id="changes">Correlation changes: check before you rely on it</h2>
+<p>Correlation with SPY, by calendar year:</p>
+<div class="tablewrap"><table class="matrix"><thead><tr><th></th><th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>2026 (to 15 Oct)</th></tr></thead><tbody><tr><th>XLK</th><td class="num" style="background:color-mix(in oklab,var(--up) 67%,transparent)">0.96</td><td class="num" style="background:color-mix(in oklab,var(--up) 61%,transparent)">0.87</td><td class="num" style="background:color-mix(in oklab,var(--up) 63%,transparent)">0.90</td><td class="num" style="background:color-mix(in oklab,var(--up) 66%,transparent)">0.94</td><td class="num" style="background:color-mix(in oklab,var(--up) 59%,transparent)">0.84</td></tr><tr><th>XLF</th><td class="num" style="background:color-mix(in oklab,var(--up) 62%,transparent)">0.89</td><td class="num" style="background:color-mix(in oklab,var(--up) 56%,transparent)">0.80</td><td class="num" style="background:color-mix(in oklab,var(--up) 44%,transparent)">0.63</td><td class="num" style="background:color-mix(in oklab,var(--up) 59%,transparent)">0.84</td><td class="num" style="background:color-mix(in oklab,var(--up) 36%,transparent)">0.52</td></tr><tr><th>XLE</th><td class="num" style="background:color-mix(in oklab,var(--up) 31%,transparent)">0.44</td><td class="num" style="background:color-mix(in oklab,var(--up) 28%,transparent)">0.39</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.31</td><td class="num" style="background:color-mix(in oklab,var(--up) 43%,transparent)">0.62</td><td class="num" style="background:color-mix(in oklab,var(--down) 21%,transparent)">-0.30</td></tr><tr><th>XLV</th><td class="num" style="background:color-mix(in oklab,var(--up) 58%,transparent)">0.82</td><td class="num" style="background:color-mix(in oklab,var(--up) 46%,transparent)">0.65</td><td class="num" style="background:color-mix(in oklab,var(--up) 36%,transparent)">0.52</td><td class="num" style="background:color-mix(in oklab,var(--up) 38%,transparent)">0.54</td><td class="num" style="background:color-mix(in oklab,var(--up) 12%,transparent)">0.17</td></tr><tr><th>XLY</th><td class="num" style="background:color-mix(in oklab,var(--up) 64%,transparent)">0.91</td><td class="num" style="background:color-mix(in oklab,var(--up) 60%,transparent)">0.85</td><td class="num" style="background:color-mix(in oklab,var(--up) 58%,transparent)">0.84</td><td class="num" style="background:color-mix(in oklab,var(--up) 63%,transparent)">0.90</td><td class="num" style="background:color-mix(in oklab,var(--up) 54%,transparent)">0.76</td></tr><tr><th>XLP</th><td class="num" style="background:color-mix(in oklab,var(--up) 51%,transparent)">0.73</td><td class="num" style="background:color-mix(in oklab,var(--up) 40%,transparent)">0.56</td><td class="num" style="background:color-mix(in oklab,var(--up) 22%,transparent)">0.31</td><td class="num" style="background:color-mix(in oklab,var(--up) 23%,transparent)">0.33</td><td class="num" style="background:color-mix(in oklab,var(--down) 4%,transparent)">-0.06</td></tr><tr><th>XLI</th><td class="num" style="background:color-mix(in oklab,var(--up) 64%,transparent)">0.92</td><td class="num" style="background:color-mix(in oklab,var(--up) 57%,transparent)">0.82</td><td class="num" style="background:color-mix(in oklab,var(--up) 55%,transparent)">0.79</td><td class="num" style="background:color-mix(in oklab,var(--up) 63%,transparent)">0.90</td><td class="num" style="background:color-mix(in oklab,var(--up) 48%,transparent)">0.69</td></tr><tr><th>XLB</th><td class="num" style="background:color-mix(in oklab,var(--up) 61%,transparent)">0.87</td><td class="num" style="background:color-mix(in oklab,var(--up) 54%,transparent)">0.77</td><td class="num" style="background:color-mix(in oklab,var(--up) 45%,transparent)">0.64</td><td class="num" style="background:color-mix(in oklab,var(--up) 56%,transparent)">0.80</td><td class="num" style="background:color-mix(in oklab,var(--up) 36%,transparent)">0.51</td></tr><tr><th>XLU</th><td class="num" style="background:color-mix(in oklab,var(--up) 43%,transparent)">0.62</td><td class="num" style="background:color-mix(in oklab,var(--up) 32%,transparent)">0.45</td><td class="num" style="background:color-mix(in oklab,var(--up) 14%,transparent)">0.21</td><td class="num" style="background:color-mix(in oklab,var(--up) 34%,transparent)">0.49</td><td class="num" style="background:color-mix(in oklab,var(--up) 5%,transparent)">0.08</td></tr><tr><th>XLRE</th><td class="num" style="background:color-mix(in oklab,var(--up) 55%,transparent)">0.79</td><td class="num" style="background:color-mix(in oklab,var(--up) 48%,transparent)">0.69</td><td class="num" style="background:color-mix(in oklab,var(--up) 30%,transparent)">0.42</td><td class="num" style="background:color-mix(in oklab,var(--up) 42%,transparent)">0.61</td><td class="num" style="background:color-mix(in oklab,var(--up) 18%,transparent)">0.26</td></tr><tr><th>XLC</th><td class="num" style="background:color-mix(in oklab,var(--up) 62%,transparent)">0.88</td><td class="num" style="background:color-mix(in oklab,var(--up) 57%,transparent)">0.81</td><td class="num" style="background:color-mix(in oklab,var(--up) 54%,transparent)">0.78</td><td class="num" style="background:color-mix(in oklab,var(--up) 62%,transparent)">0.89</td><td class="num" style="background:color-mix(in oklab,var(--up) 36%,transparent)">0.51</td></tr></tbody></table></div>
+<p>In 2022 almost every sector moved closely with SPY. In 2026 energy turned negative and the defensives drifted towards zero. The "usual" relationships in textbooks describe an average; the market you trade today can be different.</p>
+<div class="callout warn"><strong>Correlation is not cause</strong>
+A strong link to oil does not prove oil moved the sector on a given day. It says they have moved together. The board marks these as reasons that <b>fit</b> or go <b>against</b>, never as causes.</div>
+
+<h2 id="apply">Using it in a trade</h2>
+<ol class="steps">
+  <li><b>Read the mood first.</b> Low average correlation: choose sectors carefully, and expect index calm to hide sector moves. High and rising: the crowd is moving together, usually on fear, so size smaller.</li>
+  <li><b>Find the rotation.</b> On the Day story tab, look for money leaving one end of the seesaw and arriving at the other. One rotation seen from both ends is stronger than a single sector moving alone.</li>
+  <li><b>Check the driver.</b> Does the sector's measured driver agree? XLE moving with oil (relative correlation 0.67) is a coherent story; XLE rising while oil falls is not.</li>
+  <li><b>Check the record.</b> "After this read" tells you whether this flow has followed through before. A good story with a "reversed" record is a reason to wait.</li>
+  <li><b>Pick the instrument.</b> Beta tells you how hard a sector moves: SMH (beta 2.36) moves far more than XLK (1.75). Higher beta means a bigger move and a bigger loss when you are wrong.</li>
+  <li><b>Avoid doubling up.</b> Two ideas in the same family (for example XLY and XLC, correlation 0.64) are close to one bet. Pipeline candidates show their link to their sector ETF in the Ticker impact table.</li>
+</ol>
+<div class="callout coach"><strong>Coach's summary</strong>
+Sectors tell you what the crowd fears and hopes. Correlation tells you whether the crowd is moving as one. The board's records tell you whether following the crowd has paid. Use all three before you act.</div>
+<p>Related: <a href="day-story.html">Day story</a> (flow labels and reasons), <a href="sector-rotation.html">Sector rotation</a> (the rotation cycle), <a href="transmission-map.html">Transmission map</a> (macro conditions per ETF).</p>
+<div class="pager"><a href="../ETF_Macro_Board_Manual.html">← Guide</a><a href="daily-review.html">Daily review →</a></div>
+</main>
+</div>
+</body>
+</html>
