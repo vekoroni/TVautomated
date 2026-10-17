@@ -145,3 +145,32 @@ def test_the_run_rate_is_read_from_the_ledger_s_source_run(tmp_path):
     ledger = pd.DataFrame([{"source_run": "20261015_225021"}, {"source_run": "20261015_225021"}])
     got = tool.pricing_basis_for_ledger(ledger, runs_dir=tmp_path)
     assert got["rate"] == pytest.approx(0.0428) and got["rate_basis"].startswith("MACRO:T3M")
+
+
+# --- UAT 17 Oct 2026 (UAT_Report_20261017.txt) ----------------------------------------------------------------------
+
+def test_uat06_with_no_observed_rate_the_governed_fallback_is_used_and_published(monkeypatch):
+    """UAT-06: the value used 0.042 while the row said RATE_UNAVAILABLE with a blank rate."""
+    from domain.option_valuation import option_value
+    tool = _tool()
+    v = _view(tool, monkeypatch, rate=None)
+    cand = v[tool.shortlist_candidates(v) & (v["value_model"] == "AMERICAN_CRR")]
+    r = cand.iloc[0]
+    assert r["value_rate"] == pytest.approx(0.0422)
+    assert str(r["value_rate_basis"]).startswith("GOVERNED_FALLBACK")
+    years = max(r["sessions_to_expiry"] - 10, 0) / 252
+    expected = option_value("PUT", 13.11, r["strike"], years, r["iv"], rate=0.0422, dividend_yield=0.02,
+                            style="AMERICAN")["value"]
+    assert r["value_at_half_target_q50"] == pytest.approx(max(expected - (r["ask"] - r["bid"]) / 2, 0), rel=1e-6)
+
+
+def test_uat07_dividends_are_read_for_the_analysis_session_not_the_run_date(monkeypatch):
+    """UAT-07: a 16 Oct replay asked the dividend cache for 17 Oct (date.today())."""
+    tool = _tool()
+    seen = []
+    monkeypatch.setattr(tool, "AS_OF", AS_OF)
+    monkeypatch.setattr(tool, "_DIVIDENDS", {})
+    monkeypatch.setattr(tool, "dividend_inputs", lambda t, as_of, spot: seen.append(as_of) or {
+        "dividend_yield": 0.01, "dividend_basis": f"TEST {as_of}"})
+    tool.dividend_for("TEST", 14.2)
+    assert seen == [AS_OF]

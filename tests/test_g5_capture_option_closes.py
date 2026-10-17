@@ -109,3 +109,64 @@ def test_existing_rows_are_kept(handoff, tmp_path):
     tool.capture(tool.carded_contracts(handoff, today=date(2026, 10, 16)), session="2026-10-16", quote_fn=_quote,
                  out_csv=out)
     assert len(pd.read_csv(out)) == 3
+
+
+# --- UAT 17 Oct 2026 (UAT_Report_20261017.txt, ACK: "apply the fixes apart from the Phantom fixes") ---------------
+
+def test_uat01_an_open_holding_is_captured_whatever_the_age_of_its_card(handoff):
+    """UAT-01: a filled September card with a January expiry was dropped by the 10-session lookback."""
+    _card(handoff / "split_2026-09-01_cap5", "HELD", ledger_id="2026-09-01_HELD_CALL", decision="TRADE",
+          contract_taken="HELD270115C00100000", fill={"quantity": 1, "price": 2.0})
+    _card(handoff / "split_2026-09-02_cap5", "SOLD", ledger_id="2026-09-02_SOLD_CALL", decision="TRADE",
+          contract_taken="SOLD270115C00100000", fill={"quantity": 1, "price": 2.0}, position_state="CLOSED")
+    got = {r["contract"]: r["held"] for r in _tool().carded_contracts(handoff, today=date(2026, 10, 16))}
+    assert got.get("HELD270115C00100000") == "Y"            # still open: captured until it is closed
+    assert "SOLD270115C00100000" not in got                 # explicitly closed: no longer captured
+    assert "OLD261218C00010000" not in got                  # an old card that was never filled: outside lookback
+
+
+def test_uat02_a_quote_from_another_day_is_never_stored_as_this_session_s_close(handoff, tmp_path):
+    """UAT-02: a 16 Oct quote was written as the 17 Oct close."""
+    tool = _tool()
+    out, unverified = tmp_path / "option_closes.csv", tmp_path / "option_quotes_unverified.csv"
+    rows = tool.carded_contracts(handoff, today=date(2026, 10, 16))
+    added = tool.capture(rows, session="2026-10-17", quote_fn=_quote, out_csv=out, unverified_csv=unverified)
+    assert added == 0
+    assert not out.is_file() or pd.read_csv(out).empty
+    u = pd.read_csv(unverified)
+    assert len(u) == 2 and (u["reason"] == "STALE_QUOTE").all()
+
+
+def test_uat02_an_intraday_quote_is_kept_apart_from_verified_closes(handoff, tmp_path):
+    tool = _tool()
+    out, unverified = tmp_path / "option_closes.csv", tmp_path / "option_quotes_unverified.csv"
+    early = lambda c: {**(_quote(c) or {}), "updated_utc": "2026-10-16T19:30:00Z"}       # 15:30 ET, before the close
+    tool.capture(tool.carded_contracts(handoff, today=date(2026, 10, 16)), session="2026-10-16", quote_fn=early,
+                 out_csv=out, unverified_csv=unverified)
+    assert not out.is_file() or pd.read_csv(out).empty
+    assert (pd.read_csv(unverified)["reason"] == "INTRADAY_QUOTE").all()
+
+
+def test_uat02_the_session_is_the_exchange_session_not_the_wall_clock():
+    from datetime import datetime, timezone
+    tool = _tool()
+    assert tool.closed_session(datetime(2026, 10, 16, 20, 30, tzinfo=timezone.utc)) == (date(2026, 10, 16), None)
+    assert tool.closed_session(datetime(2026, 10, 16, 19, 0, tzinfo=timezone.utc))[1] == "BEFORE_THE_CLOSE"
+    assert tool.closed_session(datetime(2026, 10, 17, 21, 0, tzinfo=timezone.utc))[1] == "NOT_A_SESSION"   # Saturday
+    assert tool.closed_session(datetime(2026, 11, 26, 22, 0, tzinfo=timezone.utc))[1] == "NOT_A_SESSION"   # holiday
+
+
+def test_uat03_a_missing_quote_is_retried_and_the_failure_is_kept(handoff, tmp_path):
+    """UAT-03: a NO_QUOTE row blocked a same-session retry."""
+    tool = _tool()
+    out, unverified = tmp_path / "option_closes.csv", tmp_path / "option_quotes_unverified.csv"
+    rows = tool.carded_contracts(handoff, today=date(2026, 10, 16))
+    tool.capture(rows, session="2026-10-16", quote_fn=lambda c: None, out_csv=out, unverified_csv=unverified)
+    calls = []
+    added = tool.capture(rows, session="2026-10-16", quote_fn=lambda c: calls.append(c) or _quote(c), out_csv=out,
+                         unverified_csv=unverified)
+    assert added == 2 and len(calls) == 2
+    d = pd.read_csv(out)
+    assert len(d) == 4                                                  # 2 failures kept + 2 recoveries
+    again = tool.capture(rows, session="2026-10-16", quote_fn=_quote, out_csv=out, unverified_csv=unverified)
+    assert again == 0 and len(pd.read_csv(out)) == 4                    # complete rows stay idempotent

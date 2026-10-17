@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import re
+import warnings
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -91,7 +92,9 @@ def _pricers():
     for path in _files():
         try:
             source = path.read_text(encoding="utf-8-sig")
-            tree = ast.parse(source)
+            with warnings.catch_warnings():            # scanned files' own invalid escapes are not this test's concern
+                warnings.simplefilter("ignore", SyntaxWarning)
+                tree = ast.parse(source)
         except (UnicodeDecodeError, SyntaxError):
             continue
         rel = path.relative_to(ROOT).as_posix()

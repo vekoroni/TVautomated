@@ -39,17 +39,32 @@ The card, Lab book and Morning are otherwise unchanged.
 
 | | Old (European, no dividend, 0.042) | New |
 |---|---|---|
-| Theses / shortlisted contracts | 435 / 874 | 435 / 874 (every old column kept, 12 added) |
+| Theses attempted / with a shortlist / shortlisted contracts | 435 / 313 / 874 | 435 / 313 / 874 (every old column kept, 12 added) |
 | Pricing of shortlisted contracts | European | 700 American tree, 174 exact closed form (calls, no dividend) |
 | Rate | 0.042 constant | 0.0428, `MACRO:T3M run 20261015_225021` |
 | Dividend payers priced with their dividend | 0 of 444 | 444 of 444 |
-| Pay decisions changed | — | 17 of 874 (target return change p10 / p50 / p90: −2.1 / +0.1 / +1.8 points) |
-| Best contract changed | — | 5 of 435 theses (CNXN, COUR, ED, LINE, WMB) |
-| Run time | 178 s | 393 s (+3.6 min; within the 5-minute budget) |
+| Pay decisions changed | — | 12 on the 867 contracts both runs share (old run against new run); 17 of 874 within the new output (American against its own European column). Target return change p10 / p50 / p90: −2.1 / +0.1 / +1.8 points |
+| Best contract changed | — | 5 of the 313 theses with a shortlist (CNXN, COUR, ED, LINE, WMB) |
+| Run time | 178 s | 393 s (+3.6 min); 304 s for v2.8 replayed with `--as-of 2026-10-16`. Not an isolated benchmark |
 
 **Daily capture, dry run on the real folders (16 Oct):** 19 contracts, 1 held (BILI Jan 15P).
 - The OI Dec 5P you hold has no decisions file, so it can't be captured until one exists (inbox W16-11).
 - The first live capture runs at your next `avs_day.ps1 eod`.
+
+## Corrections and fixes after the UAT (17 Oct, `UAT_Report_20261017.txt`; ACK: "apply the fixes apart from the Phantom fixes")
+
+- **Population wording corrected above.** 435 theses were attempted, 313 have a shortlist. The UAT's figures (313, 867 shared, 12 flips, 5 changes) are reproduced on the 16 Oct basis.
+- **UAT-01 fixed** (`capture_option_closes.py` v2; v1 in `prev\`). A held contract is captured whatever the age of its card, until the card records it CLOSED or EXITED. The 10-session lookback applies only to unfilled cards.
+- **UAT-02 fixed.** The session is the XNYS session that has closed (exchange calendar, early closes included), never the wall clock, so a weekend or holiday run captures nothing. A quote counts as that session's close only if it is stamped on that session at or after its close. Stale and intraday quotes go to `monitor\option_quotes_unverified.csv` with the reason, never into `option_closes.csv`.
+- **UAT-03 fixed.** A `NO_QUOTE` row no longer counts as done: the next run retries it, and both rows stay as the audit trail. A verified close is never written twice.
+- **UAT-06 fixed** (Lane B v2.8; v2.7 in `prev\`). With no observed rate, Lane B uses the governed fallback through the module's `resolve_rate` (0.0422, labelled `GOVERNED_FALLBACK`) and publishes the rate it used.
+- **UAT-07 fixed.** A new `--as-of YYYY-MM-DD` sets the analysis session for expiry time and dividends, and the dividend cache key includes the session. Replay check: v2.8 with `--as-of 2026-10-16` reproduces the original 16 Oct European values **exactly** (difference 0.0 on all 44,888 rows), with dividends read from the 15 Oct cache.
+- **Guard test:** the scanned files' own escape-character warnings are suppressed.
+- **Tests:** 7 new UAT tests (5 capture, 2 Lane B), written failing first from the UAT probes, now pass. The affected files: capture 10, Lane B 9, card rate 5, owner tree 327, guard 1, OT4 18 passed. `test_avs_fix_002_stages2_5.py` keeps its 2 pre-existing failures.
+- **Not fixed here (Phantom workstream, filed to the fix inbox):**
+  - UAT-04: weekly maintenance fails on a legacy-schema database;
+  - UAT-05: readiness says FRESH with incomplete Greeks.
+- **Still open from the UAT:** Lane B's runtime (tool, capture script, `avs_day.ps1`) is git-ignored, so a commit alone does not reproduce the deployment. Your decision: version it, or keep scratch plus `prev\` backups. The first live Evening/Morning publication and the first real close capture are still to be verified.
 
 ## Closure checks (next runs)
 
