@@ -2202,7 +2202,7 @@ def calibrate_heston(chain_df: pd.DataFrame, spot: float,
 
         if len(cal) < HESTON_USE_MIN_STRIKES:
             # Insufficient data — fall back to analytical proxy
-            return _calibrate_heston_proxy(chain_df, spot, r)
+            return _calibrate_heston_proxy(chain_df, spot, r, "INSUFFICIENT_CALIBRATION_STRIKES")
 
         # Cap at 30 contracts for speed; take evenly spread across strikes
         if len(cal) > 30:
@@ -2263,6 +2263,11 @@ def calibrate_heston(chain_df: pd.DataFrame, spot: float,
 
         import signal as _signal
 
+        # G4 (ACK 17 Oct 2026): the 3-second guard needs SIGALRM, which Windows does not have. Say so instead of
+        # reaching the proxy through a caught AttributeError.
+        if not hasattr(_signal, "SIGALRM"):
+            return _calibrate_heston_proxy(chain_df, spot, r, "TIMEOUT_UNSUPPORTED_ON_PLATFORM")
+
         class _Timeout(Exception):
             pass
 
@@ -2283,12 +2288,12 @@ def calibrate_heston(chain_df: pd.DataFrame, spot: float,
         except _Timeout:
             _signal.alarm(0)
             # Calibration timed out — fall back to proxy
-            return _calibrate_heston_proxy(chain_df, spot, r)
+            return _calibrate_heston_proxy(chain_df, spot, r, "CALIBRATION_TIMEOUT")
         except Exception:
             _signal.alarm(0)
 
         if result is None or not result.success:
-            return _calibrate_heston_proxy(chain_df, spot, r)
+            return _calibrate_heston_proxy(chain_df, spot, r, "CALIBRATION_NOT_CONVERGED")
 
         v0_f, kappa_f, theta_f, xi_f, rho_f = result.x
 
@@ -2305,16 +2310,18 @@ def calibrate_heston(chain_df: pd.DataFrame, spot: float,
         }
 
     except Exception:
-        return _calibrate_heston_proxy(chain_df, spot, r)
+        return _calibrate_heston_proxy(chain_df, spot, r, "CALIBRATION_ERROR")
 
 
 def _calibrate_heston_proxy(chain_df: pd.DataFrame, spot: float,
-                             r: float = RISK_FREE_RATE) -> Optional[Dict]:
+                             r: float = RISK_FREE_RATE,
+                             proxy_reason: str = "PROXY_REQUESTED") -> Optional[Dict]:
     """
     Fast analytical proxy — used as fallback when chain data is insufficient
     for full Nelder-Mead calibration. Extracts Heston parameters directly
     from observable vol surface shape with no iteration.
-    Clearly labelled as proxy so downstream can distinguish from fitted values.
+    Clearly labelled as proxy so downstream can distinguish from fitted values;
+    proxy_reason records why the fit was not used (G4, 17 Oct 2026).
     """
     if chain_df.empty or spot <= 0:
         return None
@@ -2367,6 +2374,7 @@ def _calibrate_heston_proxy(chain_df: pd.DataFrame, spot: float,
             'fit_error': None,
             'n_points': int(len(chain_df)),
             'method': 'analytical_proxy',
+            'proxy_reason': proxy_reason,
         }
     except Exception:
         return None
@@ -3939,12 +3947,12 @@ def _legacy_fetch_sector_regime(ticker: str, _map_only: bool = False) -> Dict:
 def contract_greeks_source(contract: Dict) -> str:
     """Where the published contract Greeks came from (AVS options analytics slice 1e, 30 Sep 2026).
 
-    When Heston calibrates, enrich_contract_with_heston_greeks replaces the provider's Greeks with Heston/BSM Greeks
-    at the at-the-money variance, which ignores the contract's own IV and skew. The source travels with the Greeks.
+    G4 (ACK 17 Oct 2026, decision D4): the published Greeks are always the provider's. Model Greeks travel only under
+    model_atm_* names, so heston_used no longer changes the source.
     """
     if not contract or contract.get("delta") is None:
         return "UNAVAILABLE"
-    return "HESTON_ATM_VARIANCE_MODEL" if contract.get("heston_used") else "PROVIDER_EOD_CHAIN"
+    return "PROVIDER_EOD_CHAIN"
 
 
 def evening_contract_analytics(contract: Dict, ctx: Dict) -> Dict:
@@ -3963,77 +3971,92 @@ def evening_contract_analytics(contract: Dict, ctx: Dict) -> Dict:
     )
 
 
+MODEL_GREEKS_BASIS = "BS_AT_ATM_VARIANCE_DISPLAY_ONLY"
+VANNA_CHARM_BASIS = "BSM_CONTRACT_IV"
+
+
+def bsm_vanna_charm(S: float, K: float, T: float, sigma: float,
+                    r: float = RISK_FREE_RATE) -> Tuple[Optional[float], Optional[float]]:
+    """Black-Scholes vanna and charm (no dividend) at the contract's own IV.
+
+    vanna = change in delta per 1.00 of IV (-d2 x pdf(d1) / sigma); the same for calls and puts.
+    charm = change in delta over one calendar day with spot and IV unchanged; the same for calls and puts.
+    """
+    d1, d2 = _d1d2(S, K, T, sigma, r)
+    if d1 is None:
+        return None, None
+    vanna = -d2 * norm.pdf(d1) / sigma
+    charm = -norm.pdf(d1) * (2 * r * T - d2 * sigma * sqrt(T)) / (2 * T * sigma * sqrt(T)) / 365.0
+    return float(vanna), float(charm)
+
+
 def enrich_contract_with_heston_greeks(contract: Dict,
                                         heston_params: Optional[Dict],
                                         spot: float,
                                         r: float = RISK_FREE_RATE) -> Dict:
     """
-    Enhance the selected contract's Greeks using Heston if parameters available.
-    Adds vanna, charm to the contract dict.
-    Falls back to BSM if Heston params unavailable or calculation fails.
+    Second-order Greeks and labelled model Greeks for the selected contract.
+
+    G4 (ACK 17 Oct 2026, decision D4 "Heston overwrite retired; provider greeks"): the provider's delta, gamma, theta
+    and vega are never replaced. heston_greeks gives Black-Scholes Greeks at the at-the-money variance for every
+    strike, which ignores the contract's own IV and skew (measured 13 and 15 Oct: 0% of deltas matched the provider,
+    ~13% were off by more than 0.10). Those values are kept for display as model_atm_* with their basis.
+
+    Vanna and charm are measured on the contract's own IV (vanna_charm_basis). A missing provider Greek stays missing.
 
     Vanna impact on scoring:
       High positive vanna on a CALL entering Phase D = delta will accelerate
       as vol rises on the breakout → double benefit of directional + vol expansion.
     """
-    if not heston_params or not contract:
-        # BSM second-order Greeks fallback
-        sig   = contract.get('iv', contract.get('implied_vol'))
-        S     = spot
-        K     = contract.get('strike')
-        T_raw = contract.get('dte', 30)
-        right = contract.get('right', 'C')
-        if sig and K and T_raw and S > 0:
-            T = max(float(T_raw) / 365.0, 1e-4)
-            d1, _ = _d1d2(S, float(K), T, float(sig))
-            if d1 is not None:
-                # Vanna (BSM): vega × d2 / (S × sigma)
-                vega_bsm = bs_vega(S, float(K), T, float(sig), r)
-                vanna = float(vega_bsm * d1 / (S * float(sig))) if vega_bsm else None
-                # Charm (BSM): -(pdf(d1) × (2r×T - d2×sigma×sqrt(T)) / (2×T×sigma×sqrt(T))) / 365
-                T_sq = sqrt(T)
-                charm = None
-                try:
-                    charm = -(norm.pdf(d1) * (2*r*T - d1*float(sig)*T_sq) /
-                               (2*T*float(sig)*T_sq)) / 365.0
-                except Exception:
-                    pass
-                enriched = dict(contract)
-                if vanna is not None: enriched['vanna'] = round(float(vanna), 5)
-                if charm is not None: enriched['charm'] = round(float(charm), 5)
-                enriched['heston_used'] = False
-                return enriched
+    if not contract:
         return contract
-
+    enriched = dict(contract)
     K     = contract.get('strike')
     T_raw = contract.get('dte', 30)
     right = (contract.get('right') or 'C').upper()[:1]
-
-    if not K or not T_raw:
-        return contract
-
+    sig   = contract.get('iv', contract.get('implied_vol'))
+    if not K or not T_raw or not spot or spot <= 0:
+        return enriched
     T = max(float(T_raw) / 365.0, 1e-4)
 
-    greeks = heston_greeks(spot, float(K), T, r, heston_params, right)
-    enriched = dict(contract)
+    if sig:
+        vanna, charm = bsm_vanna_charm(spot, float(K), T, float(sig), r)
+        if vanna is not None:
+            enriched['vanna'] = round(vanna, 5)
+            enriched['charm'] = round(charm, 5)
+            enriched['vanna_charm_basis'] = VANNA_CHARM_BASIS
 
-    # Update Greeks with Heston values (more accurate)
-    if greeks.get('delta') is not None:
-        enriched['delta'] = greeks['delta']
-    if greeks.get('gamma') is not None:
-        enriched['gamma'] = greeks['gamma']
-    if greeks.get('vega') is not None:
-        enriched['vega']  = greeks['vega']
-    if greeks.get('theta') is not None:
-        enriched['theta'] = greeks['theta']
-    if greeks.get('vanna') is not None:
-        enriched['vanna'] = round(greeks['vanna'], 5)
-    if greeks.get('charm') is not None:
-        enriched['charm'] = round(greeks['charm'], 5)
-    enriched['heston_used']  = greeks.get('heston_used', False)
-    enriched['heston_price'] = greeks.get('heston_price')
-
+    enriched['heston_used'] = False
+    if heston_params:
+        greeks = heston_greeks(spot, float(K), T, r, heston_params, right)
+        if greeks.get('heston_used'):
+            for greek in ('delta', 'gamma', 'theta', 'vega'):
+                enriched[f'model_atm_{greek}'] = greeks.get(greek)
+            enriched['model_greeks_basis'] = MODEL_GREEKS_BASIS
+            enriched['heston_used']  = True
+            enriched['heston_price'] = greeks.get('heston_price')
     return enriched
+
+
+def contract_greek_output_fields(contract: Dict) -> Dict:
+    """The selected contract's Greek columns: provider Greeks, then the labelled display-only model Greeks (G4)."""
+    return {
+        'contract_delta'          : contract.get('delta'),
+        'contract_gamma'          : contract.get('gamma'),
+        'contract_theta'          : contract.get('theta'),
+        'contract_vega'           : contract.get('vega'),
+        'contract_vanna'          : contract.get('vanna'),
+        'contract_charm'          : contract.get('charm'),
+        'contract_vanna_charm_basis': contract.get('vanna_charm_basis'),
+        'contract_heston_used'    : contract.get('heston_used', False),
+        'contract_heston_price'   : contract.get('heston_price'),
+        'contract_model_atm_delta': contract.get('model_atm_delta'),
+        'contract_model_atm_gamma': contract.get('model_atm_gamma'),
+        'contract_model_atm_theta': contract.get('model_atm_theta'),
+        'contract_model_atm_vega' : contract.get('model_atm_vega'),
+        'contract_model_greeks_basis': contract.get('model_greeks_basis'),
+        'contract_greeks_source'  : contract_greeks_source(contract),
+    }
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _fetch_hist_closes(ticker: str, days: int = 252) -> List[float]:
@@ -8759,13 +8782,12 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     elif was_synthetic:
         print(f"  [{ticker}] ⚠️  BSM synthetic mark in use")
 
-    # ── 4c. Heston Greek enrichment (vanna, charm, accurate delta/vega) ────
+    # ── 4c. Vanna/charm on the contract's IV; model ATM Greeks recorded display-only (G4: provider Greeks kept) ──
     try:
         contract = enrich_contract_with_heston_greeks(contract, heston_params, spot)
         if contract.get('heston_used'):
-            print(f"  [{ticker}] ✅ Heston Greeks applied "
-                  f"(fit_err={iv_ctx.get('heston_fit_error','?')}, "
-                  f"vanna={contract.get('vanna','?'):.3f})")
+            print(f"  [{ticker}] Model ATM Greeks recorded (display only; provider Greeks published, "
+                  f"method={(heston_params or {}).get('method', '?')})")
     except Exception as e:
         print(f"  [{ticker}] Heston enrichment skipped: {e}")
 
@@ -9033,15 +9055,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         'expiry'                  : contract.get('expiry'),
         'strike'                  : contract.get('strike'),
         'premium'                 : contract.get('mark'),
-        'contract_delta'          : contract.get('delta'),
-        'contract_gamma'          : contract.get('gamma'),
-        'contract_theta'          : contract.get('theta'),
-        'contract_vega'           : contract.get('vega'),
-        'contract_vanna'          : contract.get('vanna'),
-        'contract_charm'          : contract.get('charm'),
-        'contract_heston_used'    : contract.get('heston_used', False),
-        'contract_heston_price'   : contract.get('heston_price'),
-        'contract_greeks_source'  : contract_greeks_source(contract),
+        **contract_greek_output_fields(contract),
         **evening_contract_analytics(contract, ctx),
         'contract_iv'             : contract.get('iv'),
         'contract_oi'             : contract.get('oi'),

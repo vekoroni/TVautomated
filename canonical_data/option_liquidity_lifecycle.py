@@ -489,6 +489,8 @@ class OptionLiquidityLifecycleStore:
                     );
                 CREATE INDEX IF NOT EXISTS idx_option_observation_contract
                     ON option_contract_observations(contract_symbol, quote_as_of DESC);
+                CREATE INDEX IF NOT EXISTS idx_option_observation_supersedes
+                    ON option_contract_observations(supersedes_event_id);
 
                 CREATE TABLE IF NOT EXISTS option_contract_selection_events (
                     selection_event_id TEXT PRIMARY KEY,
@@ -1090,9 +1092,11 @@ class OptionLiquidityLifecycleStore:
         with self.registry.connection() as connection:
             row = connection.execute(
                 """
-                SELECT * FROM option_contract_observations
-                WHERE thesis_id = ?
-                ORDER BY quote_as_of DESC, observed_at DESC LIMIT 1
+                SELECT * FROM option_contract_observations AS o
+                WHERE o.thesis_id = ? AND NOT EXISTS (
+                    SELECT 1 FROM option_contract_observations AS s
+                    WHERE s.supersedes_event_id = o.observation_id)
+                ORDER BY o.quote_as_of DESC, o.observed_at DESC LIMIT 1
                 """,
                 (_normalise_token(thesis_id, "thesis_id"),),
             ).fetchone()
@@ -2479,6 +2483,88 @@ class OptionLiquidityLifecycleStore:
         # Returning latest_observation(thesis) is therefore order-dependent and
         # can hand the caller a different contract from the one just inserted.
         # Resolve by the immutable natural identity minted above instead.
+        result = self.contract_observation(observation_id)
+        assert result is not None
+        return PersistResult(result, False)
+
+    def record_observation_greek_correction(
+        self,
+        *,
+        superseded_observation_id: str,
+        delta: float,
+        source_dataset_id: str,
+        corrected_by_run_id: str,
+        correction_reason: str,
+        observed_at: datetime | None = None,
+    ) -> PersistResult:
+        """Append-only correction of a recorded delta (G4, ACK 17 Oct 2026).
+
+        Before G4 the selected contract was registered with the Heston ATM-variance model delta and recorded here as
+        a MARKETDATA observation. A correction copies the superseded observation, replaces only the delta with the
+        provider's from the MarketData option chain quoted at the same time, and links the lineage. It records no new
+        market quote, so the thesis-state checks of record_contract_observation do not apply. Readers exclude
+        superseded observations.
+        """
+        run = _normalise_token(corrected_by_run_id, "corrected_by_run_id")
+        reason = _required_text(correction_reason, "correction_reason").upper()
+        new_delta = _finite_optional(delta, "delta")
+        if new_delta is None:
+            raise DatasetValidationError("a delta correction requires the provider delta")
+        with self.registry.connection() as connection:
+            original = connection.execute(
+                "SELECT * FROM option_contract_observations WHERE observation_id = ?",
+                (str(superseded_observation_id),),
+            ).fetchone()
+        if original is None:
+            raise DatasetValidationError("supersedes_event_id does not exist")
+        source = self.registry.get_dataset(source_dataset_id)
+        if (
+            source is None
+            or source.dataset_type is not DatasetType.OPTION_CHAIN
+            or source.provider != MARKETDATA_PROVIDER
+            or source.instrument_id != original["ticker"]
+        ):
+            raise DatasetValidationError(
+                "a delta correction must come from that ticker's MARKETDATA option chain"
+            )
+        observation_id = _hash(
+            "OPTION_CONTRACT_OBSERVATION_V1",
+            original["thesis_id"], run, original["contract_symbol"], original["quote_as_of"],
+        )
+        if observation_id == original["observation_id"]:
+            raise DatasetValidationError("an observation cannot supersede itself")
+        row = dict(original)
+        row.update({
+            "observation_id": observation_id,
+            "run_id": run,
+            "observed_at": iso_utc(parse_utc(observed_at) or utc_now()),
+            "source_dataset_id": source.dataset_id,
+            "delta": new_delta,
+            "calculation_version": "G4_DELTA_CORRECTION_V1",
+            "supersedes_event_id": original["observation_id"],
+            "correction_reason": reason,
+            "corrected_by_run_id": run,
+            "correction_state": "CORRECTED",
+        })
+        hash_payload = {k: v for k, v in row.items() if k not in ("observed_at", "payload_hash")}
+        row["payload_hash"] = _hash("OPTION_OBSERVATION_PAYLOAD_V1", _canonical_json(hash_payload))
+        with self.registry.connection() as connection:
+            existing = connection.execute(
+                "SELECT * FROM option_contract_observations WHERE observation_id = ?", (observation_id,),
+            ).fetchone()
+            if existing:
+                if existing["payload_hash"] != row["payload_hash"]:
+                    raise OptionLifecycleConflict("correction identity already has different content")
+                return PersistResult(self._observation_from_row(existing), True)
+            columns = list(row)
+            try:
+                connection.execute(
+                    f"INSERT INTO option_contract_observations({', '.join(columns)}) "
+                    f"VALUES ({', '.join('?' for _ in columns)})",
+                    [row[c] for c in columns],
+                )
+            except sqlite3.IntegrityError as error:
+                raise OptionLifecycleConflict(str(error)) from error
         result = self.contract_observation(observation_id)
         assert result is not None
         return PersistResult(result, False)

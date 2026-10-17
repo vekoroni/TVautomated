@@ -87,12 +87,12 @@ def test_calls_keep_their_existing_stop_order():
 
 
 # --- 1e -------------------------------------------------------------------------------------------------------------
-# The Greeks shown for a contract must say where they came from. When the Heston model calibrates, Options Intelligence
-# replaces the provider's Greeks with Heston/BSM Greeks at the at-the-money variance (ignoring the contract's own IV and
-# skew); the Morning then writes the provider's live Greeks. The source travels with the Greeks.
+# The Greeks shown for a contract must say where they came from. G4 (ACK 17 Oct 2026, decision D4): Options
+# Intelligence no longer replaces the provider's Greeks with the Heston ATM-variance model, so a computed model
+# (heston_used) leaves the source as the provider's; the Morning then writes the provider's live Greeks.
 
 @pytest.mark.parametrize("contract,expected", [
-    ({"delta": 0.5, "heston_used": True}, "HESTON_ATM_VARIANCE_MODEL"),
+    ({"delta": 0.5, "heston_used": True}, "PROVIDER_EOD_CHAIN"),
     ({"delta": 0.5, "heston_used": False}, "PROVIDER_EOD_CHAIN"),
     ({"delta": 0.5}, "PROVIDER_EOD_CHAIN"),
     ({"delta": None}, "UNAVAILABLE"),

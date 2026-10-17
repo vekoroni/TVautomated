@@ -1,0 +1,291 @@
+{
+  "mode": "DRY_RUN",
+  "planned": 39953,
+  "skipped": {
+    "NO_SOURCE_CHAIN_LINEAGE": 2172,
+    "CHAIN_UNREADABLE_OR_INTEGRITY_FAILED": 5,
+    "ALREADY_PROVIDER_DELTA": 2
+  },
+  "abs_delta_error_max": 0.694419617524948,
+  "over_0_10": 2417,
+  "sessions": [
+    "2026-08-28",
+    "2026-08-31",
+    "2026-09-02",
+    "2026-09-03",
+    "2026-09-04",
+    "2026-09-08",
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-16",
+    "2026-09-17",
+    "2026-09-18",
+    "2026-09-21",
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24",
+    "2026-09-25",
+    "2026-09-29",
+    "2026-10-01",
+    "2026-10-02",
+    "2026-10-05",
+    "2026-10-08",
+    "2026-10-09",
+    "2026-10-12",
+    "2026-10-13",
+    "2026-10-15"
+  ],
+  "sample": [
+    {
+      "observation_id": "000c617afe4b21ddf41acb47057a77ee2c2b0605a2d9a46bc3fc71b3b9d10a21",
+      "ticker": "RRR",
+      "contract_symbol": "RRR260918C00055000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.6323462922987122,
+      "provider_delta": 0.676,
+      "chain_dataset_id": "7840e8f40b46caba7bb6752f8f569ef7f3ab8a7ef7fc72e777680a3ae5f8cc51",
+      "live_dataset_id": "864ef84f1f16bc4eb59fe93cfa568f424f423511d26fab56cb9db773e836fc55"
+    },
+    {
+      "observation_id": "00214dfe81786081072a72ce02d95ff99472b1bb432fe042a1cc2fb089e2c39e",
+      "ticker": "EVC",
+      "contract_symbol": "EVC260918C00007500",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.6723083833925919,
+      "provider_delta": 0.6465,
+      "chain_dataset_id": "cd0fbb3139070f366a46396b373deac6f1397b2b7798e79d2a0f30d3d83d0b74",
+      "live_dataset_id": "c91b81ae40e31b1a7360373ed12439c15cf6059d238029d84b0d7c953a33f4bf"
+    },
+    {
+      "observation_id": "0078719dc35b78e4135ffcd22bc6c4da4b6b6bb8849e1c85ad592bd7622ce163",
+      "ticker": "JBIO",
+      "contract_symbol": "JBIO260918P00022500",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.576049561934922,
+      "provider_delta": -0.6259,
+      "chain_dataset_id": "a038c48c0be51a68655a23bc3563643dff140989d7608cadf4a8fbe9fc6ceef2",
+      "live_dataset_id": "cf242ccf983bb7cf061dee1ff62d22fcf9f205f5fd4ed0efc1df711eec15e586"
+    },
+    {
+      "observation_id": "00adecdacfac1feb01805b032b743b6f5f75fd0a094f7e14b2e6615ff77c581b",
+      "ticker": "ACHC",
+      "contract_symbol": "ACHC261016C00030000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.5035897913349625,
+      "provider_delta": 0.4535,
+      "chain_dataset_id": "e7a686abd87c05882c406fc6957957935ffd9d9c8d49c5bc2c25d0f74ef3df41",
+      "live_dataset_id": "7e4af0eaa16ca16ed0ce3b0764a9e05f0fa169ce5e1acf5a863743bc253adfb5"
+    },
+    {
+      "observation_id": "0192ad879eff94fabdedd1665558919c5f42a499194538a001798256e8a27ba3",
+      "ticker": "XHB",
+      "contract_symbol": "XHB260918P00105000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.49504419931763755,
+      "provider_delta": -0.4975,
+      "chain_dataset_id": "05f4438c6898cc52da93dd20886020372906f70ef6f2a698af259f8e20098cb7",
+      "live_dataset_id": "f7e4813065db7e3827dbe1312cff871db4dd9c81f5b4d727b54ef79f6c75d859"
+    },
+    {
+      "observation_id": "01fb9415ab819718750b236d26c01718f8a4ce317ae43b3872d02bc2e6113e0a",
+      "ticker": "VRDN",
+      "contract_symbol": "VRDN260918P00024000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.560847528732138,
+      "provider_delta": -0.5244,
+      "chain_dataset_id": "e6afa7ca4b33e3604ed9a045ff9cf253daef578d9b1fb2e5ad34accb9f08a69a",
+      "live_dataset_id": "bb02681d02c853a3e802b40704cc3114e93925e453a84a1197d0be33f3e9845a"
+    },
+    {
+      "observation_id": "022ee62480f909e3f3eecdfc0dd3aaddeeccf00963340c93259aa0ae8e21a726",
+      "ticker": "MRX",
+      "contract_symbol": "MRX260918P00075000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.5703677540941179,
+      "provider_delta": -0.5535,
+      "chain_dataset_id": "e29f08c6657f7eeb597c491d797805e28c75ef57620544d81d60a494f297a63a",
+      "live_dataset_id": "f3c53e5fcd2f2e50c2339f75e4e3edc7e8a1874c0090c58a97f3ca9492bd1d98"
+    },
+    {
+      "observation_id": "024bf7b0fd0015cdbccd043d8ac1d72a607e0ac53d4e925dc73cb0f74a87f8cf",
+      "ticker": "ABNB",
+      "contract_symbol": "ABNB260918P00190000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.491265801112275,
+      "provider_delta": -0.494,
+      "chain_dataset_id": "ed32e19447d34c6e130baa37fa2d286a1586787e9ab1ff741b0059f9b35a1aba",
+      "live_dataset_id": "3a174d50c7e1b804421241be70dcc987b8bdde79838466018e73cd685eb003f3"
+    },
+    {
+      "observation_id": "024f92be5f6c9ac3f0843c1a680b6961df44d49a93e84987b4f6e31e73a93c66",
+      "ticker": "CPRT",
+      "contract_symbol": "CPRT260918P00032500",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.40535369612616323,
+      "provider_delta": -0.4039,
+      "chain_dataset_id": "36802194456b227f19e00626d909051b5e45d69783df2e2d09ac4f1f380756b7",
+      "live_dataset_id": "09d6b355e8d961929986eca44468de5639c9a011089b61b5e064e53e5f4519fa"
+    },
+    {
+      "observation_id": "02659b10ab7470931c46fcc5399b75da63972be00550619c012d0f47eb80e6f2",
+      "ticker": "CDNA",
+      "contract_symbol": "CDNA261016C00050000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.535162266363993,
+      "provider_delta": 0.5281,
+      "chain_dataset_id": "f83111e39e3f1d732e9f7df9a27aaa757f5e67611248c6ea37c52f68e83b092b",
+      "live_dataset_id": "029a086c35769278fe0a7d0bd3c47628bdafe103f2a2bf2c8fce58e3d39f8b11"
+    },
+    {
+      "observation_id": "02ac84234c923f5c6b17adaffbb3621912af882882f32b5b2933eea07891719c",
+      "ticker": "CAKE",
+      "contract_symbol": "CAKE261016C00115000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.47483891397697287,
+      "provider_delta": 0.476,
+      "chain_dataset_id": "7f2bed0b4cdbed16a1820aefe366aa6ff5a5f21105aa40623cf9fc5e72bab521",
+      "live_dataset_id": "6a39252149249a1b757762ddee03c39bd571d42850f4e7cdd7c6fb4db5eca0bc"
+    },
+    {
+      "observation_id": "0327ff2dc1c6810d0122ffc2afce1e4a4a64c87e676da33a3f35d05d5333e728",
+      "ticker": "TWST",
+      "contract_symbol": "TWST261016C00145000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.5356196988074589,
+      "provider_delta": 0.5387,
+      "chain_dataset_id": "018489cd7a70177fee85558d9b0c62bbfbaa17d437a1d3edfd0b78dd3f8a07f2",
+      "live_dataset_id": "b5fa0c346745abc3983cde66fe5ce0e4945ae558ac5e8b268c3ef2d6a230b8ba"
+    },
+    {
+      "observation_id": "03785c2c0f279bc0b71ff2bde664c80fefe6d2e2810e24f59bd405907ceb3366",
+      "ticker": "INTA",
+      "contract_symbol": "INTA260918C00045000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.5148057292224228,
+      "provider_delta": 0.4029,
+      "chain_dataset_id": "0eb39c80f81eaadb9f4fa567b1978e0ac47d05cdc559400dc0226ff0cf896594",
+      "live_dataset_id": "d8fa921e254d56ac915477f5ce980f86a0c7102abc56c23f6590a7632fa0ae72"
+    },
+    {
+      "observation_id": "04853eb7a240d284bf72dd99e6848fa9f777030b1d5b15596742c734ea4dad78",
+      "ticker": "KLAR",
+      "contract_symbol": "KLAR261002P00014000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.421041032224029,
+      "provider_delta": -0.4229,
+      "chain_dataset_id": "b7785a8d7ce986c00a90cdc1e87e288c323082ed56f83c43cd59ae12ca79f690",
+      "live_dataset_id": "d3f8fd3bcda877cf86a0a9fc8ab6b514a0a41f3c462aac295f95bed6d09657b1"
+    },
+    {
+      "observation_id": "0492b9f731be1d0f1e67e114e78a20fedb484bc6b20545ceae289ad65d26151c",
+      "ticker": "QXO",
+      "contract_symbol": "QXO260918P00014000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.5702743314964014,
+      "provider_delta": -0.5731,
+      "chain_dataset_id": "a557cb6564cc825468693cee72f85dedda2a090d178d2c9d8acb70341f531401",
+      "live_dataset_id": "93d596e6c3000595e6810ac2b239f39088693eac2550d32dd69b9b44d190cd64"
+    },
+    {
+      "observation_id": "049c30dd52fefcc1c316298510c0e2fcdadc13e219c1fbef248e84ec0ae73968",
+      "ticker": "FUN",
+      "contract_symbol": "FUN260918P00017500",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.5977063288826021,
+      "provider_delta": -0.6552,
+      "chain_dataset_id": "1bb62e2e15dfd673a145cfca0f24e7f53cf016144738d979ceca05cf84b8d284",
+      "live_dataset_id": "f6fec6957284166d913875c0d4d52a25bfebff9c9be92e657e40a0d32c27d14d"
+    },
+    {
+      "observation_id": "04a50c13b13c56a65a0ecdf0933fc052d62321027290962fb024539ecfb226ce",
+      "ticker": "BRKR",
+      "contract_symbol": "BRKR260918C00057500",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.5039545423038739,
+      "provider_delta": 0.5592,
+      "chain_dataset_id": "578e4b459162a800d08400987b5e1a0a05eee81533fc0de2d44ca9aa9dca5ffb",
+      "live_dataset_id": "5ce102ce946cfbcc6b4681e300923896d652809f9452d3ff17812e39b25f6132"
+    },
+    {
+      "observation_id": "04b512f6c2b071b7fb2cece74ceb34822efdc1efd5238f9c181ead396a9b07c8",
+      "ticker": "HUT",
+      "contract_symbol": "HUT260925C00083000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.4770778743572814,
+      "provider_delta": 0.4779,
+      "chain_dataset_id": "d286c9b390790501ebdc4eb08473b668e6c3def898d66beba4b52b9b23070671",
+      "live_dataset_id": "03f2020a6afe126b1c20ec74f945ac40e9a46c2acecc3dde683d438dd9ec7e35"
+    },
+    {
+      "observation_id": "04e8da0ad0ebbdd103399c44a83508305cf9ffff95b045c25a09deaf23509254",
+      "ticker": "MGM",
+      "contract_symbol": "MGM260918C00042000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.5597750990162665,
+      "provider_delta": 0.5572,
+      "chain_dataset_id": "e9f7f1a778a1bc763cb1610a58ce58657e0ffffce196fcd976600e4e745259a3",
+      "live_dataset_id": "b6900f23068601dc04ae704148cac5acd8c4c8f769ffede7f1877c909e1ad395"
+    },
+    {
+      "observation_id": "0548966dd51098c1f37eec6e363f87bebe85cdc0a858451c730f763b474ba153",
+      "ticker": "KN",
+      "contract_symbol": "KN260918C00035000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.42855613828966777,
+      "provider_delta": 0.4285,
+      "chain_dataset_id": "40821f5ac99640bd54a99e08d5aeed76d10ef910b1b0e7aa0f3dba2fc831475f",
+      "live_dataset_id": "505f6b175fd892f208ae330e4cf41fb6e23c79883be6a2ac5832aba7622ce756"
+    },
+    {
+      "observation_id": "05b1894e02ec3ecbe29311acdc910c98a4361893a511f4331bf7d1e5c8852128",
+      "ticker": "APO",
+      "contract_symbol": "APO261002P00135000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.4626898018175678,
+      "provider_delta": -0.4707,
+      "chain_dataset_id": "9e0c3f94b80a60a5132a29b82378b1fc8062e109dd59c6f45c36bf0a2d44e67b",
+      "live_dataset_id": "90667171d42d56352449952dcc08c6a782eebdf1e6f6fd4be48fc0aece7d78ea"
+    },
+    {
+      "observation_id": "05e71affbacdfab5210d0a668dec0ef3ec6f7777c94fd7fcecddc628df7d03e6",
+      "ticker": "AGIO",
+      "contract_symbol": "AGIO260918P00035000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.5659355189851478,
+      "provider_delta": -0.6023,
+      "chain_dataset_id": "9c59a00087738d658ee581a6663464f81c8b1e17312151f35bfb728acf8e75e5",
+      "live_dataset_id": "89c51b4f1a9a77cc14c154565e83e2f2b39f1f5a166cc2d00edabfbaaddbc62a"
+    },
+    {
+      "observation_id": "0664eb02202ce5d32f25b533d80c220a669ff4bf441bc29d6f729dfe8937570f",
+      "ticker": "MRVL",
+      "contract_symbol": "MRVL260925P00215000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": -0.4416357595537407,
+      "provider_delta": -0.4502,
+      "chain_dataset_id": "be711a97a4d17efad46a1bb7a0f52fa1307f57f7c4fdce9aac14fd970e117763",
+      "live_dataset_id": "1195bdf7610e8c59ae81be001db7b3344a43fdf3ce6fc0b20483e1dc0ea920f8"
+    },
+    {
+      "observation_id": "066c9b91ecd6e8fb5c0939ba1651c758c676bc577bef9b3a9668a79c0af22125",
+      "ticker": "ATEN",
+      "contract_symbol": "ATEN260918C00025000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.6260989878031361,
+      "provider_delta": 0.6124,
+      "chain_dataset_id": "3e4957bbf573eb14c1f0c582bf42f50e829259b566fdfcb983aaf0562a04740d",
+      "live_dataset_id": "e260ccfae057cbf8e6f63d5846a499cb8a5c335eece8797d14b0f93cd714b8cf"
+    },
+    {
+      "observation_id": "06dbd4212e8fb6ec4bc4a217b9be5cdb264d2c87257c98363ae9f7e23c6c3c94",
+      "ticker": "IT",
+      "contract_symbol": "IT260918C00200000",
+      "quote_as_of": "2026-08-28T20:00:00Z",
+      "recorded_delta": 0.49833201019160467,
+      "provider_delta": 0.4973,
+      "chain_dataset_id": "00b8dda7b20d9637d9c2ea69e8b9943ef529c2b293f2372fa4654e52fc56cb3f",
+      "live_dataset_id": "375cebd1f6fa846a9a9fa24912803b736fb3dc7ad2589e9069ee424ce9200143"
+    }
+  ]
+}

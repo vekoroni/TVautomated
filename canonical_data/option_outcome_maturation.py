@@ -66,6 +66,10 @@ def read_exact_contract_option_path(
             WHERE o.contract_symbol = ? AND o.ticker = (
                 SELECT ticker FROM doi_contract_families WHERE family_id = ?
             )
+            AND NOT EXISTS (
+                SELECT 1 FROM option_contract_observations AS s
+                WHERE s.supersedes_event_id = o.observation_id
+            )
             ORDER BY o.quote_as_of, o.observed_at, o.observation_id
             """,
             (assessment.contract_symbol, assessment.family_id),
