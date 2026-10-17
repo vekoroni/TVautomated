@@ -1,5 +1,5 @@
 ﻿<#
-AVSHUNTER daily mini-automation (v3.1, 17 Oct 2026: eod also captures option closes; v3 backup in prev\avs_day_v3_2026-10-17.ps1). Nothing to edit: every date, run id and folder is read from the files.
+AVSHUNTER daily mini-automation (v3.2, 17 Oct 2026: option closes left to the post-close monitor, one writer; history in git). Nothing to edit: every date, run id and folder is read from the files.
 Run from any PowerShell window:
     & C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\data\scratch\workaround\avs_day.ps1 <step>
 
@@ -13,8 +13,8 @@ Steps
     board     rebuild the macro board (e.g. after CPI) and refresh today_context: re-tag money before more deep dives
     checktriage  check the scheduled triage's output (no credits): PASS / WARN / FAIL. Start the deep dives only on PASS or WARN
     preclose  collect the day's card decisions into order tickets, then run the pre-close trigger scan (about 20:10 UK)
-    eod       end of day (after 21:00 UK): re-collect decisions, score today's ledger, record every carded and held
-              contract's closing quote (monitor\option_closes.csv), list cards with no recorded order
+    eod       end of day (after 21:00 UK): re-collect decisions, score today's ledger, list cards with no recorded order
+              (option closes are written by the post-close monitor to monitor\option_closes.csv)
 Options
     -Cap 3    change the premium cap (saved in day_settings.json and used from then on; default 5)
 Every step ends by rewriting today_context.json, which the chat prompts read instead of placeholders.
@@ -245,8 +245,8 @@ switch ($Step) {
         $c = Get-Context
         & $Py "$W\collect_decisions.py" --folder $c.split_handoff
         & $Py "$W\track_outcomes.py" $c.ledger
-        # G5 item 4 (ACK 17 Oct 2026): record every carded and held contract's closing quote (no Claude credits)
-        & $Py "$W\capture_option_closes.py"
+        # Option closes: written by the post-close monitor (monitor\option_closes.csv); the local capture_option_closes.py
+        # was retired from this step by ACK on 17 Oct 2026 so the file has one writer.
         $c = Write-Context
         if ($c.cards) {
             $open = @(Import-Csv $c.cards | Where-Object { $_.decision -in 'TRADE', 'ENTER', 'WATCH' -and -not $_.order_placed })

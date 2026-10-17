@@ -66,6 +66,15 @@ The card, Lab book and Morning are otherwise unchanged.
   - UAT-05: readiness says FRESH with incomplete Greeks.
 - **Still open from the UAT:** Lane B's runtime (tool, capture script, `avs_day.ps1`) is git-ignored, so a commit alone does not reproduce the deployment. Your decision: version it, or keep scratch plus `prev\` backups. The first live Evening/Morning publication and the first real close capture are still to be verified.
 
+## Superseded the same day: option-close capture owner (ACK, 17 Oct)
+
+ACK chose the post-close monitor as the one writer of `monitor\option_closes.csv`. That capture had been built on 16 Oct; I wasn't aware of it when building item 4.
+- `avs_day.ps1` v3.2: `eod` no longer runs `capture_option_closes.py`.
+- The script is marked **RETIRED** and won't write unless `--run-retired` is passed.
+- The UAT-01/02/03 fixes stay as tested reference rules for the monitor (filed as a fix candidate for its prompt), not as a running writer.
+
+So item 4 and closure check 3 below no longer apply to this build.
+
 ## Closure checks (next runs)
 
 1. Lane A, first Evening plus Morning: cards show `valuation_rate_basis = MACRO:T3M ... run <run_id>`.

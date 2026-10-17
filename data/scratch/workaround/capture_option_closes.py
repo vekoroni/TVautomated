@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Daily option close capture (v2, 17 Oct 2026; G5 minimal item 4 + UAT-01/02/03 fixes; v1 in prev\\).
+"""RETIRED 17 Oct 2026 (ACK): the post-close monitor is the one writer of monitor\\option_closes.csv. This script is no
+longer run by avs_day.ps1 eod, and main() refuses to write unless --run-retired is given. Its rules stay as the
+reference for the monitor's capture (tests/test_g5_capture_option_closes.py): held contracts with no age limit
+(UAT-01), exchange-session closes only from quotes stamped at/after the close (UAT-02), retries of missing quotes (UAT-03).
+
+Daily option close capture (v2, 17 Oct 2026; G5 minimal item 4 + UAT-01/02/03 fixes; v1 in prev\\).
 
 After the close, record the closing quote of every contract named by a TRADE / WATCH / ENTER card in the last 10
 hand-off sessions, and of every contract still held (whatever the age of its card, until the card records it closed),
@@ -193,7 +198,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--handoff", type=Path, default=W / "handoff")
     ap.add_argument("--out", type=Path, default=W / "monitor" / "option_closes.csv")
+    ap.add_argument("--run-retired", action="store_true", help="run anyway (retired 17 Oct: the monitor owns the file)")
     a = ap.parse_args(argv)
+    if not a.run_retired:
+        print("capture_option_closes: RETIRED 17 Oct 2026 - the post-close monitor writes monitor\\option_closes.csv; "
+              "nothing written (pass --run-retired only if ACK reinstates it)")
+        return 0
     session, reason = closed_session(datetime.now(timezone.utc))
     if session is None:
         print(f"capture_option_closes: nothing captured ({reason}); closes are recorded only after an XNYS session close")
