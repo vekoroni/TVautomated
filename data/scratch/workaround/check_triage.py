@@ -14,6 +14,7 @@ Checks
   columns    the standard columns are present and the decision columns are still empty
   contract   OCC symbol, underlying = ticker, expiry after the session, ask within the premium cap; differs from
              best_contract_checked only with a contract_why
+  spread     contract_spread_pct present and the trade_contract within 25% of mid (16 Oct gate; WARN otherwise)
   earnings   the triage's Tastytrade date agrees (within 1 day) with the hand-off earnings_date
   prompts    one section per ranked name, headed with its rank and ticker, containing the session and the hand-off
              path, with no unfilled placeholders
@@ -35,7 +36,8 @@ from pathlib import Path
 
 import pandas as pd
 
-VERSION = "check_triage_v1"
+VERSION = "check_triage_v2"   # v2 17 Oct: spread-gate check (X17-02)
+SPREAD_GATE_PCT = 25.0        # W16-02, ACK 16 Oct: no order over 25% of mid
 WORK = Path("data") / "scratch" / "workaround"
 OCC = re.compile(r"\b([A-Z]{1,6})\s*(\d{2})(\d{2})(\d{2})([CP])(\d{8})\b")
 NEED = ["deep_mine_rank", "ticker", "ledger_id", "side", "trigger", "kill", "trade_contract", "pays_at_half_target",
@@ -117,6 +119,22 @@ def main() -> int:
         T["_rank"] = pd.to_numeric(nums, errors="coerce")
     else:
         T["_rank"] = range(1, len(T) + 1)
+
+    # spread gate (16 Oct, W16-02; check added 17 Oct, X17-02): trade_contract within 25% of mid, else the next strike
+    # or expiry that passes. contract_spread_pct may be a percent (31.5) or a fraction (0.315).
+    if "contract_spread_pct" not in T.columns:
+        warns.append("contract_spread_pct column is missing: the 16 Oct spread gate (<= 25% of mid) was not applied")
+    else:
+        for t, v in zip(T["ticker"], T["contract_spread_pct"]):
+            raw = s(v).rstrip("%")
+            try:
+                pct = float(raw) * (100.0 if 0 < float(raw) <= 1 else 1.0)
+            except ValueError:
+                warns.append(f"{t}: contract_spread_pct is empty or not a number ('{s(v)}'): spread gate not shown")
+                continue
+            if pct > SPREAD_GATE_PCT + 1e-9:
+                warns.append(f"{t}: trade_contract spread {pct:.1f}% of mid is over the 25% gate: name the next strike or "
+                             "expiry that passes, or no trade")
 
     # contracts
     sess = datetime.strptime(session, "%Y-%m-%d").date()
