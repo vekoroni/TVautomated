@@ -286,13 +286,18 @@ class PhantomDatabase:
             return 0
         cols = list(rows[0].keys())
         placeholders = ",".join(["?"] * len(cols))
-        assignments = ",".join([f"{c}=excluded.{c}" for c in cols if c not in {"ticker", "quote_date", "option_symbol"}])
+        assignments = ",".join([f"{c}=COALESCE(excluded.{c},chain_snapshots.{c})" if c in {'iv','delta','gamma','theta','vega'} else f"{c}=excluded.{c}" for c in cols if c not in {"ticker", "quote_date", "option_symbol"}])
         sql = (
             f"INSERT INTO chain_snapshots({','.join(cols)}) VALUES({placeholders}) "
             f"ON CONFLICT(ticker, quote_date, option_symbol) DO UPDATE SET {assignments}"
         )
         with self.connect() as conn:
             conn.executemany(sql, [[r.get(c) for c in cols] for r in rows])
+            try:
+                from .phantom_maintenance import complete_greeks_and_queue_iv
+            except ImportError:
+                from phantom_maintenance import complete_greeks_and_queue_iv
+            complete_greeks_and_queue_iv(conn, rows)
         return len(rows)
 
     def write_backfill_audit(self, query_key: str, ticker: str, quote_date: str, params: Dict[str, Any], status: str,

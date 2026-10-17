@@ -208,12 +208,14 @@ def upsert_chain_rows_conn(conn: sqlite3.Connection, rows: List[Dict[str, Any]])
         return 0
     cols = list(rows[0].keys())
     placeholders = ",".join(["?"] * len(cols))
-    assignments = ",".join([f"{c}=excluded.{c}" for c in cols if c not in {"ticker", "quote_date", "option_symbol"}])
+    assignments = ",".join([f"{c}=COALESCE(excluded.{c},chain_snapshots.{c})" if c in {'iv','delta','gamma','theta','vega'} else f"{c}=excluded.{c}" for c in cols if c not in {"ticker", "quote_date", "option_symbol"}])
     sql = (
         f"INSERT INTO chain_snapshots({','.join(cols)}) VALUES({placeholders}) "
         f"ON CONFLICT(ticker, quote_date, option_symbol) DO UPDATE SET {assignments}"
     )
     conn.executemany(sql, [[r.get(c) for c in cols] for r in rows])
+    from phantom_maintenance import complete_greeks_and_queue_iv
+    complete_greeks_and_queue_iv(conn, rows)
     return len(rows)
 
 
@@ -543,6 +545,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         conn.commit()
         conn.close()
 
+    from phantom_maintenance import drain_pending
+    counters['local_maintenance'] = drain_pending(db_path, max_pairs=100000)
     print(json.dumps(counters, indent=2), flush=True)
     return 0
 

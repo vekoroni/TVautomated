@@ -353,7 +353,8 @@ class PhantomOptionChainProjector:
                 """
                 chain_placeholders = ",".join("?" for _ in _CHAIN_COLUMNS)
                 assignments = ",".join(
-                    f"{column}=excluded.{column}"
+                    (f"{column}=COALESCE(excluded.{column},chain_snapshots.{column})"
+                     if column in {'iv','delta','gamma','theta','vega'} else f"{column}=excluded.{column}")
                     for column in _CHAIN_COLUMNS
                     if column not in {"ticker", "quote_date", "option_symbol"}
                 )
@@ -378,6 +379,8 @@ class PhantomOptionChainProjector:
                     connection.execute(
                         chain_sql, tuple(row[column] for column in _CHAIN_COLUMNS)
                     )
+                from scripts.phantom_maintenance import complete_greeks_and_queue_iv
+                complete_greeks_and_queue_iv(connection, rows)
                 connection.execute(
                     """
                     INSERT INTO canonical_projection_receipts(

@@ -21,8 +21,17 @@ def has_column(conn: sqlite3.Connection, table: str, column: str) -> bool:
     return any(str(row[1]).lower() == column.lower() for row in cur.fetchall())
 
 
+def _schema_statements(conn: sqlite3.Connection, sql: str) -> None:
+    # executescript implicitly commits an active ingest transaction. These
+    # static DDL statements contain no embedded semicolons and must stay atomic
+    # with the caller's raw rows, Greek results and pending-IV receipt.
+    for statement in sql.split(';'):
+        if statement.strip():
+            conn.execute(statement)
+
+
 def ensure_computed_greeks_schema(conn: sqlite3.Connection) -> None:
-    conn.executescript(
+    _schema_statements(conn,
         """
         CREATE TABLE IF NOT EXISTS options_greeks_history (
             ticker TEXT NOT NULL,
@@ -178,6 +187,19 @@ def hydrate_chain_snapshots(conn: sqlite3.Connection, records: Iterable[Dict[str
     now = utc_now()
     for rec in records:
         if not str(rec.get("quality_status") or "").startswith("OK"):
+            # A failed solve is still a measured result. Leave numeric fields
+            # unchanged, but expose the reason on the chain consumed downstream.
+            reason = str(rec.get("quality_status") or "UNKNOWN")
+            flags = rec.get("quality_flags")
+            if flags:
+                reason += ";" + (";".join(flags) if isinstance(flags, list) else str(flags))
+            cur = conn.execute(
+                """UPDATE chain_snapshots SET greeks_quality=?, greeks_updated_at_utc=?
+                   WHERE ticker=? AND quote_date=? AND option_symbol=?
+                   AND (iv IS NULL OR delta IS NULL OR gamma IS NULL OR theta IS NULL OR vega IS NULL)""",
+                (reason, now, rec.get("ticker"), rec.get("snapshot_date"), rec.get("contract_symbol")),
+            )
+            updated += int(cur.rowcount or 0)
             continue
         params = (
             rec.get("iv"),
@@ -211,7 +233,11 @@ def hydrate_chain_snapshots(conn: sqlite3.Connection, records: Iterable[Dict[str
                     gamma=COALESCE(gamma, ?),
                     theta=COALESCE(theta, ?),
                     vega=COALESCE(vega, ?),
-                    greeks_source=COALESCE(greeks_source, ?),
+                    greeks_source=CASE
+                      WHEN (iv IS NOT NULL OR delta IS NOT NULL OR gamma IS NOT NULL OR theta IS NOT NULL OR vega IS NOT NULL)
+                       AND (iv IS NULL OR delta IS NULL OR gamma IS NULL OR theta IS NULL OR vega IS NULL)
+                      THEN 'MIXED_EXISTING_AND_COMPUTED_BS'
+                      ELSE COALESCE(NULLIF(greeks_source, ''), ?) END,
                     greeks_quality=COALESCE(greeks_quality, ?),
                     greeks_updated_at_utc=COALESCE(greeks_updated_at_utc, ?)
                 WHERE ticker=? AND quote_date=? AND option_symbol=?

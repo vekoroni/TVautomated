@@ -275,7 +275,9 @@ def main(argv: Iterable[str] | None = None) -> int:
             except Exception as exc:
                 db.write_backfill_audit(key, ticker, qd_str, params, "ERROR", 0, 1, str(exc), started)
                 credits += 1
-    print(json.dumps({"rows_written": written, "estimated_credits": credits, "db_path": str(db_path)}, indent=2))
+    from phantom_maintenance import drain_pending
+    maintenance = drain_pending(db_path, max_pairs=100000)
+    print(json.dumps({"rows_written": written, "estimated_credits": credits, "db_path": str(db_path), "local_maintenance": maintenance}, indent=2))
     return 0
 
 

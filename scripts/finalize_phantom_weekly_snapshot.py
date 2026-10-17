@@ -47,6 +47,8 @@ def nearest_iv(group: pd.DataFrame, target_delta: float) -> float | None:
             pd.to_numeric(valid["strike"], errors="coerce")
             - pd.to_numeric(valid["underlying_price"], errors="coerce")
         ).abs()
+        if not distance.notna().any():
+            return None
         row = valid.loc[distance.idxmin()]
     return float(row["iv"])
 
@@ -96,7 +98,8 @@ def _surface_and_atm(frame: pd.DataFrame, quote_date: str, built_at: str):
         - pd.to_numeric(valid_iv["underlying_price"], errors="coerce")
     ).abs()
     valid_iv = valid_iv.sort_values(["ticker", "rank_dte", "rank_delta", "rank_strike", "side"], kind="mergesort")
-    atm = valid_iv.groupby("ticker", as_index=False).first()[["ticker", "iv"]]
+    # Keep one actual contract row, never splice non-null fields across rows.
+    atm = valid_iv.drop_duplicates("ticker", keep="first")[["ticker", "iv"]]
     return surface_rows, atm
 
 
@@ -136,17 +139,20 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
                  skew_25d,put_call_iv_spread,median_spread_pct,total_open_interest,total_volume,created_at_utc)
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", surface_rows)
             conn.commit()
-            _write_iv_cache(iv_cache_path, quote_date, atm, built_at)
+            _write_iv_cache(iv_cache_path, quote_date, atm, built_at, replace_tickers=derived)
         return report
     finally:
         conn.close()
 
 
-def _write_iv_cache(iv_cache_path: Path, quote_date: str, atm: pd.DataFrame, built_at: str) -> None:
+def _write_iv_cache(iv_cache_path: Path, quote_date: str, atm: pd.DataFrame, built_at: str, *, replace_tickers=None) -> None:
     cache = sqlite3.connect(str(iv_cache_path), timeout=60)
     try:
         cache.execute("PRAGMA journal_mode=WAL")
         cache.execute("BEGIN")
+        if replace_tickers:
+            cache.executemany('DELETE FROM iv_history WHERE ticker=? AND sample_date=?',
+                              [(ticker,quote_date) for ticker in replace_tickers])
         cache.executemany(
             """INSERT OR REPLACE INTO iv_history(ticker,sample_date,atm_iv,source,updated_at)
                VALUES(?,?,?,'phantom_history',?)""",
@@ -273,7 +279,7 @@ def main() -> int:
         ["ticker", "rank_dte", "rank_delta", "rank_strike", "side"],
         kind="mergesort",
     )
-    atm = valid_iv.groupby("ticker", as_index=False).first()[["ticker", "iv"]]
+    atm = valid_iv.drop_duplicates("ticker", keep="first")[["ticker", "iv"]]
 
     report = {
         "status": "PASS" if coverage["iv"] > 0 else "FAIL",

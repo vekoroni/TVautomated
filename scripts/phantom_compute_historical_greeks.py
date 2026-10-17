@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import shutil
 import sys
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
@@ -103,6 +104,10 @@ def read_risk_free_rate(macro_path: Path, fallback: float) -> float:
 def build_where(args: argparse.Namespace, tickers: Sequence[str], history_table_exists: bool) -> tuple[str, List[Any]]:
     clauses = ["1=1"]
     params: List[Any] = []
+    after_key = getattr(args, "_after_key", None)
+    if after_key:
+        clauses.append("(c.ticker,c.quote_date,c.option_symbol) > (?,?,?)")
+        params.extend(after_key)
     if args.start_date:
         clauses.append("c.quote_date >= ?")
         params.append(args.start_date)
@@ -168,7 +173,7 @@ def fetch_batch(conn: sqlite3.Connection, args: argparse.Namespace, tickers: Seq
         FROM chain_snapshots c
         {join_sql}
         WHERE {where_sql}
-        ORDER BY c.quote_date, c.ticker, c.option_symbol
+        ORDER BY c.ticker, c.quote_date, c.option_symbol
         LIMIT ?
     """
     rows = conn.execute(sql, params + [int(limit)]).fetchall()
@@ -241,6 +246,8 @@ def main() -> int:
     parser.add_argument("--max-rows", type=int, default=0, help="0 means all currently targetable rows.")
     parser.add_argument("--batch-size", type=int, default=25000)
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--min-free-gib", type=float, default=15.0,
+                        help="Stop before a batch if available disk is below this reserve.")
     parser.add_argument("--risk-free-rate", type=float, default=0.045)
     parser.add_argument("--macro-path", default="")
     parser.add_argument("--all-rows", action="store_true", help="Target all chain rows, not only rows missing Greeks.")
@@ -263,17 +270,23 @@ def main() -> int:
         print(json.dumps({"status": "error", "error": f"DB not found: {db_path}"}, indent=2))
         return 2
 
-    conn = sqlite3.connect(str(db_path), timeout=120)
+    # A plan must not create schema, sidecars, or change journal settings.
+    conn = (sqlite3.connect(str(db_path), timeout=120) if args.execute else
+            sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True, timeout=120))
     conn.row_factory = sqlite3.Row
     try:
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
+        if args.execute:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+        else:
+            conn.execute("PRAGMA query_only=ON")
         # Large date-bounded maintenance runs can require an ORDER BY working
         # set. Keep it in memory so SQLite does not depend on an inaccessible
         # or capacity-constrained system temp directory mid-run.
         conn.execute("PRAGMA temp_store=MEMORY")
-        ensure_computed_greeks_schema(conn)
-        conn.commit()
+        if args.execute:
+            ensure_computed_greeks_schema(conn)
+            conn.commit()
 
         total_targeted = count_targets(conn, args, tickers)
         requested = total_targeted if args.max_rows <= 0 else min(total_targeted, int(args.max_rows))
@@ -314,6 +327,8 @@ def main() -> int:
         chain_updated = 0
         status_counts: Counter[str] = Counter()
         while processed < requested:
+            if shutil.disk_usage(db_path.parent).free < args.min_free_gib * 1024**3:
+                raise RuntimeError("Insufficient free disk for the next Greek repair batch")
             remaining = requested - processed
             limit = min(max(1, int(args.batch_size)), remaining)
             rows = fetch_batch(conn, args, tickers, limit)
@@ -324,6 +339,11 @@ def main() -> int:
             if not args.no_chain_update:
                 chain_updated += hydrate_chain_snapshots(conn, records, overwrite=bool(args.overwrite_chain_greeks))
             conn.commit()
+
+            # Keyset pagination avoids repeatedly scanning/sorting the entire
+            # historical population, and visits recomputed failures only once.
+            last = rows[-1]
+            args._after_key = (last["ticker"], last["quote_date"], last["option_symbol"])
 
             processed += len(records)
             batch_status = Counter(str(rec.get("quality_status") or "UNKNOWN") for rec in records)
