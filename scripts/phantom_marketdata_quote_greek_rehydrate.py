@@ -282,7 +282,7 @@ def update_row(conn: sqlite3.Connection, result: Dict[str, Any], allow_partial: 
     if status != "OK_FULL_GREEKS" and not (status == "OK_PARTIAL_GREEKS" and allow_partial):
         return 0
     values = result["values"]
-    conn.execute(
+    cursor = conn.execute(
         """
         UPDATE chain_snapshots
         SET iv=COALESCE(?, iv),
@@ -303,7 +303,7 @@ def update_row(conn: sqlite3.Connection, result: Dict[str, Any], allow_partial: 
             result["option_symbol"],
         ),
     )
-    if conn.total_changes <= 0:
+    if cursor.rowcount <= 0:
         return 0
     conn.execute(
         """
@@ -324,6 +324,12 @@ def update_row(conn: sqlite3.Connection, result: Dict[str, Any], allow_partial: 
             utc_now(),
         ),
     )
+    # Do not drain IV or commit here: keep the update, lineage and pending work
+    # atomic within the existing ingestion transaction.
+    from phantom_maintenance import complete_greeks_and_queue_iv
+    complete_greeks_and_queue_iv(conn, [{**values, 'ticker':result['ticker'],
+        'quote_date':result['quote_date'],'option_symbol':result['option_symbol'],
+        'source':'MARKETDATA_OPTIONS_QUOTES'}])
     return 1
 
 

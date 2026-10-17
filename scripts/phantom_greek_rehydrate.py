@@ -399,6 +399,10 @@ def upsert_chain_rows_conn(conn: sqlite3.Connection, rows: List[Dict[str, Any]])
         f"ON CONFLICT(ticker, quote_date, option_symbol) DO UPDATE SET {','.join(assignments)}"
     )
     conn.executemany(sql, [[row.get(col) for col in cols] for row in rows])
+    # Tested transaction-local completion only. IV draining belongs to the
+    # bounded maintenance worker after the ingest transaction has committed.
+    from phantom_maintenance import complete_greeks_and_queue_iv
+    complete_greeks_and_queue_iv(conn, rows)
     return len(rows)
 
 

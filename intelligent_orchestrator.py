@@ -1400,6 +1400,12 @@ def check_data_readiness(*, expected_session, phantom_path, iv_cache_path, price
         return {"state": state, "latest": latest, "lag_sessions": lag}
 
     marks = ",".join("?" * len(phantom_sample_tickers))
+    # Metadata/identity reads only: no IV draining, schema changes, or repair
+    # writes on the production run's readiness path.
+    from scripts.phantom_maintenance import session_health
+    from scripts.phantom_weekly_maintenance import load_roster
+    _roster_path = Path(phantom_path).parent.parent.parent / "data/universe/polygon_liquid_universe.csv"
+    _health_tickers = load_roster(_roster_path) if _roster_path.is_file() else phantom_sample_tickers
     return {
         "price_store": _state(_latest(price_path, "SELECT MAX(trading_date) FROM ohlcv_daily WHERE ticker = 'SPY'")),
         "phantom_chains": _state(_latest(
@@ -1407,6 +1413,7 @@ def check_data_readiness(*, expected_session, phantom_path, iv_cache_path, price
             tuple(phantom_sample_tickers))),
         "iv_surface_history": _state(_latest(phantom_path, "SELECT MAX(quote_date) FROM iv_surface_history")),
         "iv_cache": _state(_latest(iv_cache_path, "SELECT MAX(sample_date) FROM iv_history")),
+        "phantom_maintenance": session_health(phantom_path, expected_session.isoformat(), _health_tickers),
     }
 
 
@@ -1496,7 +1503,9 @@ def run_preflight_checks(
             price_path=cfg.BASE_DIR / "data" / "canonical" / "historical_prices.sqlite")
         for _source, _info in _readiness.items():
             _line = f"   Data {_source:<19}: {_info['state']} (latest {_info['latest']}, expected {_expected})"
-            (logger.warning if _info["state"] in {"STALE", "MISSING"} else logger.info)(_line)
+            (logger.warning if _info["state"] in {"STALE", "MISSING", "NEEDS_GREEKS", "NEEDS_AUDIT", "PENDING_IV", "INCOMPLETE_COVERAGE"} else logger.info)(_line)
+            if _source == "phantom_maintenance":
+                logger.info("   Phantom coverage/Greek health: %s", _info)
     except Exception as _readiness_error:  # noqa: BLE001
         logger.warning("   Data readiness : not evaluated (%s)", _readiness_error)
 
