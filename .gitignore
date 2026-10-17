@@ -77,7 +77,15 @@ reports/
 # Scratch / working directories — data/scratch/pipeline_map was moved to
 # docs/pipeline_map/ (tracked) before this rule was added; everything else
 # under data/scratch/ is disposable reconstruction/run scratch.
-data/scratch/
+data/scratch/*
+# Exception (ACK 17 Oct 2026, UAT release limit): Lane B's runtime CODE in data/scratch/workaround is versioned so a
+# checkout reproduces the deployment. Only its top-level .py scripts and avs_day.ps1 are tracked; every data file
+# (ledgers, hand-offs, decisions, CSV/JSON/MD/XLSX outputs) and every sub-folder (handoff, lessons, monitor, prev, ...)
+# stays ignored. Files stay where they are, so no path in avs_day.ps1, the runbook or the scheduled tasks changes.
+!data/scratch/workaround/
+data/scratch/workaround/*
+!data/scratch/workaround/*.py
+!data/scratch/workaround/*.ps1
 
 # vanguard/data/ is a symlink into C:\Users\ACKVerissimo\vanguard\data\ — an
 # external, non-repo directory holding the live actuarial database (~725MB)
