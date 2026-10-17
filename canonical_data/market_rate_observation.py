@@ -61,3 +61,26 @@ def load_market_rate(path: Path | str) -> MarketRateObservation:
     except (UnicodeDecodeError, json.JSONDecodeError):
         return MarketRateObservation(None, "NONE", None, hashlib.sha256(raw).hexdigest(), "DATA_DEFECT")
     return resolve_market_rate(payload, raw_bytes=raw)
+
+
+def rate_inputs(path: Path | str | None) -> dict:
+    """The valuation engine's rate arguments for one run (G5, ACK 17 Oct 2026): the run's own observed rate.
+
+    `path` is the run folder or any file inside it; the nearest macro_snapshot.json up to three levels up is the run's.
+    Returns {"rate", "rate_basis"} for anticipated_move_fields / option_value. With no observed rate the rate is None
+    and the basis says why, so the engine's governed fallback is used and labelled (missing is never neutral).
+    """
+    if path is None:
+        return {"rate": None, "rate_basis": "RATE_UNAVAILABLE:NO_RUN"}
+    start = Path(path)
+    folders = [start] if start.is_dir() else []
+    folders += list(start.parents)[:3]
+    for folder in folders:
+        snapshot = folder / "macro_snapshot.json"
+        if snapshot.is_file():
+            obs = load_market_rate(snapshot)
+            if obs.quality_state == "PASS" and obs.rate_annual_fraction is not None:
+                as_of = f" as of {obs.rate_as_of}" if obs.rate_as_of else ""
+                return {"rate": obs.rate_annual_fraction, "rate_basis": f"{obs.rate_source}{as_of} run {folder.name}"}
+            return {"rate": None, "rate_basis": f"RATE_UNAVAILABLE:{obs.quality_state} run {folder.name}"}
+    return {"rate": None, "rate_basis": "RATE_UNAVAILABLE:NO_MACRO_SNAPSHOT"}

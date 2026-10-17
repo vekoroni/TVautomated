@@ -60,6 +60,67 @@ def european_bsm_value(side: str, spot: float, strike: float, years: float, vol:
     return disc_k * _N.cdf(-d2) - disc_s * _N.cdf(-d1)
 
 
+def american_crr_value(spot: float, strike: float, years: float, rate: float, dividend_yield: float,
+                       volatility: float, direction: str, *, steps: int = 100) -> float:
+    """Cox-Ross-Rubinstein American value: the same model and arithmetic as EV3's tree
+    (vanguard.ev_engine_v3.american_option_price), owned here so the module's speed does not depend on a frozen
+    file (G5/G9, ACK 17 Oct 2026, D3). Each level's spot prices are stepped from the level above (divide by `up`)
+    instead of rebuilt with powers: about 40 ms -> a few ms per value at 300 steps; values equal EV3's to 1e-9
+    (tests/test_g5_owner_crr_tree.py)."""
+    import numpy as np
+    is_call = str(direction).upper() == "CALL"
+    intrinsic = max(spot - strike, 0.0) if is_call else max(strike - spot, 0.0)
+    if years <= 0 or volatility <= 0 or steps <= 0:
+        return intrinsic
+    dt = years / steps
+    up = math.exp(volatility * math.sqrt(dt))
+    down = 1.0 / up
+    denominator = up - down
+    if denominator <= 0:
+        return intrinsic
+    probability = min(max((math.exp((rate - dividend_yield) * dt) - down) / denominator, 0.0), 1.0)
+    discount = math.exp(-rate * dt)
+    indices = np.arange(steps + 1)
+    spots = spot * (up ** (steps - indices)) * (down ** indices)
+    values = np.maximum(spots - strike, 0.0) if is_call else np.maximum(strike - spots, 0.0)
+    for _level in range(steps - 1, -1, -1):
+        values = discount * (probability * values[:-1] + (1.0 - probability) * values[1:])
+        spots = spots[:-1] * down          # node (level, j) = node (level + 1, j) / up
+        exercise = np.maximum(spots - strike, 0.0) if is_call else np.maximum(strike - spots, 0.0)
+        values = np.maximum(values, exercise)
+    return float(values[0])
+
+
+def american_crr_values(spot, strike, years, rate, dividend_yield, volatility, is_call, *, steps: int = 100):
+    """american_crr_value for many contracts in one pass (arrays; each row has its own inputs). The same tree,
+    vectorised across rows so the per-level cost is shared: for Lane B's shortlist (G5, ACK 17 Oct 2026)."""
+    import numpy as np
+    s, k, t, r, q, v = (np.asarray(x, float).reshape(-1) for x in np.broadcast_arrays(
+        spot, strike, years, rate, dividend_yield, volatility))
+    call = np.broadcast_to(np.asarray(is_call, bool), s.shape)
+    intrinsic = np.where(call, np.maximum(s - k, 0.0), np.maximum(k - s, 0.0))
+    out = intrinsic.astype(float).copy()
+    ok = (t > 0) & (v > 0) & (s > 0) & (k > 0) & (steps > 0)
+    if not ok.any():
+        return out
+    s, k, t, r, q, v, c = s[ok], k[ok], t[ok], r[ok], q[ok], v[ok], call[ok]
+    dt = t / steps
+    up = np.exp(v * np.sqrt(dt))
+    down = 1.0 / up
+    p = np.clip((np.exp((r - q) * dt) - down) / (up - down), 0.0, 1.0)[:, None]
+    disc = np.exp(-r * dt)[:, None]
+    idx = np.arange(steps + 1)
+    spots = s[:, None] * (up[:, None] ** (steps - idx)) * (down[:, None] ** idx)
+    kk, cc, dd = k[:, None], c[:, None], down[:, None]
+    values = np.where(cc, np.maximum(spots - kk, 0.0), np.maximum(kk - spots, 0.0))
+    for _level in range(steps - 1, -1, -1):
+        values = disc * (p * values[:, :-1] + (1.0 - p) * values[:, 1:])
+        spots = spots[:, :-1] * dd
+        values = np.maximum(values, np.where(cc, np.maximum(spots - kk, 0.0), np.maximum(kk - spots, 0.0)))
+    out[ok] = values[:, 0]
+    return out
+
+
 def option_value(side: str, spot: float, strike: float, years: float, vol: float, *, rate: float,
                  dividend_yield: float, style: str = "AMERICAN") -> Dict[str, Any]:
     """The one model value per share, with the model named."""
@@ -67,11 +128,10 @@ def option_value(side: str, spot: float, strike: float, years: float, vol: float
     if str(style).upper() == "EUROPEAN":
         return {"value": european_bsm_value(side, spot, strike, years, vol, rate=rate, dividend_yield=dividend_yield),
                 "model": "BSM_EUROPEAN"}
-    from vanguard.ev_engine_v3 import american_option_price
     if spot <= 0 or strike <= 0:
         return {"value": _intrinsic(side, spot, strike), "model": "AMERICAN_CRR"}
-    value = american_option_price(spot, strike, years, rate, dividend_yield, vol, side,
-                                  steps=int(valuation_policy()["crr_steps"]))
+    value = american_crr_value(spot, strike, years, rate, dividend_yield, vol, side,
+                               steps=int(valuation_policy()["crr_steps"]))
     return {"value": float(value), "model": "AMERICAN_CRR"}
 
 

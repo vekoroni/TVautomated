@@ -93,6 +93,7 @@ from canonical_data.session_clock import session_snapshot, xnys_sessions_between
 from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
 from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS, anticipated_move_fields
 from canonical_data.dividend_history import dividend_inputs
+from canonical_data.market_rate_observation import rate_inputs
 from domain.option_walls import level_wall
 from domain.structure_behaviour.thesis_category import EVIDENCE_FIELDS as THESIS_EVIDENCE_FIELDS
 from contracts.thesis_record import THESIS_SPINE_FIELDS, VANGUARD_CONTEXT_FIELDS
@@ -2157,6 +2158,8 @@ def build_candidate_manifest(
         authority_source_stage,
     )
     df = pd.read_csv(eil_path, low_memory=False)
+    # G5 (ACK 17 Oct 2026): the card is valued on this run's observed rate, not the governed fallback.
+    card_rate = rate_inputs(eil_path)
     log.info(f"  {len(df)} rows loaded")
     ev3_authority_columns = [
         column for column in df.columns if str(column).startswith("ev3_")
@@ -2908,6 +2911,7 @@ def build_candidate_manifest(
             invalidation_level=invalidation,
             **dividend_inputs(candidate.get("ticker"), as_of=row.get("bar_data_asof"),
                               spot=candidate.get("signal_price")),
+            **card_rate,
         ))
         # Step 4d: the exit plan follows the anticipated move (replaces the earlier plan's invented targets).
         candidate.update(anticipated_exit_plan(

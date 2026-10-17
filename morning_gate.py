@@ -1226,6 +1226,16 @@ def _try_live_repair_alternatives(
     return {}
 
 
+_MORNING_RATE_INPUTS: Dict[str, Any] = {}
+
+
+def set_morning_rate_inputs(run_dir: Optional[Path]) -> None:
+    """G5 (ACK 17 Oct 2026): the Morning values every contract on this run's observed rate (rate_inputs)."""
+    global _MORNING_RATE_INPUTS
+    from canonical_data.market_rate_observation import rate_inputs
+    _MORNING_RATE_INPUTS = rate_inputs(run_dir) if run_dir is not None else {}
+
+
 def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, Any]) -> Dict[str, Any]:
     """Fix E (ACK 5 Oct 2026) + M-G2-01 (ACK 10 Oct 2026): the Morning values the contract it shows, on its quote.
 
@@ -1271,7 +1281,7 @@ def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, An
         trade_side_event=_u(row.get("thesis_structure_alignment")) == "ALIGNED",
         # Output-trust item 4: the invalidation scenario and the dividend yield from history (basis stated).
         invalidation_level=row.get("invalidation_price") or row.get("invalidation_eod") or row.get("invalidation_level"),
-        **dividend_inputs(row.get("ticker"), as_of=today, spot=_spot))
+        **dividend_inputs(row.get("ticker"), as_of=today, spot=_spot), **_MORNING_RATE_INPUTS)
     out["anticipated_contract_basis"] = (f"MORNING_REPRICED:{symbol}" if unchanged
                                          else f"MORNING_CONTRACT_RECOMPUTED:{symbol}")
     out["anticipated_contract_symbol"] = symbol          # L5: the contract the decision's value belongs to
@@ -3453,6 +3463,7 @@ def run_morning_gate(
 
     run_dir    = RUNS_DIR / run_id
     mv_dir     = run_dir / "morning_validation"
+    set_morning_rate_inputs(run_dir)
     input_path = mv_dir / f"morning_candidates_{run_id}.csv"
     output_path = mv_dir / f"morning_validated_trades_{run_id}.csv"
     summary_path = mv_dir / f"morning_gate_summary_{run_id}.json"
