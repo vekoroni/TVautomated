@@ -545,7 +545,7 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
     """
     out = {"state": "MISSING", "regime": None, "net_gex_bn": None, "gamma_flip": None,
            "spot": None, "as_of": None, "age_days": None, "data_mode": None,
-           "coverage_pct": None, "flip_vs_spot_pct": None, "note": ""}
+           "coverage_pct": None, "flip_vs_spot_pct": None, "quality_flags": "", "note": ""}
     try:
         if not path.exists():
             out["note"] = f"{path.name} not found — run avshunter_gex_proxy first"
@@ -570,6 +570,7 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
             "spot": float(r["Spot"]) if pd.notna(r.get("Spot")) else None,
             "as_of": str(as_of) if pd.notna(as_of) else None, "age_days": age,
             "data_mode": r.get("Data_Mode"), "coverage_pct": r.get("Coverage_Pct"),
+            "quality_flags": str(r.get("Quality_Flags") or ""),
         })
         if out["gamma_flip"] and out["spot"]:
             out["flip_vs_spot_pct"] = round((out["spot"] / out["gamma_flip"] - 1) * 100, 3)
@@ -581,6 +582,24 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
         out["note"] = f"{type(e).__name__} — {e}"
         errors.append(f"GEX read failed: {out['note']}")
     return out
+
+
+def format_gex_summary(gex, ticker=GEX_PRIMARY_TICKER):
+    """An absent crossing is valid GEX context, not a numeric zero or an error."""
+    import math
+    def number(value, spec):
+        try:
+            return format(float(value), spec) if math.isfinite(float(value)) else "N/A"
+        except (TypeError, ValueError):
+            return "N/A"
+    flip = number(gex.get("gamma_flip"), ".2f")
+    distance = number(gex.get("flip_vs_spot_pct"), "+.2f")
+    if flip == "N/A" and "NO_ZERO_GAMMA_CROSSING_IN_GRID" in str(gex.get("quality_flags", "")):
+        flip = "N/A (no zero-gamma crossing in grid)"
+    return (f"  OK   {ticker} {gex.get('regime')} net {number(gex.get('net_gex_bn'), '+.3f')}B  "
+            f"flip {flip} vs spot {number(gex.get('spot'), '.2f')} "
+            f"({distance}{'%' if distance != 'N/A' else ''})  as_of {gex.get('as_of')} "
+            f"[{gex.get('data_mode')}, cov {number(gex.get('coverage_pct'), '.1f')}%]")
 
 
 # ── EVENT CALENDAR (shared with bond_macro_intelligence B-01) ───────────────
@@ -986,10 +1005,7 @@ if __name__ == "__main__":
     print("\nLoading GEX handoff...")
     gex = load_gex()
     if gex["state"] == "OK":
-        print(f"  OK   {GEX_PRIMARY_TICKER} {gex['regime']} net {gex['net_gex_bn']:+.3f}B  "
-              f"flip {gex['gamma_flip']} vs spot {gex['spot']} "
-              f"({gex['flip_vs_spot_pct']:+.2f}%)  as_of {gex['as_of']} "
-              f"[{gex['data_mode']}, cov {gex['coverage_pct']}%]")
+        print(format_gex_summary(gex))
     else:
         print(f"  {gex['state']}: {gex['note']}")
 

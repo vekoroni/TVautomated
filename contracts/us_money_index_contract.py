@@ -204,6 +204,13 @@ V2_STATE_FLAGS = ("regime_change_since_monday", "monetisation_change_since_monda
 _FLAG_TRUE_PREFIXES = ("CONFIRMED",)
 _FLAG_FALSE_PREFIXES = ("UNCONFIRMED", "NOT_CONFIRMED", "NONE")
 _FLAG_EXACT = {"TRUE": True, "YES": True, "FALSE": False, "NO": False}
+# Explicit producer-schema compatibility only. This describes market risk-off,
+# not systemic funding seizure. Do not generalise REV*/MATERIAL text to truth.
+_FIELD_TEXT_ALIASES = {
+    "risk_off_transition": {
+        "REV43_MATERIAL_PRICE_AND_SPX_IMPLIED_VOLATILITY_TRANSMISSION_AFTER_VIX_CLEARS_18_AND20_WHILE_OIL_EXTENDS_ABOVE107": True,
+    },
+}
 
 
 def _state_flag(value: Any, field: str) -> tuple[bool, str]:
@@ -212,6 +219,8 @@ def _state_flag(value: Any, field: str) -> tuple[bool, str]:
         return value, "BOOLEAN"
     if isinstance(value, str) and value.strip():
         lead = value.split(";", 1)[0].strip().upper()
+        if lead in _FIELD_TEXT_ALIASES.get(field, {}):
+            return _FIELD_TEXT_ALIASES[field][lead], "EXPLICIT_REV43_PRODUCER_ALIAS"
         if lead in _FLAG_EXACT:
             return _FLAG_EXACT[lead], "PARSED_FROM_PRODUCER_TEXT"
         if lead.startswith(_FLAG_FALSE_PREFIXES):          # checked first: UNCONFIRMED also contains CONFIRMED

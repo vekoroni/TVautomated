@@ -66,3 +66,30 @@ def test_the_validator_reports_the_verdict(tmp_path):
     no = subprocess.run([sys.executable, str(script), str(bad)], capture_output=True, text=True)
     assert ok.returncode == 0 and "risk_off_transition=True (PARSED_FROM_PRODUCER_TEXT)" in ok.stdout
     assert no.returncode == 1 and "risk_off_transition" in (no.stdout + no.stderr)
+
+
+REV43='REV43_MATERIAL_PRICE_AND_SPX_IMPLIED_VOLATILITY_TRANSMISSION_AFTER_VIX_CLEARS_18_AND20_WHILE_OIL_EXTENDS_ABOVE107'
+
+
+def test_rev43_exact_alias_preserves_detail_authority_and_source():
+    detail=REV43+'; POSITIVE_LAGGED_WEEKLY_FLOWS_DO_NOT_CANCEL_INTRADAY_RISK_OFF; NO_PROOF_SYSTEMIC_FUNDING_SEIZURE'
+    raw=_packet(risk_off_transition=detail)
+    original=copy.deepcopy(raw)
+    out=normalise_us_money_index_sidecar(raw)
+    assert out['state']['risk_off_transition'] is True
+    assert out['state']['risk_off_transition_basis']=='EXPLICIT_REV43_PRODUCER_ALIAS'
+    assert out['state']['risk_off_transition_detail']==detail
+    assert out['source_payload']==original and raw==original
+    assert out['authority']=='ADVISORY_ONLY'
+    assert out['execution_permission']=='NONE_INTELLIGENCE_ONLY'
+
+
+@pytest.mark.parametrize('flags',[
+    {'risk_off_transition':REV43.replace('REV43','REV44')},
+    {'risk_off_transition':REV43+'_UNCONFIRMED'},
+    {'regime_change_since_monday':REV43},
+    {'risk_off_transition':'MATERIAL_RISK_OFF'},
+])
+def test_revision_alias_does_not_accept_unknown_or_other_fields(flags):
+    with pytest.raises(USMoneyIndexValidationError):
+        normalise_us_money_index_sidecar(_packet(**flags))
