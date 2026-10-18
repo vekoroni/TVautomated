@@ -3154,6 +3154,20 @@ def pin_run_directory(
     return True
 
 
+def materialize_lab_macro_evidence(run_id: str) -> dict:
+    """Freeze shared run evidence without Worker 3 preparation or ticker jobs."""
+    from contracts.interpreter_macro_context import materialize_interpreter_macro_context
+    run_dir = cfg.RUNS_DIR / str(run_id)
+    meta = json.loads((run_dir / 'run_meta.json').read_text(encoding='utf-8-sig'))
+    session = str((meta.get('dynamic_plan') or {}).get('last_completed_session') or '').strip()
+    if not session:
+        raise RuntimeError('Lab macro evidence requires governed run session')
+    return materialize_interpreter_macro_context(
+        run_dir=run_dir, session_date=session, macro_dir=cfg.MACRO_DIR,
+        prefer_run_snapshot=True,
+    )
+
+
 def materialize_worker3_market_environment(
     run_id: str,
     *,
@@ -7584,6 +7598,7 @@ def evening_workflow(
                     _manifest,
                     cfg.RUNS_DIR,
                     sync_interpreter=False,
+                    publish_review=False,  # publish after shared run macro evidence is frozen
                 )
                 try:
                     from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
@@ -7689,36 +7704,32 @@ def evening_workflow(
     if not _run_station_inspection(canonical_run_id, "book", _book_out, _eod_out):
         return False
 
-    # W3-ME2: freeze the advisory macro packet after the Lab book exists and
-    # before the authoritative manifest is refreshed. Worker 3 reads only this
-    # run-bound packet; it never reopens mutable Dropbox "latest" files.
+    # Retain shared frozen evidence for review/Deep Dive, but Worker 3 itself
+    # is decommissioned. No per-ticker contexts, prepared jobs or dispatch.
     try:
-        _worker3_rows = (
-            _lab_book.get("rows")
-            if isinstance(locals().get("_lab_book"), dict)
-            else None
-        )
-        _worker3_macro = materialize_worker3_market_environment(
-            canonical_run_id,
-            lab_rows=_worker3_rows,
-        )
-        logger.info(
-            "Worker 3 market environment: status=%s packet=%s bytes=%d contexts=%d invalid=%d authority=ADVISORY_ONLY",
-            _worker3_macro.get("status"),
-            _worker3_macro.get("packet_id"),
-            _worker3_macro.get("payload_bytes", 0),
-            (_worker3_macro.get("macro_ticker_context_diagnostics") or {}).get(
-                "macro_ticker_context_requested", 0
-            ),
-            (_worker3_macro.get("macro_ticker_context_diagnostics") or {}).get(
-                "macro_ticker_context_invalid", 0
-            ),
-        )
-    except Exception as _worker3_macro_error:
+        _lab_macro_evidence = materialize_lab_macro_evidence(canonical_run_id)
+        logger.info('Lab shared macro evidence frozen; Worker 3 decommissioned (no jobs)')
+    except Exception as _lab_macro_error:
         logger.warning(
-            "Worker 3 advisory handoff unavailable without changing pipeline authority: %s",
-            _worker3_macro_error,
+            "Lab macro evidence unavailable without changing pipeline authority: %s",
+            _lab_macro_error,
         )
+
+    # Publish the review only after the shared watched macro packet exists (or
+    # its failure is recorded). Publishing before it made every EOD view stale
+    # as soon as interpreter_macro_context.json appeared. No decisions rerun.
+    try:
+        if isinstance(locals().get('_lab_book'), dict):
+            from contracts.lab_review_sources import republish_saved_review
+            _review_publication = republish_saved_review(
+                canonical_run_id, cfg.RUNS_DIR, book=_lab_book,
+            )
+            _lab_book['review_projection'] = _review_publication
+            logger.info('EOD review published after macro handoff: revision=%s rows=%s',
+                        _review_publication['revision'], _review_publication['row_count'])
+    except Exception as _review_publication_error:
+        logger.warning('EOD review publication failed without changing decisions: %s',
+                       _review_publication_error)
 
     # AVS-FIX-001 W3.9: outcome maturation, as its own non-critical stage. It
     # was nested inside the decision-ledger APPEND block, so a failure appending

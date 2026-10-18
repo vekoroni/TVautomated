@@ -24,7 +24,9 @@ class CurrentCanaryTests(unittest.TestCase):
         contracts = self.root / "contracts"
         contracts.mkdir()
         for name in ("worker3_integration_v1.json", "worker3_provider_release_v1.json"):
-            shutil.copyfile(Path(__file__).resolve().parents[1] / "contracts" / name, contracts / name)
+            repo = Path(__file__).resolve().parents[1]
+            source = repo / 'tests/fixtures/worker3_prepare_only_policy.json' if name == 'worker3_integration_v1.json' else repo / 'contracts' / name
+            shutil.copyfile(source, contracts / name)
 
     def test_latest_ignores_alias_and_records_incomplete(self):
         newer = self.root / "data/output/runs/20260907_120000"

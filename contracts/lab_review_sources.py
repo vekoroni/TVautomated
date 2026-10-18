@@ -261,3 +261,29 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
         receipt["validation_event_state"] = "VERIFIED_IDENTITY_PROJECTED"
     receipt["validation_unmatched_rows"] = len(output["rows"]) - receipt["validation_events_applied"]
     return output, context, receipt
+
+
+def republish_saved_review(run_id: str, runs_dir: Path | str, *, book=None):
+    """Explicit display publication after run evidence is final; never called by GET.
+
+    Only the review generation/manifest is written. The source book, decision
+    artifacts and providers are untouched. EOD can reuse its governed in-memory
+    book; an operator repair reads only the explicitly selected saved book.
+    """
+    from contracts.lab_review_projection import (
+        _folder, publish_review_projection, source_file_receipt,
+    )
+    runs = Path(runs_dir).resolve()
+    folder = _folder(runs, run_id)  # validates exact run identity/path
+    root = folder.parent.parent
+    source = root / 'intelligence_lab' / f'final_opportunity_book_{run_id}.json'
+    before = source_file_receipt(source)
+    if book is None:
+        book = json.loads(source.read_text(encoding='utf-8-sig'))
+    if book.get('run_id') != run_id:
+        raise ValueError('Saved review run identity mismatch')
+    prepared, context, receipt = prepare_review_publication(book, root)
+    if source_file_receipt(source) != before:
+        raise ValueError('Source book changed during review preparation')
+    return publish_review_projection(prepared, runs, context=context,
+        source_receipt={**before, **receipt})

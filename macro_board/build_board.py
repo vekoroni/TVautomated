@@ -446,6 +446,11 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     name = "etf_macro_board.html" if not as_of else f"etf_macro_board_asof_{as_of}.html"
     target = output_dir / name
     target.write_text(html, encoding="utf-8")
+    if not as_of:
+        # Independent advisory publication: no pipeline or Worker 3 rerun.
+        # Publish only after the matching board HTML has been saved successfully.
+        from contracts.lab_macro_desk import publish as publish_lab_macro
+        publish_lab_macro(payload, output_dir)
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
 

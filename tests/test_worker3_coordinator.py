@@ -13,7 +13,7 @@ from tests.test_worker3_avshunter_source_bridge import RUN_ID, SourceFixture
 
 
 REPO = Path(__file__).resolve().parents[1]
-POLICY = REPO / "contracts" / "worker3_integration_v1.json"
+POLICY = REPO / "tests/fixtures/worker3_prepare_only_policy.json"
 
 
 class Worker3CoordinatorTests(unittest.TestCase):

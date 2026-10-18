@@ -19,7 +19,7 @@ from tests.test_worker3_avshunter_source_bridge import RUN_ID, SourceFixture
 
 
 REPO = Path(__file__).resolve().parents[1]
-INTEGRATION_POLICY = REPO / "contracts" / "worker3_integration_v1.json"
+INTEGRATION_POLICY = REPO / "tests/fixtures/worker3_prepare_only_policy.json"
 DISABLED_RELEASE = REPO / "contracts" / "worker3_provider_release_v1.json"
 
 

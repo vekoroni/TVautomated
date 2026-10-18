@@ -91,6 +91,8 @@ def _policy(path: str | Path) -> CoordinatorPolicy:
     }
     if type(document) is not dict or set(document) != required:
         raise ContractError("Worker 3 integration policy fields changed")
+    if document['status'] == 'DECOMMISSIONED_RETAINED' and document['enabled'] is False:
+        raise ContractError('Worker 3 is decommissioned and retained; explicit reactivation approval required')
     if (
         document["contract_id"] != "AVS-W3-INTEGRATION"
         or document["version"] != "1.3.1"
