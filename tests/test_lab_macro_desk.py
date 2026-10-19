@@ -22,13 +22,15 @@ def test_advisory_projection_does_not_mutate_or_import_trade_authority():
     assert out['authority'] == 'ADVISORY_ONLY'
     assert out['can_grant_capital'] is out['can_reverse_direction'] is False
     assert 'probability' not in out and 'direction' not in out
-    assert len(out['scenarios']) == 2
-    assert all(s['evidence_ids'] and s['confirmation'] and s['invalidation'] for s in out['scenarios'])
-    assert out['evidence'][0]['observation']['date'] == '2026-10-15'
+    assert 'scenarios' not in out
+    assert out['mentality']['axes']['positioning']['label'] == 'UNKNOWN'
+    assert next(e for e in out['evidence'] if e['id']=='condition:credit')['observation']['date'] == '2026-10-15'
 
 
 def test_unknown_missing_states_do_not_invent_scenarios():
-    assert project(board(conditions={'current': {'credit': 'MISSING'}}))['scenarios'] == []
+    out = project(board(conditions={'current': {'credit': 'MISSING'}}))
+    assert out['mentality']['axes']['confidence']['label'] == 'UNRESOLVED'
+    assert out['mentality']['reaction_sensitivities'] == []
 
 
 def test_source_cutoff_and_quality_issues_are_exposed():
@@ -63,8 +65,8 @@ def test_atomic_publish_idempotence_and_independent_refresh(tmp_path):
 def test_missing_corrupt_and_stale_are_disclosed(tmp_path):
     app = Flask(__name__); register_routes(app, tmp_path); client = app.test_client()
     assert client.get('/api/lab/macro-context').status_code == 503
-    publish(board(built_at_utc='2020-01-01T00:00:00Z'), tmp_path)
-    assert client.get('/api/lab/macro-context').json['freshness'] == 'STALE'
+    publish(board(as_of_session='2019-12-31',built_at_utc='2020-01-01T00:00:00Z'), tmp_path)
+    assert client.get('/api/lab/macro-context').json['freshness'] == 'STALE_BUILD'
     (tmp_path / 'lab_macro_latest.json').write_text('bad')
     assert client.get('/api/lab/macro-context').status_code == 503
 

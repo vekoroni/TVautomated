@@ -170,7 +170,7 @@ WORKER3_ANALYST_REPORTS = None
 WORKER3_BROWSER = None
 
 from contracts.lab_macro_desk import register_routes as register_macro_desk_routes
-register_macro_desk_routes(app, BASE_DIR / 'macro_board' / 'output')
+register_macro_desk_routes(app, BASE_DIR / 'macro_board' / 'output', lambda: RUNS_DIR)
 
 # The Interpreter Desk is a separate advisory path. It reads a frozen EOD
 # snapshot, optionally reconciles the accepted Morning handoff, and never
