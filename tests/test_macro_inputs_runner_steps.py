@@ -32,10 +32,13 @@ def _order(text: str, names) -> list[int]:
     return [text.index(n) for n in names]
 
 
-def test_gex_and_bonds_run_by_default_before_the_producers_and_bonds_is_verbose():
+def test_gex_runs_first_and_bonds_run_after_the_producers_and_bonds_is_verbose():
+    # 19 Oct 2026: bonds' Polygon calls seconds before the six producers coincided with HTTP 429s that wiped
+    # out market intelligence; bonds now run once the producers have finished (only the board reads its state).
     text = _plan("-Session", "PreOpen")
-    gex, bonds, vix = _order(text, ["GEX (stored chains)", "Bond macro + calendar", "VIX engine v4.1"])
-    assert gex < bonds < vix
+    gex, vix, bonds, fred = _order(text, ["GEX (stored chains)", "VIX engine v4.1", "Bond macro + calendar",
+                                          "FRED monitor v2.6"])
+    assert gex < vix < bonds < fred
     assert "bond_macro_intelligence.py --verbose" in text
 
 

@@ -486,6 +486,23 @@ def build_metrics(ticker, name, closes, highs=None, lows=None, volumes=None,
 # SOURCE 1 — POLYGON
 # ============================================================================
 
+# 19 Oct 2026: a 429 "Too Many Requests" on the 13:35 UK pre-open run (several producers and the bond step
+# calling Polygon in the same minute) left FX_Spot 100% null, and the collection guard then wrote no outputs.
+# A rate limit is transient: wait (Polygon's Retry-After when given, else a growing backoff) and try again.
+POLYGON_MAX_ATTEMPTS = 4
+POLYGON_BACKOFF_SECONDS = (5, 15, 30)
+POLYGON_MAX_WAIT_SECONDS = 60
+
+
+def _polygon_wait(response, attempt):
+    try:
+        hinted = float((getattr(response, "headers", None) or {}).get("Retry-After"))
+    except (TypeError, ValueError):
+        hinted = None
+    wait = hinted if hinted is not None and hinted >= 0 else POLYGON_BACKOFF_SECONDS[min(attempt, len(POLYGON_BACKOFF_SECONDS) - 1)]
+    return min(wait, POLYGON_MAX_WAIT_SECONDS)
+
+
 class PolygonExtractor:
     def __init__(self, api_key):
         self.api_key, self.base_url, self._cache = api_key, "https://api.polygon.io", {}
@@ -498,8 +515,15 @@ class PolygonExtractor:
         url = (f"{self.base_url}/v2/aggs/ticker/{ticker}/range/1/day"
                f"/{start.strftime('%Y-%m-%d')}/{end.strftime('%Y-%m-%d')}")
         try:
-            r = requests.get(url, params={'apiKey': self.api_key, 'adjusted': 'true',
-                                          'sort': 'asc', 'limit': 50000}, timeout=15)
+            for attempt in range(POLYGON_MAX_ATTEMPTS):
+                r = requests.get(url, params={'apiKey': self.api_key, 'adjusted': 'true',
+                                              'sort': 'asc', 'limit': 50000}, timeout=15)
+                if r.status_code == 429 and attempt < POLYGON_MAX_ATTEMPTS - 1:
+                    wait = _polygon_wait(r, attempt)
+                    print(f"    RATE LIMIT {ticker}: HTTP 429, retry {attempt + 2}/{POLYGON_MAX_ATTEMPTS} in {wait:g}s")
+                    time.sleep(wait)
+                    continue
+                break
             r.raise_for_status()
             time.sleep(0.05)
             self._cache[ticker] = r.json()
@@ -2117,7 +2141,7 @@ def main():
     print("-" * 70)
 
     report = {
-        'version': '5.4.3', 'run_id': ts, 'timestamp': datetime.now().isoformat(),
+        'version': '5.4.3', 'run_id': ts, 'timestamp': datetime.now(timezone.utc).isoformat(),  # G2-04: UTC with offset, never naive local time
         'sources': ['Polygon', 'Cboe', 'yfinance', 'FRED'],
         'collection_validation': val_rows,
         'collection_errors': [redact(x) for x in COLLECTION_ERRORS],   # second line of defence

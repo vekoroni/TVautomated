@@ -57,12 +57,13 @@
 # (never past -LatestStartET) and stop with exit 5 if it is still running.
 #
 # Three phases:
-#   1. setup (in order): GEX from stored chains, bond state + auction calendar (--verbose).
+#   1. setup (in order): GEX from stored chains (no API calls).
 #   2. producers, IN PARALLEL: VIX engine, regime model, market intelligence, liquidity monitor,
 #      macro module, Fung-Hsieh filter; each logs to logs\scheduled\macro_inputs_<time>\,
 #      copied into the transcript one step at a time afterwards. -ProducerTimeoutMinutes
 #      stops a producer that hangs.
-#   3. merge and publish (in order): FRED monitor (merges the producers into
+#   3. merge and publish (in order): bond state + auction calendar (--verbose; after the producers so its
+#      Polygon calls do not share a minute with theirs), FRED monitor (merges the producers into
 #      avsh_macro_master.csv), build_macro_json.py, rapid_rotation_flag.py (patches the rebuilt packet;
 #      exit 1 = ROTATION_BUILDING, 2 = SPECULATOR_ROTATION_ACTIVE are flag levels, not failures), the board.
 #
@@ -208,7 +209,8 @@ $lateBy = if ($forced -and $etNow -gt $latestAt) { $etNow - $latestAt } else { [
 # -- Steps --------------------------------------------------------------------------------------
 $setup = @()
 if (-not $SkipGex)   { $setup += New-Step "gex"   "GEX (stored chains)"   (Join-Path $repoRoot "scripts\build_local_gex.py") }
-if (-not $SkipBonds) { $setup += New-Step "bonds" "Bond macro + calendar" (Join-Path $repoRoot "bond_macro_intelligence.py") @("--verbose") }
+# Bonds run after the producers (see the publish steps): 19 Oct 2026, their Polygon calls seconds before the six
+# producers coincided with HTTP 429s that wiped out market intelligence. Only the board reads the bond state.
 
 $producers = @(
     (New-Step "vix"     "VIX engine v4.1"            (Join-Path $colab "avshunter_vix_engine_v4_1.py")),
@@ -219,7 +221,9 @@ $producers = @(
     (New-Step "fh"      "Fung-Hsieh filter v1.4"     (Join-Path $colab "avshunter_fung_hsieh_filter_v1_4.py"))
 )
 
-$publish = @( (New-Step "fred" "FRED monitor v2.6 (+ merge)" (Join-Path $colab "avshunter_fred_monitor_v2_6.py")) )
+$publish = @()
+if (-not $SkipBonds) { $publish += New-Step "bonds" "Bond macro + calendar" (Join-Path $repoRoot "bond_macro_intelligence.py") @("--verbose") }
+$publish += New-Step "fred" "FRED monitor v2.6 (+ merge)" (Join-Path $colab "avshunter_fred_monitor_v2_6.py")
 if (-not $SkipMacroJson) { $publish += New-Step "packet" "Macro packet (build_macro_json)" (Join-Path $repoRoot "build_macro_json.py") @("--force") }
 if (-not $SkipRotationFlag) {
     $publish += New-Step "rrf" "Rapid rotation flag" (Join-Path $repoRoot "rapid_rotation_flag.py") @() @(0, 1, 2) "exit 1/2 = flag level, not a failure"
