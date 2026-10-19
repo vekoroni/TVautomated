@@ -19,7 +19,7 @@ class BrowserLaunchTests(unittest.TestCase):
             chain=hex(i)[2:]*64;quote=hex(i+3)[2:]*64;symbol=ticker+'261016C00010000'
             fixture.rows.append(fixture.lab_row(ticker,'CALL',chain,quote,symbol));fixture._register_chain_quote(ticker,chain,quote,symbol)
         fixture.write_run();(self.root/'contracts').mkdir()
-        shutil.copy(ROOT/'contracts/worker3_integration_v1.json',self.root/'contracts/worker3_integration_v1.json')
+        shutil.copy(ROOT/'tests/fixtures/worker3_prepare_only_policy.json',self.root/'contracts/worker3_integration_v1.json')
         release=json.loads((ROOT/'contracts/worker3_provider_release_v1.json').read_text())
         release.update(enabled=True,status='CONTROLLED_ACTIVE',allowed_models=['claude-sonnet-4-6'],max_jobs_per_activation=5,max_calls_per_process=5,max_total_microusd=5000000,max_call_microusd=1000000,max_output_tokens=8192,max_input_bytes=500000,timeout_seconds=300,input_microusd_per_million_tokens=3000000,output_microusd_per_million_tokens=15000000)
         (self.root/'contracts/worker3_provider_release_v1.json').write_text(json.dumps(release))

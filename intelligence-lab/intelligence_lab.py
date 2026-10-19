@@ -164,23 +164,13 @@ from contracts.lab_evidence_overlay import (
     load_overlays,
 )
 from msi_runtime import active_flags
-from worker3.domain import ContractError as Worker3ContractError
-from worker3.integration.lab_mount import install_worker3_lab_projection
-from worker3.integration.browser_launch import install_worker3_browser
+# Worker 3 decommissioned, not deleted. No imports, mounts, jobs or providers.
+# Its retained code, report store and policies require an explicit reactivation.
+WORKER3_ANALYST_REPORTS = None
+WORKER3_BROWSER = None
 
-# Worker 3 is optional and paused by the checked-in provider release. Do not
-# mount its browser launch routes unless the advisory report projection is on.
-# A broken advisory release must not take the governed signal book offline.
-try:
-    WORKER3_ANALYST_REPORTS = install_worker3_lab_projection(app, BASE_DIR)
-    WORKER3_BROWSER = (
-        install_worker3_browser(app, BASE_DIR)
-        if WORKER3_ANALYST_REPORTS is not None else None
-    )
-except (Worker3ContractError, OSError) as worker3_mount_error:
-    WORKER3_ANALYST_REPORTS = None
-    WORKER3_BROWSER = None
-    print(f"  WARNING Worker 3 advisory reports unavailable: {worker3_mount_error}")
+from contracts.lab_macro_desk import register_routes as register_macro_desk_routes
+register_macro_desk_routes(app, BASE_DIR / 'macro_board' / 'output', lambda: RUNS_DIR)
 
 # The Interpreter Desk is a separate advisory path. It reads a frozen EOD
 # snapshot, optionally reconciles the accepted Morning handoff, and never
