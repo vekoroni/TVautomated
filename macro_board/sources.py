@@ -155,6 +155,43 @@ def _age_hours(stamp: str | None, now: datetime, fallback_path: Path) -> tuple[s
     return when.isoformat(), (pd.Timestamp(now) - when).total_seconds() / 3600.0
 
 
+def sessions_closed_between(start, end) -> int | None:
+    """XNYS session closes in (start, end]; None when the calendar is unavailable."""
+    try:
+        from avshunter.shared.xnys_calendar import is_xnys_session, session_bounds
+    except Exception:  # noqa: BLE001 - calendar unavailable: the hour limit alone decides
+        return None
+    a, b = pd.Timestamp(start), pd.Timestamp(end)
+    a = a.tz_localize("UTC") if a.tzinfo is None else a.tz_convert("UTC")
+    b = b.tz_localize("UTC") if b.tzinfo is None else b.tz_convert("UTC")
+    count = 0
+    for day in pd.date_range(a.date() - pd.Timedelta(days=1), b.date(), freq="D"):
+        d = day.date()
+        if not is_xnys_session(d):
+            continue
+        close = pd.Timestamp(session_bounds(d)[1])
+        close = close.tz_localize("UTC") if close.tzinfo is None else close.tz_convert("UTC")
+        if a < close <= b:
+            count += 1
+    return count
+
+
+def freshness(made, now: datetime, max_age_hours: float) -> tuple[str, str]:
+    """FRESH within the hour limit, or while no US session has closed since the file was produced (a Friday
+    evening file is still current on Monday before the open). Otherwise STALE, saying how many closes it missed."""
+    when = pd.Timestamp(made)
+    when = when.tz_localize("UTC") if when.tzinfo is None else when.tz_convert("UTC")
+    age = (pd.Timestamp(now) - when).total_seconds() / 3600.0
+    if age <= max_age_hours:
+        return "FRESH", ""
+    missed = sessions_closed_between(when, now)
+    if missed == 0:
+        return "FRESH", "no US session has closed since it was produced"
+    if missed is None:
+        return "STALE", f"older than {max_age_hours:g} h"
+    return "STALE", f"{missed} US session{'s' if missed != 1 else ''} closed since it was produced; older than {max_age_hours:g} h"
+
+
 def latest_glob(pattern: str) -> Path | None:
     matches = sorted(glob.glob(str(resolve(pattern))))
     return Path(matches[-1]) if matches else None
@@ -176,8 +213,8 @@ def read_json(name: str, path: Path | None, stamp_keys: Sequence[str], max_age_h
             stamp = str(node)
             break
     as_of, age = _age_hours(stamp, now, path)
-    status = "FRESH" if age is not None and age <= max_age_hours else "STALE"
-    note = "" if stamp else "as-of taken from file time"
+    status, why = freshness(as_of, now, max_age_hours) if as_of else ("STALE", "")
+    note = "; ".join(x for x in ("" if stamp else "as-of taken from file time", why) if x)
     return SourceRead(name, str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path), status, as_of, age, data, note)
 
 
@@ -194,9 +231,10 @@ def read_csv(name: str, path: Path | None, date_column: str | None, max_age_hour
     # A date-only stamp means "data for that session"; age is measured from file time so a
     # pre-market build on D+1 of D-dated data is not marked stale. Missing column -> file time.
     as_of, age = _age_hours(None, now, path)
-    status = "FRESH" if age is not None and age <= max_age_hours else "STALE"
+    status, why = freshness(as_of, now, max_age_hours) if as_of else ("STALE", "")
     rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
-    return SourceRead(name, rel, status, stamp or as_of, age, frame, "" if stamp else "as-of taken from file time")
+    note = "; ".join(x for x in ("" if stamp else "as-of taken from file time", why) if x)
+    return SourceRead(name, rel, status, stamp or as_of, age, frame, note)
 
 
 def records(frame: pd.DataFrame | None) -> list[dict]:

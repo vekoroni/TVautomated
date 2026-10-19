@@ -242,3 +242,10 @@ def latest_layer(snapshot_rows: Mapping[str, Mapping], closes: Mapping[str, tupl
                             "change_vs_close_pct": round((quote["price"] / close - 1.0) * 100.0, 6)})
         out[t] = row
     return out
+
+
+def classify_latest(status: str, segment: str) -> str:
+    """An empty snapshot while the US market is closed (before 04:00 ET pre-market, overnight, weekends,
+    holidays) is expected: no quote can exist after the close yet, so the board stays on the last close.
+    Empty during pre-market, regular or after-hours trading is a real gap and stays EMPTY."""
+    return "NO_QUOTE_YET" if status == "EMPTY" and str(segment).upper() == "CLOSED" else status

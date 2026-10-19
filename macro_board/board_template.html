@@ -71,7 +71,7 @@ h3{font-size:13px;margin:0 0 8px;font-weight:650;color:var(--text)}
 .chip.na{color:var(--muted);border-style:dashed}
 .stat{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}
 .stat i{font-style:normal;display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;font-size:10px;font-weight:700;color:#fff}
-.stat.ok i{background:var(--good)} .stat.stale i{background:var(--warn);color:#000} .stat.miss i{background:var(--critical)}
+.stat.ok i{background:var(--good)} .stat.stale i{background:var(--warn);color:#000} .stat.miss i{background:var(--critical)} .stat.info i{background:var(--muted)}
 .fresh-strip{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin:6px 0 2px}
 .pos{color:var(--up)} .neg{color:var(--down)}
 .spark{display:block;width:100%;height:42px;margin-top:6px}
@@ -213,8 +213,8 @@ document.addEventListener("mousemove", e => {
 /* ---------- helpers ---------- */
 const statusChip = (status, label) => {
   const s = String(status || "MISSING").toUpperCase();
-  const k = s === "FRESH" || s === "OK" ? "ok" : s === "STALE" ? "stale" : "miss";
-  const icon = k === "ok" ? "✓" : k === "stale" ? "!" : "×";
+  const k = s === "FRESH" || s === "OK" ? "ok" : s === "STALE" ? "stale" : s === "INFO" ? "info" : "miss";
+  const icon = k === "ok" ? "✓" : k === "stale" ? "!" : k === "info" ? "i" : "×";
   return `<span class="stat ${k}"><i aria-hidden="true">${icon}</i>${esc(label ?? s)}</span>`;
 };
 const LEAN_TXT = {UP:"▲ Up", DOWN:"▼ Down", NO_CLEAR_LEAN:"– No clear lean", INSUFFICIENT_SAMPLE:"Insufficient sample", INSUFFICIENT_HISTORY:"Short history", PATH_DEPENDENT:"Path-dependent"};
@@ -298,9 +298,10 @@ $("#authority").innerHTML = `<b>Standalone decision board.</b> Reads AVSHUNTER d
 $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span> ` + Object.values(B.external).map(s =>
   `<span data-tip="${esc(`<b>${esc(s.name)}</b><br>${esc(s.path)}<br>as of ${esc(s.as_of||"—")} · age ${s.age_hours ?? "—"} h${s.note ? "<br>"+esc(s.note) : ""}`)}">${statusChip(s.status, s.name.split(" (")[0])}</span>`).join("") +
   `<span data-tip="${esc(`Daily bars: pipeline store historical_prices.sqlite to ${B.prices?.store_last_session || "?"} (Polygon, split-adjusted)` + (Object.keys(B.prices?.fill?.filled || {}).length ? `<br>Filled by the board from Polygon grouped daily (completed sessions only): ${Object.entries(B.prices.fill.filled).map(([t, d]) => t + " " + d.length + " session" + (d.length > 1 ? "s" : "")).join(", ")}` : "") + (Object.keys(B.prices?.fill?.unavailable || {}).length ? `<br>Unavailable: ${Object.keys(B.prices.fill.unavailable).join(", ")}` : "") + (Object.keys(B.prices?.fill?.gap_too_long || {}).length ? `<br>Gap too long to fill (left stale): ${Object.entries(B.prices.fill.gap_too_long).map(([t, g]) => t + " since " + g.last_stored).join(", ")}` : ""))}">${statusChip("FRESH", "Prices to " + B.as_of_session + (B.prices?.store_last_session && B.prices.store_last_session !== B.as_of_session ? " (store to " + B.prices.store_last_session + ")" : ""))}</span>` +
-  (B.latest && B.latest.status !== "NOT_APPLICABLE_AS_OF_BUILD" ? `<span data-tip="${esc(`Latest prices: Polygon snapshot (about 15 min delayed) · ${B.latest.status} · fetched ${B.latest.fetched_utc || "—"}<br>${B.latest.superseding || 0} ETFs have a quote after the ${esc(B.as_of_session)} close, used as the current price for room and levels. Leans and the reaction review stay on completed sessions.`)}">${statusChip(B.latest.status === "OK" ? "FRESH" : "MISSING", "Latest prices" + (B.latest.superseding ? " · " + B.latest.superseding + " after the close" : ""))}</span>` : "") +
+  (B.latest && B.latest.status !== "NOT_APPLICABLE_AS_OF_BUILD" ? `<span data-tip="${esc(`Latest prices: Polygon snapshot (about 15 min delayed) · ${B.latest.status} · fetched ${B.latest.fetched_utc || "—"}${B.latest.status === "NO_QUOTE_YET" ? "<br>The US market was closed when the board was built (pre-market opens 04:00 ET), so no quote exists after the " + esc(B.as_of_session) + " close yet. The board uses that close. Run the pre-open package after 08:35 ET for pre-market prices." : ""}<br>${B.latest.superseding || 0} ETFs have a quote after the ${esc(B.as_of_session)} close, used as the current price for room and levels. Leans and the reaction review stay on completed sessions.`)}">${statusChip(B.latest.status === "OK" ? "FRESH" : B.latest.status === "NO_QUOTE_YET" ? "INFO" : "MISSING", B.latest.status === "NO_QUOTE_YET" ? "Latest prices · none since the close yet" : "Latest prices" + (B.latest.superseding ? " · " + B.latest.superseding + " after the close" : ""))}</span>` : "") +
   `<span data-tip="${esc(`tastytrade market metrics (read-only) · ${B.tastytrade?.file || "no snapshot"} · fetched ${B.tastytrade?.fetched_utc || "—"}${(B.tastytrade?.skipped||[]).length ? " · rejected by the MCP server's schema: " + B.tastytrade.skipped.join(", ") : ""}${(B.refresh_report?.tastytrade?.status === "FAILED") ? " · today's refresh failed: " + B.refresh_report.tastytrade.error : ""}`)}">${statusChip(B.tastytrade?.status || "MISSING", "tastytrade metrics")}</span>` +
   Object.entries(B.holdings_status || {}).map(([etf, h]) => `<span data-tip="${esc(`${h.issuer} daily holdings · as of ${h.as_of} · ${h.count} positions`)}">${statusChip(h.status, etf + " holdings")}</span>`).join("") +
+  Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status === "OK" && r.source === "FALLBACK").map(([etf, r]) => `<span data-tip="${esc("Primary issuer refused (" + (r.primary_error || "") + "). Holdings taken from " + (r.issuer || "the fallback file") + ", as of " + (r.as_of || "—") + ".")}">${statusChip("FRESH", etf + " holdings via " + String(r.issuer || "fallback").split(" (")[0])}</span>`).join("") +
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status !== "OK").map(([etf, r]) => `<span data-tip="${esc(r.error || "")}">${statusChip("MISSING", etf + " holdings refresh failed")}</span>`).join("");
 
 /* ---------- tabs ---------- */
@@ -862,6 +863,20 @@ function renderMoneyIndex(){
   <div class="card" style="margin-top:10px"><table class="mini" style="width:100%"><thead><tr><th class="l">Component</th><th>Today</th><th>Percentile</th><th class="l">Measured points</th><th>Published</th><th class="l">Published status</th></tr></thead><tbody>${crow}</tbody></table></div>
   <div style="margin-top:22px"></div></div>`;
 }
+/* ---------- rapid rotation flag ---------- */
+const RRF_TXT = {SPECULATOR_ROTATION_ACTIVE:["down","Rotation active"], ROTATION_BUILDING:["stale","Rotation building"], NORMAL:["up","Normal"]};
+function rotationFlagCard(){
+  const p = B.intel?.packet || {}, d = p.rotation_detail || null, flag = p.rotation_override;
+  if (!flag && !d) return `<div class="card"><h3>Rapid rotation flag</h3><div class="sub muted">Not in the macro packet (rapid_rotation_flag.py has not run since the packet was built).</div></div>`;
+  const [k, l] = RRF_TXT[flag] || ["flat", flag || "—"];
+  const line = (x, kind) => `<tr><td class="l"><b>${esc(x.ticker)}</b></td><td class="${cls(x.pct)}">${pct(x.pct)}</td><td>${kind === "c" ? "≥ +" + x.threshold + "%" : x.threshold + "%"}</td><td class="l muted">${esc(x.source || "")}</td></tr>`;
+  const rows = [...(d?.commodity_spikes || []).map(x => line(x, "c")), ...(d?.paper_drops || []).map(x => line(x, "p"))].join("");
+  const rec = (B.scorecards?.rotation_flag?.record || {})["5"];
+  return `<div class="card"><h3>Rapid rotation flag <span class="chip ${k === "stale" ? "flat" : k}">${esc(l)}</span> ${uncal}</h3>
+    <div class="sub">${esc(d?.summary || "")} · as of ${esc((p.rotation_flag_as_of_utc || "").replace("T", " ").slice(0, 16))} UTC</div>
+    ${rows ? `<table class="mini" style="width:100%;margin-top:6px"><thead><tr><th class="l">Instrument</th><th>Move</th><th>Bar</th><th class="l">Source</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+    <div class="note">Commodities spiking while equities drop ("speculator rotation"). Fixed thresholds in rapid_rotation_flag.py, never tested before 19 Oct 2026; its replayed record is on the Scorecards tab${rec && rec.flagged ? ` (after past flags SPY's next 5 sessions averaged ${pct(rec.flagged.spy_mean_pct)} vs ${pct(rec.all.spy_mean_pct)} on all sessions, ${rec.flagged.n_eff} independent windows)` : ""}. Display only.</div></div>`;
+}
 function renderIntel(){
   const I = B.intel; const p = I.packet || {};
   const routing = p.horizon_routing ? Object.entries(p.horizon_routing).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="l">${words(v.bias)}</td><td>${fmt(v.bullish_prob_pct,1)}%</td><td class="l">${words(v.engine_mode)}</td></tr>`).join("") : "";
@@ -887,6 +902,7 @@ function renderIntel(){
   const gex = (I.gex || []).map(g => `<tr><td class="l"><b>${esc(g.Ticker)}</b></td><td class="l">${words(g.Regime)}</td><td>${fmt(g.Spot,2)}</td><td>${fmt(g.Gamma_Flip,1)}</td><td>${fmt(g.Call_Wall,0)}</td><td>${fmt(g.Put_Wall,0)}</td><td>${fmt(g.Net_GEX_Bn,2)}</td><td class="l">${esc(g.Date)}</td></tr>`).join("");
   $("#p-intel").innerHTML = renderMoneyIndex() + `<h2>Macro intelligence <span class="sub">advisory sources as published · not measured by this board unless scored on the Scorecards tab</span></h2>
   <div class="grid g-intel">
+    ${rotationFlagCard()}
     <div class="card"><h3>LLM macro packet</h3>${kv(p, [["regime_label","Regime"],["regime_probability","Probability",v=>fmt(v,3)+" "+uncal],["macro_conviction","Conviction",v=>fmt(v,2)+" "+uncal],["risk_on_off_switch","Risk switch"],["dir_bias","Direction bias"],["trend_energy","Trend energy"],["vol_mode","Vol mode"],["liquidity_pulse","Liquidity"],["rates_impulse","Rates"],["usd_state","USD"],["credit_state","Credit"],["macro_filter","Macro filter"],["regime_drift_status","Drift"]])}
       ${routing ? `<table class="mini" style="margin-top:8px;width:100%"><thead><tr><th class="l">Horizon</th><th class="l">Bias</th><th>Bull prob</th><th class="l">Mode</th></tr></thead><tbody>${routing}</tbody></table>` : ""}
       ${p.notes ? `<details style="margin-top:6px"><summary>Packet notes</summary><p class="note">${esc(p.notes)}</p></details>` : ""}
@@ -937,6 +953,18 @@ function scoreTable(results){
     const thin = (r.n_eff||0) < B.settings.evidence.min_effective_n;
     return `<td class="${thin?"muted":""}">${isNum(r.hit_rate)?Math.round(100*r.hit_rate)+"%":"—"}</td><td class="${cls(r.mean_signed_pct)}">${pct(r.mean_signed_pct)}</td><td class="${thin?"muted":""}">${r.n_eff ?? 0}${thin?" ?":""}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
 }
+function rotationFlagScore(){
+  const R = B.scorecards?.rotation_flag;
+  if (!R) return "";
+  if (R.status === "FAILED") return `<div class="card"><h3>Rapid rotation flag</h3><div class="sub muted">Not scored: ${esc(R.reason || "")}</div></div>`;
+  const row = (lab, b, h) => b && b.n ? `<tr><td class="l">${lab}</td><td>${h}d</td><td>${b.n}</td><td class="${b.n_eff < B.settings.evidence.min_effective_n ? "muted" : ""}">${b.n_eff}${b.n_eff < B.settings.evidence.min_effective_n ? " ?" : ""}</td><td class="${cls(b.spy_mean_pct)}">${pct(b.spy_mean_pct)}</td><td>${isNum(b.spy_down_rate) ? Math.round(100 * b.spy_down_rate) + "%" : "—"}</td><td class="${cls(b.commodities_minus_spy_pp)}">${pct(b.commodities_minus_spy_pp)}</td></tr>` : "";
+  const body = Object.entries(R.record || {}).map(([h, r]) => row("All sessions", r.all, h) + row("Any flag", r.flagged, h) + row("Rotation active", r.active, h) + row("Rotation building", r.building, h)).join("");
+  const c = R.counts || {};
+  return `<div class="card"><h3>Rapid rotation flag · its rule replayed since ${esc(R.since || "")}</h3>
+    <div class="sub">${R.sessions} sessions: active ${c.SPECULATOR_ROTATION_ACTIVE ?? 0}, building ${c.ROTATION_BUILDING ?? 0}, normal ${c.NORMAL ?? 0}.${(R.missing_inputs || []).length ? " Missing from the price store (treated as not spiking): " + esc(R.missing_inputs.join(", ")) + "." : ""}</div>
+    <table class="mini" style="width:100%"><thead><tr><th class="l">Sessions</th><th>H</th><th>n</th><th>Windows</th><th>SPY next</th><th>SPY fell</th><th>Commodities − SPY</th></tr></thead><tbody>${body}</tbody></table>
+    <div class="note">${esc(R.method || "")} The flag's idea is that SPY weakens and commodities beat it after a flag: compare each flag row with "All sessions". "?" = fewer than ${B.settings.evidence.min_effective_n} independent windows.</div></div>`;
+}
 function renderScore(){
   const S = B.scorecards;
   const rm = S.regime_model || {}, pk = S.packets || {}, bd = S.board || {};
@@ -960,6 +988,7 @@ function renderScore(){
       <div class="sub">${bd.snapshots ?? 0} evening snapshot(s) saved. Each UP/DOWN lean on current-data ETFs is scored once its horizon completes. Only the evening (post-close) build is the scored record; morning builds show the same close and are kept beside it, unscored.</div>
       <table class="mini" style="width:100%"><thead><tr><th class="l">Horizon</th><th>Scored</th><th>Pending</th><th>Hit</th><th>Signed</th><th>Price-only scored</th><th>Price-only hit</th><th>Price-only signed</th></tr></thead><tbody>${brows}</tbody></table>
       <div class="note">This record grows with every daily build and is the board's only forward-tested evidence. The price-only columns score the leans the board would give from each ETF's own drift, without macro. The gap between the two is what macro adds.</div></div>
+    ${rotationFlagScore()}
     <div class="card"><h3>US Money Index · by its own ladder band</h3>
       <div class="sub">${mi.revisions ?? 0} revisions → ${mi.entry_sessions ?? 0} entry sessions (latest revision before each open wins). No direction is assigned. The table shows what SPY and QQQ did next while the index sat in each band.</div>
       <div class="table-wrap" style="max-height:none"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th class="l">Band</th>${B.horizons.map(h=>`<th>${h}d mean</th><th>${h}d up</th><th>${h}d win.</th>`).join("")}</tr></thead><tbody>${miRows || `<tr><td colspan="11" class="muted">No completed windows yet.</td></tr>`}</tbody></table></div>

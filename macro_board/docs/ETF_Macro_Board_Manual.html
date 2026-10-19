@@ -270,11 +270,21 @@ On most days most ETFs show no clear lean. That tells you today's macro gives no
 
 <h2 id="l6">Lesson 6 · Your daily routine</h2>
 <h3>Getting a fresh board</h3>
-<p>The full package (all the macro inputs, then the board) runs from PowerShell in the repo folder:</p>
+<p>The board now refreshes itself twice every trading day. Windows Task Scheduler runs the full package (all the macro inputs, GEX, the bond state, the macro packet, the rotation flag, then the board):</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>Run</th><th>New York time</th><th>UK time</th><th>Why then</th></tr></thead>
+  <tbody>
+    <tr><td>Pre-open</td><td class="num">08:35</td><td class="num">13:35 (12:35 in the weeks the clocks differ)</td><td>After the 08:30 US data releases, with pre-market prices, finished before the 09:30 open</td></tr>
+    <tr><td>Post-close</td><td class="num">16:30</td><td class="num">21:30 (20:30 in those weeks)</td><td>After the close and the evening pipeline: this is the scored record</td></tr>
+  </tbody>
+</table></div>
+<p><b>To run it yourself</b>, double-click <b>Macro board - run now</b> on the desktop. It first prints a readiness report: whether US pre-market is open, which of today's releases are not out yet, and which inputs are stale. Then it asks "Run now? (Y/N)". The same from PowerShell:</p>
 <pre>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence
-.\Run-MacroInputs.ps1 -Session PreOpen     # morning: waits until 08:35 ET
-.\Run-MacroInputs.ps1 -Session PostClose   # evening: waits until 16:30 ET</pre>
-<p>Add <code>-PlanOnly</code> to see what it would do without running anything. If you only want to rebuild the page from inputs that are already fresh, <code>.\Run-MacroBoard.ps1</code> rebuilds the board alone. The page is saved at <code>macro_board\output\etf_macro_board.html</code>; you can reopen it at any time.</p>
+.\Run-MacroInputs.ps1 -Now          # readiness report, Y/N, then runs at once
+.\Run-MacroInputs.ps1 -PlanOnly     # shows the steps; runs nothing</pre>
+<div class="callout coach"><strong>Coach's tip: timing matters</strong>
+A run before 04:00 New York time (09:00 UK) sees no pre-market prices at all, and a run before 08:30 misses the morning's data releases. If the readiness report says "too early", wait for 08:35 New York time unless you need the board now.</div>
+<p>If you only want to rebuild the page from inputs that are already fresh, <code>.\Run-MacroBoard.ps1</code> rebuilds the board alone. The page is saved at <code>macro_board\output\etf_macro_board.html</code>; you can reopen it at any time.</p>
 <div class="callout warn"><strong>Run-MacroBoard.ps1 is not the full package</strong>
 It does not refresh the macro inputs. If the board looks out of date, run <code>Run-MacroInputs.ps1</code>.</div>
 
@@ -602,7 +612,9 @@ Each tab also has its own page. Each page covers the tab's purpose, how it is bu
     <tr><td>The board looks out of date</td><td>Only the board was rebuilt, not the inputs</td><td>Run <code>.\Run-MacroInputs.ps1</code>, not <code>Run-MacroBoard.ps1</code></td></tr>
     <tr><td><code>... is not recognized</code> in PowerShell</td><td>PowerShell is not in the repo folder</td><td><code>cd C:\Users\ACKVerissimo\AVSHUNTER-Intelligence</code> first</td></tr>
     <tr><td>A chip is red or stale</td><td>That source did not update</td><td>Don't rely on panels that use it; tell your desk lead</td></tr>
-    <tr><td>QQQ holdings: <code>406 Not Acceptable</code></td><td>The issuer sometimes blocks downloads</td><td>Nothing: the board keeps the last good file and marks it stale</td></tr>
+    <tr><td>"QQQ holdings via ProShares TQQQ"</td><td>Invesco blocks automated downloads, so the board uses the Nasdaq-100 stocks in ProShares' daily TQQQ file (they match QQQ's weights closely)</td><td>Nothing: this is expected</td></tr>
+    <tr><td>"Latest prices · none since the close yet" (grey)</td><td>The board was built before US pre-market opened (04:00 New York, 09:00 UK)</td><td>The board uses the last close. Run after 08:35 New York time for pre-market prices</td></tr>
+    <tr><td>An input amber with "1 US session closed since it was produced"</td><td>That file missed at least one market close</td><td>For the US Money Index, a new ChatGPT packet is needed; other inputs refresh on the next run</td></tr>
     <tr><td>"Too unstable to read" under Options</td><td>The stored option data for that ETF jumps too much day to day to be real</td><td>Ignore option footprints for that ETF; use price and volume</td></tr>
     <tr><td>AI narrative "not available" or a red check</td><td>No credentials, the request failed, or a number did not match the facts</td><td>Use the MEASURED sections; they stand on their own</td></tr>
     <tr><td>Almost everything says "No clear lean"</td><td>Normal: today's macro gives no measurable edge</td><td>Decide on the setup, room left and option price</td></tr>

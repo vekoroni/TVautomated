@@ -252,3 +252,64 @@ def score_money_index(packet: Mapping | None, opens: pd.DataFrame, closes: pd.Da
             "calls": [{"entry_session": str(sessions[e].date()), "score": r["score"], "band": r["band"]}
                       for e, r in sorted(by_entry.items())][::-1],
             "results": results}
+
+
+# --- rapid rotation flag (rapid_rotation_flag.py), its own rule replayed on daily closes -----------------------
+
+def score_rotation_flag(opens: pd.DataFrame, closes: pd.DataFrame, *, commodities: Mapping, paper: Mapping,
+                        active_threshold: int, horizons: Sequence[int]) -> dict:
+    """Replays the flag on each session's open-to-close changes of the ETF proxies (the flag's own fallback
+    instruments) and measures what followed: SPY and the commodity proxies over the next sessions (next open to
+    close), flagged sessions against all sessions. Instruments missing from the store are stated, never guessed."""
+    import rapid_rotation_flag as rrf
+    from . import evidence as ev
+
+    def proxy(t, cfg):
+        return cfg.get("etf_fallback") or t
+
+    names = {t: proxy(t, c) for t, c in commodities.items()}
+    missing = sorted({e for e in list(names.values()) + list(paper) if e not in closes.columns})
+    daily = (closes / opens.reindex_like(closes) - 1.0) * 100.0      # the flag's Polygon definition: open to close
+    history, flags = {}, []
+    for i, day in enumerate(closes.index):
+        if i == 0:
+            flags.append(None)
+            continue
+        def pct(etf):
+            v = daily[etf].iloc[i] if etf in daily.columns else np.nan
+            return None if not np.isfinite(v) else float(v)
+        comm = {t: {"pct_change": pct(e), "source": "close"} for t, e in names.items()}
+        pap = {t: {"pct_change": pct(t)} for t in paper}
+        if all(v["pct_change"] is None for v in pap.values()):
+            flags.append(None)
+            continue
+        flag = rrf.assess_rotation(comm, pap, commodities=dict(commodities), paper=dict(paper),
+                                   active_threshold=active_threshold)["rotation_override"]
+        flags.append(flag)
+        if flag != "NORMAL":
+            history[str(day.date())] = flag
+    flag_series = pd.Series(flags, index=closes.index)
+    comm_etfs = [e for e in names.values() if e in closes.columns]
+    record = {}
+    for h in horizons:
+        fwd = ev.forward_returns(opens, closes, int(h))
+        spy = fwd["SPY"] if "SPY" in fwd.columns else pd.Series(np.nan, index=closes.index)
+        comm = fwd[comm_etfs].mean(axis=1) if comm_etfs else pd.Series(np.nan, index=closes.index)
+
+        def block(mask):
+            ok = mask & spy.notna()
+            pos = np.flatnonzero(ok.to_numpy())
+            s = spy[ok].to_numpy() * 100.0
+            c = (comm[ok] - spy[ok]).to_numpy() * 100.0
+            return {"n": int(len(s)), "n_eff": int(ev.effective_n(pos, int(h))) if len(pos) else 0,
+                    "spy_mean_pct": None if not len(s) else round(float(np.mean(s)), 4),
+                    "spy_down_rate": None if not len(s) else round(float(np.mean(s < 0)), 4),
+                    "commodities_minus_spy_pp": None if not len(c) or not np.isfinite(c).any() else round(float(np.nanmean(c)), 4)}
+        valid = flag_series.notna()
+        record[str(h)] = {"all": block(valid), "flagged": block(valid & (flag_series != "NORMAL")),
+                          "active": block(valid & (flag_series == "SPECULATOR_ROTATION_ACTIVE")),
+                          "building": block(valid & (flag_series == "ROTATION_BUILDING"))}
+    return {"history": history, "missing_inputs": missing, "record": record,
+            "sessions": int(flag_series.notna().sum()), "since": str(closes.index[1].date()) if len(closes.index) > 1 else None,
+            "counts": {k: int((flag_series == k).sum()) for k in ("SPECULATOR_ROTATION_ACTIVE", "ROTATION_BUILDING", "NORMAL")},
+            "method": "Each session's open-to-close change of the flag's ETF fallbacks (its Polygon definition); the live pre-open flag may use overnight futures instead."}

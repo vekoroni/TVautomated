@@ -101,6 +101,54 @@ def parse_invesco_json(payload: Mapping) -> list[dict]:
     return out
 
 
+def parse_proshares_csv(data: bytes, exclude: Sequence[str] = ()) -> tuple[list[dict], str | None]:
+    """ProShares daily holdings CSV (e.g. TQQQ). Keeps the equity sleeve only: rows with a security ticker and a
+    market value, minus the listed money-market funds; swaps, futures, T-bills and net other assets have no
+    ticker or no market value. Weights are each stock's share of the sleeve's market value."""
+    import csv
+    text = data.decode("utf-8-sig", errors="replace")
+    rows = list(csv.reader(io.StringIO(text)))
+    as_of = None
+    for row in rows[:4]:
+        cell = (row[0] if row else "").strip().upper()
+        if cell.startswith("AS OF"):
+            try:
+                as_of = datetime.strptime(cell.replace("AS OF", "").strip(), "%m/%d/%Y").date().isoformat()
+            except ValueError:
+                as_of = None
+    header = next((i for i, row in enumerate(rows) if row and "Security Ticker" in ",".join(row)), None)
+    if header is None:
+        return [], as_of
+    cols = [c.strip() for c in rows[header]]
+    i_tic, i_name, i_mv = cols.index("Security Ticker"), cols.index("Security Description"), cols.index("Market Value")
+    i_sh = cols.index("Shares/Contracts") if "Shares/Contracts" in cols else None
+    skip = {e.upper() for e in exclude}
+    picked = []
+    for row in rows[header + 1:]:
+        if len(row) <= i_mv:
+            continue
+        ticker = row[i_tic].strip().upper()
+        value = _number(row[i_mv])
+        if not ticker or ticker in skip or not _TICKER.match(ticker) or value is None or value <= 0:
+            continue
+        picked.append((ticker, row[i_name].strip(), value, _number(row[i_sh]) if i_sh is not None else None))
+    total = sum(v for _, _, v, _ in picked)
+    holdings = [{"ticker": t, "name": n, "weight_pct": v / total * 100.0, "shares": sh} for t, n, v, sh in picked] if total else []
+    return holdings, as_of
+
+
+def _parse(fmt: str, data: bytes, source: Mapping) -> tuple[list[dict], str | None]:
+    if fmt == "ssga_xlsx":
+        rows = xlsx_rows(data)
+        return parse_ssga_rows(rows), ssga_as_of(rows)
+    if fmt == "invesco_json":
+        payload = json.loads(data)
+        return parse_invesco_json(payload), payload.get("effectiveBusinessDate")
+    if fmt == "proshares_csv":
+        return parse_proshares_csv(data, source.get("exclude") or ())
+    raise ValueError(f"unknown holdings format {fmt}")
+
+
 # --- fetching (explicit network step) ------------------------------------------------------
 
 def _download(requests, source: Mapping, timeout: float, attempts: int = 3, pause_seconds: float = 5.0) -> bytes:
@@ -124,31 +172,33 @@ def refresh(sources: Mapping[str, Mapping], out_dir: Path, timeout: float = 40.0
     raw_dir = out_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
     report = {}
+    suffixes = {"ssga_xlsx": ".xlsx", "invesco_json": ".json", "proshares_csv": ".csv"}
     for etf, source in sources.items():
-        try:
-            data = _download(requests, source, timeout)
-            if source["format"] == "ssga_xlsx":
-                rows = xlsx_rows(data)
-                holdings, as_of = parse_ssga_rows(rows), ssga_as_of(rows)
-            elif source["format"] == "invesco_json":
-                payload = json.loads(data)
-                holdings, as_of = parse_invesco_json(payload), payload.get("effectiveBusinessDate")
-            else:
-                raise ValueError(f"unknown holdings format {source['format']}")
-            if not holdings:
-                raise ValueError("no holdings parsed")
+        attempts = [("PRIMARY", source)] + ([("FALLBACK", source["fallback"])] if source.get("fallback") else [])
+        errors = []
+        for kind, src_cfg in attempts:
+            try:
+                data = _download(requests, src_cfg, timeout)
+                holdings, as_of = _parse(src_cfg["format"], data, src_cfg)
+                if not holdings:
+                    raise ValueError("no holdings parsed")
+            except Exception as exc:                               # one issuer failing never stops the board
+                errors.append(f"{kind.lower()}: {type(exc).__name__}: {str(exc)[:160]}")
+                continue
             digest = hashlib.sha256(data).hexdigest()
-            suffix = ".xlsx" if source["format"] == "ssga_xlsx" else ".json"
-            raw_name = f"{digest[:16]}_{etf}_{as_of}{suffix}"
+            raw_name = f"{digest[:16]}_{etf}_{as_of}{suffixes.get(src_cfg['format'], '.bin')}"
             (raw_dir / raw_name).write_bytes(data)
-            record = {"etf": etf, "issuer": source["issuer"], "as_of": as_of, "url": source["url"],
+            record = {"etf": etf, "issuer": src_cfg["issuer"], "as_of": as_of, "url": src_cfg["url"],
+                      "source": kind, "primary_error": errors[0] if errors else None,
                       "fetched_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                       "raw_sha256": digest, "raw_file": raw_name,
                       "total_weight_pct": round(sum(h["weight_pct"] for h in holdings), 4), "holdings": holdings}
             (out_dir / f"{etf}_latest.json").write_text(json.dumps(record), encoding="utf-8")
-            report[etf] = {"status": "OK", "as_of": as_of, "count": len(holdings)}
-        except Exception as exc:                                   # one issuer failing never stops the board
-            report[etf] = {"status": "FAILED", "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+            report[etf] = {"status": "OK", "as_of": as_of, "count": len(holdings), "source": kind,
+                           "issuer": src_cfg["issuer"], **({"primary_error": errors[0]} if errors else {})}
+            break
+        else:
+            report[etf] = {"status": "FAILED", "error": "; ".join(errors)}
     return report
 
 

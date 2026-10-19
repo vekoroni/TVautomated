@@ -363,7 +363,16 @@
         "issuer": "Invesco",
         "format": "invesco_json",
         "accept": "application/json",
-        "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/QQQ/holdings/fund?idType=ticker&productType=ETF"
+        "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/QQQ/holdings/fund?idType=ticker&productType=ETF",
+        "fallback": {
+          "issuer": "ProShares TQQQ (Nasdaq-100 sleeve)",
+          "format": "proshares_csv",
+          "url": "https://accounts.profunds.com/etfdata/ByFund/TQQQ-psdlyhld.csv",
+          "exclude": [
+            "IQMM"
+          ],
+          "rationale": "ACK 19 Oct 2026. Invesco refuses every automated request (HTTP 406 on the JSON API and the CSV download since 2 Oct). QQQ tracks the Nasdaq-100; ProShares' TQQQ daily file holds the same stocks beside its swaps, futures and T-bills. The equity sleeve (security ticker + market value, money-market fund IQMM excluded) reweighted to 100% matched the last Invesco QQQ file: correlation 0.994, mean absolute difference 0.09 pts, 100 of 101 names common (index change MRNA/WBD). Used only when Invesco fails; the board labels the issuer."
+        }
       },
       "XLK": {
         "issuer": "State Street",

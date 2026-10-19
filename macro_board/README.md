@@ -16,10 +16,40 @@ AVSHUNTER's macro outputs and databases (ACK, 6 Oct 2026).
 
 ## Run
 
+The full package (macro inputs, GEX, bond state, macro packet, rapid rotation flag, then the board) is
+`Run-MacroInputs.ps1` in the repo root. Since 19 Oct 2026 it runs from Windows Task Scheduler, Monday to Friday:
+
+| Task | Wakes | Runs (the runner waits) | Notes |
+|---|---|---|---|
+| `AVSHUNTER_MacroInputs_PreOpen` | 12:20 UK | 08:35 ET (13:35 UK; 12:35 UK in the weeks UK and US clocks differ), latest start 09:00 ET | after the 08:30 ET releases, with pre-market prices; done before the open |
+| `AVSHUNTER_MacroInputs_PostClose` | 20:15 UK | 16:30 ET (21:30 UK; 20:30 UK in those weeks), latest start 23:30 ET | the scored evening record; waits for a running pipeline |
+
+US holidays skip themselves. For a manual run use the desktop shortcut **Macro board - run now**, or:
+
+```powershell
+.\Run-MacroInputs.ps1 -Now          # readiness report (what a run now will and will not have), then Y/N, then runs at once
+.\Run-MacroInputs.ps1 -PlanOnly     # the steps and the window; runs nothing
+venv\Scripts\python.exe -m macro_board.readiness   # the readiness report on its own
+```
+
+Steps, in order: GEX from stored chains (`scripts/build_local_gex.py`) and the bond state
+(`bond_macro_intelligence.py --verbose`); the six producers in parallel; the FRED monitor; `build_macro_json.py`;
+`rapid_rotation_flag.py` (patches the rebuilt packet; exit 1 = rotation building and 2 = rotation active are flag
+levels, not failures); the board. `-SkipGex`, `-SkipBonds`, `-SkipRotationFlag` leave a step out.
+
+The board alone, from inputs that are already there:
+
 ```powershell
 .\Run-MacroBoard.ps1            # refresh holdings + tastytrade metrics, build and open
 venv\Scripts\python.exe -m macro_board --as-of 2026-09-15   # measured layers as of a past session
 ```
+
+Input ages: an input is fresh within its hour limit, or while no US session has closed since it was produced (so a
+Friday evening file is still current on Monday before the open); otherwise the strip says how many closes it
+missed. Before US pre-market opens (04:00 ET) no quote can exist after the close, so "Latest prices" shows a
+neutral "none since the close yet" and the board uses the close. QQQ holdings: Invesco refuses automated
+downloads (HTTP 406), so the board falls back to the Nasdaq-100 stock sleeve of ProShares' daily TQQQ file
+(`config["holdings"]["sources"]["QQQ"]["fallback"]`) and labels the issuer.
 
 A build takes about 40–90 seconds. The first run also caches the breadth panel, keyed on the
 price store's size and modification time. Output:

@@ -55,7 +55,7 @@ PACKAGE = Path(__file__).resolve().parent
 DEFAULT_CONFIG = PACKAGE / "config" / "macro_board_config_v1.json"
 OUTPUT_DIR = PACKAGE / "output"
 TEMPLATE = PACKAGE / "board_template.html"
-ALWAYS_LOAD = ("SPY", "HYG", "LQD", "USO")
+ALWAYS_LOAD = ("SPY", "HYG", "LQD", "USO", "NVDA")   # NVDA: a paper asset of the rapid rotation flag
 
 
 def _clean(value):
@@ -313,6 +313,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                               score_tickers, horizons),
         "packets": sc.score_packets(packets, opens, closes, score_tickers, horizons, score_cfg),
         "board": sc.score_board_snapshots(snapshot_dir, opens, closes, horizons),
+        "rotation_flag": score_rotation_flag(opens, closes, horizons),
         "money_index": sc.score_money_index(external["us_money_index"].data if external["us_money_index"].status
                                             not in ("MISSING", "UNREADABLE") else None,
                                             opens, closes, score_tickers, horizons, score_cfg),
@@ -446,6 +447,11 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     name = "etf_macro_board.html" if not as_of else f"etf_macro_board_asof_{as_of}.html"
     target = output_dir / name
     target.write_text(html, encoding="utf-8")
+    if not as_of:
+        # Independent advisory publication: no pipeline or Worker 3 rerun.
+        # Publish only after the matching board HTML has been saved successfully.
+        from contracts.lab_macro_desk import publish as publish_lab_macro
+        publish_lab_macro(payload, output_dir)
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
 
@@ -464,9 +470,21 @@ def build_latest(metrics: dict, universe, config: dict, now: datetime, *, refres
     rows = mkt.latest_layer(snap["rows"], closes, now=now,
                             stale_after_minutes=float(config["prices"]["latest_stale_after_minutes"]))
     superseded = sum(1 for r in rows.values() if r["supersedes_close"])
-    print(f"[board] latest prices: {snap['status']}, {len(snap['rows'])} quotes, {superseded} supersede the close")
-    return {"status": snap["status"], "fetched_utc": now.isoformat(timespec="seconds"), "rows": rows,
+    segment = mkt.segment_of(now)
+    status = mkt.classify_latest(snap["status"], segment)
+    print(f"[board] latest prices: {status} ({segment}), {len(snap['rows'])} quotes, {superseded} supersede the close")
+    return {"status": status, "segment": segment, "fetched_utc": now.isoformat(timespec="seconds"), "rows": rows,
             "superseding": superseded}
+
+
+def score_rotation_flag(opens, closes, horizons) -> dict:
+    """rapid_rotation_flag.py's own rule replayed on history and scored (display only, never a gate)."""
+    try:
+        import rapid_rotation_flag as rrf
+        return sc.score_rotation_flag(opens, closes, commodities=rrf.COMMODITY_FUTURES, paper=rrf.PAPER_TICKERS,
+                                      active_threshold=rrf.ACTIVE_THRESHOLD, horizons=horizons)
+    except Exception as exc:  # noqa: BLE001 - the board never stops for an advisory scorecard
+        return {"status": "FAILED", "reason": f"{type(exc).__name__}: {exc}"}
 
 
 def build_review(payload: dict, config: dict, opens, closes, holdings_payload: dict, external: dict) -> dict:
@@ -890,7 +908,8 @@ def build_intel(external: dict, packet: dict | None) -> dict:
                 "dir_bias", "trend_energy", "vol_mode", "liquidity_pulse", "rates_impulse", "usd_state",
                 "credit_state", "credit_risk_score", "sector_lead", "sector_avoid", "horizon_routing", "notes",
                 "macro_authority", "conflict_flags", "rotation_override", "vix_spot", "net_liquidity_score",
-                "vix_regime_score", "gex_regime_score", "macro_momentum_score", "macro_filter", "regime_drift_status")
+                "vix_regime_score", "gex_regime_score", "macro_momentum_score", "macro_filter", "regime_drift_status",
+                "rotation_detail", "rotation_flag_as_of_utc")
         intel["packet"] = {k: packet.get(k) for k in keys}
         intel["packet"]["sector_rotation"] = packet.get("sector_rotation")
     usmi = data("us_money_index")

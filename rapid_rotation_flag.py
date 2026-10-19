@@ -114,6 +114,42 @@ def read_colab_pct(ticker: str) -> float | None:
 
 
 # ─────────────────────────────────────────────
+# OVERNIGHT CAPTURE (Run-MacroInputs pre-open step)
+# Live futures and pre-market ETFs measured since the last US close. Used first when the capture is
+# fresh and the instrument's line is live; the Colab futures CSVs it replaced no longer exist.
+# ─────────────────────────────────────────────
+
+OVERNIGHT_MAX_AGE_HOURS = 12.0      # same limit as the macro board's overnight freshness
+
+
+def read_overnight(ticker: str) -> dict | None:
+    files = sorted(COLAB_DROP_DIR.glob("overnight_*.json")) if COLAB_DROP_DIR.exists() else []
+    if not files:
+        return None
+    try:
+        doc = json.loads(files[-1].read_text(encoding="utf-8"))
+        made = datetime.fromisoformat(str(doc["as_of_utc"]).replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if made.tzinfo is None:
+        made = made.replace(tzinfo=timezone.utc)
+    if (datetime.now(timezone.utc) - made).total_seconds() / 3600.0 > OVERNIGHT_MAX_AGE_HOURS:
+        return None
+    if str(doc.get("run_session") or "").lower() != "preopen":
+        return None                 # an evening capture measures from today's close: almost no move yet
+    for rows in (doc.get("groups") or {}).values():
+        for row in rows or []:
+            if row.get("symbol") != ticker:
+                continue
+            pct = row.get("change_pct")
+            if row.get("state") != "OK" or row.get("stale") or pct is None:
+                return None
+            return {"ticker": ticker, "pct_change": round(float(pct), 3), "status": "OK", "source": "overnight_capture",
+                    "window": f"since the {doc.get('us_reference_session')} close (overnight capture {files[-1].name})"}
+    return None
+
+
+# ─────────────────────────────────────────────
 # POLYGON FALLBACK FETCH
 # ─────────────────────────────────────────────
 
@@ -152,57 +188,75 @@ def get_polygon_change(ticker: str) -> dict:
 # UNIFIED FETCH — futures CSV first, then Polygon ETF fallback
 # ─────────────────────────────────────────────
 
+POLYGON_WINDOW = "previous session, open to close"
+
+
 def fetch_commodity(futures_ticker: str, cfg: dict) -> dict:
-    """Try Colab futures CSV first. Fall back to Polygon ETF."""
+    """Fresh overnight capture first, then the Colab futures CSV, then the ETF via Polygon."""
+    live = read_overnight(futures_ticker)
+    if live is not None:
+        return live
     pct = read_colab_pct(futures_ticker)
     if pct is not None:
         return {"ticker": futures_ticker, "pct_change": pct,
-                "status": "OK", "source": "colab_csv"}
+                "status": "OK", "source": "colab_csv", "window": "Colab daily change"}
 
     # Fallback: use ETF via Polygon
     etf = cfg.get("etf_fallback", futures_ticker)
     result = get_polygon_change(etf)
     result["ticker"] = futures_ticker  # keep futures label for reporting
     result["etf_used"] = etf
+    result["window"] = POLYGON_WINDOW
     return result
 
 
 def fetch_paper(ticker: str) -> dict:
-    """Paper assets — read from Colab CSV first, then Polygon."""
+    """Paper assets: live pre-market line from the overnight capture, then the Colab CSV, then Polygon."""
+    live = read_overnight(ticker)
+    if live is not None:
+        return live
     pct = read_colab_pct(ticker)
     if pct is not None:
-        return {"ticker": ticker, "pct_change": pct, "status": "OK", "source": "colab_csv"}
-    return get_polygon_change(ticker)
+        return {"ticker": ticker, "pct_change": pct, "status": "OK", "source": "colab_csv", "window": "Colab daily change"}
+    result = get_polygon_change(ticker)
+    result["window"] = POLYGON_WINDOW
+    return result
 
 
 # ─────────────────────────────────────────────
 # ROTATION DETECTION LOGIC (unchanged from v1.0)
 # ─────────────────────────────────────────────
 
-def assess_rotation(commodity_results: dict, paper_results: dict) -> dict:
+def assess_rotation(commodity_results: dict, paper_results: dict, *, commodities: dict | None = None,
+                    paper: dict | None = None, active_threshold: int | None = None) -> dict:
+    """The flag rule. Settings default to this module's; the macro board replays the same rule on history."""
+    commodities = COMMODITY_FUTURES if commodities is None else commodities
+    paper = PAPER_TICKERS if paper is None else paper
+    active_threshold = ACTIVE_THRESHOLD if active_threshold is None else active_threshold
     commodity_spikes = []
-    for ticker, cfg in COMMODITY_FUTURES.items():
+    for ticker, cfg in commodities.items():
         r = commodity_results.get(ticker, {})
         pct = r.get("pct_change")
         if pct is not None and pct >= cfg["spike_pct"]:
             commodity_spikes.append({
-                "ticker": ticker, "desc": cfg["desc"],
+                "ticker": ticker, "desc": cfg.get("desc", ticker),
                 "pct": pct, "threshold": cfg["spike_pct"],
-                "source": r.get("source", "?")
+                "source": r.get("source", "?"), "window": r.get("window")
             })
 
     paper_drops, paper_mixed = [], []
-    for ticker, cfg in PAPER_TICKERS.items():
+    for ticker, cfg in paper.items():
         r = paper_results.get(ticker, {})
         pct = r.get("pct_change")
         if pct is not None and pct <= cfg["drop_pct"]:
-            paper_drops.append({"ticker": ticker, "desc": cfg["desc"],
-                                 "pct": pct, "threshold": cfg["drop_pct"]})
+            paper_drops.append({"ticker": ticker, "desc": cfg.get("desc", ticker),
+                                 "pct": pct, "threshold": cfg["drop_pct"],
+                                 "source": r.get("source", "?"), "window": r.get("window")})
         elif pct is not None:
             paper_mixed.append({"ticker": ticker, "pct": pct})
 
-    commodity_firing = len(commodity_spikes) >= ACTIVE_THRESHOLD
-    paper_confirming = len(paper_drops) >= len(PAPER_TICKERS)
+    commodity_firing = len(commodity_spikes) >= active_threshold
+    paper_confirming = len(paper_drops) >= len(paper)
     paper_partial    = len(paper_drops) >= 1
 
     if commodity_firing and paper_confirming:
@@ -213,7 +267,7 @@ def assess_rotation(commodity_results: dict, paper_results: dict) -> dict:
     elif commodity_firing and paper_partial:
         flag    = "ROTATION_BUILDING"
         summary = (f"{len(commodity_spikes)} commodities spiking, "
-                   f"partial paper pressure ({len(paper_drops)}/{len(PAPER_TICKERS)}). "
+                   f"partial paper pressure ({len(paper_drops)}/{len(paper)}). "
                    "Monitor — rotation may be developing.")
     elif len(commodity_spikes) == 1 and paper_confirming:
         flag    = "ROTATION_BUILDING"
