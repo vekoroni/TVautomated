@@ -219,6 +219,10 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
         "sector_context": _safe((context or {}).get("sector", {"state": "NOT_PUBLISHED"})),
         "reconciliation": _safe(book.get("reconciliation", {})),
     }
+    # Derived, saved-input research is built at publication, never on a page request.
+    # It has separate display authority and cannot alter the governed rows above.
+    from contracts.lab_convexity_watchlist import publish_convexity
+    manifest["convexity_watchlist"] = publish_convexity(manifest, database, rows)
     _atomic_manifest(folder, manifest)
     return manifest
 
@@ -415,6 +419,11 @@ def register_review_routes(app, runs_dir):
     @app.get("/api/lab/<run_id>/summary", endpoint="lab_review_summary")
     def summary(run_id):
         return answer(read_review_summary, run_id)
+
+    @app.get("/api/lab/<run_id>/convexity", endpoint="lab_review_convexity")
+    def convexity(run_id):
+        from contracts.lab_convexity_watchlist import read_convexity
+        return answer(read_convexity, run_id, request.args.get("revision"))
 
     @app.get("/api/lab/<run_id>/rows", endpoint="lab_review_rows")
     def rows(run_id):

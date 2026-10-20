@@ -1,0 +1,6 @@
+.convexity-watchlist{border:1px solid var(--line);border-radius:9px;padding:16px;margin:18px 0;background:var(--surface)}
+.convexity-watchlist h3{margin:22px 0 8px}.convexity-table{min-width:1080px}
+.convexity-table th{font-weight:bold}.convexity-table td{max-width:270px;overflow-wrap:anywhere}
+.convexity-table .convexity-caveat{max-width:none;background:var(--soft);color:var(--muted);font-size:12px;padding-top:6px;padding-bottom:8px}
+.convexity-watchlist button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+@media(max-width:700px){.convexity-watchlist{padding:12px}}

@@ -1,10 +1,16 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AVSHUNTER · Trade review</title><link rel="stylesheet" href="/static/review-app.css"></head>
+<title>AVSHUNTER · Trade review</title><link rel="stylesheet" href="/static/review-app.css"><link rel="stylesheet" href="/static/convexity-watchlist.css"></head>
 <body><main id="review-app">
 <header><div><div class="brand">AVSHUNTER</div><h1>Intelligence Lab</h1><p class="muted">Review-first · human execution · no order or capital authority</p></div>
 <div class="run-controls"><label for="review-run">Run</label><select id="review-run"><option>Loading runs…</option></select><button id="review-refresh" type="button">Refresh</button><a href="/market-mentality">Market Mentality</a><a href="/legacy">Legacy audit Lab</a></div></header>
 <div id="review-status" role="status" aria-live="polite">Loading published review records…</div>
+<section id="convexity-watchlist" class="convexity-watchlist" aria-labelledby="convexity-heading">
+<div class="heading"><h2 id="convexity-heading">High-convexity watchlist</h2><button id="convexity-load" type="button">Load saved comparisons</button></div>
+<p>Find payoff asymmetry before confirmation — without confusing a watch candidate with an entry-ready setup.</p>
+<p class="muted">Saved data only. Waiting can increase premium or IV and consume runway; early entry adds failed-trigger risk. A saved pre-trigger payoff is not a post-confirmation offer.</p>
+<p id="convexity-status" role="status" aria-live="polite">Comparisons load on demand from a revision-pinned publication. No providers, pipeline or on-page repricing.</p>
+<div id="convexity-content"></div></section>
 <section class="ticker-search" aria-labelledby="ticker-search-heading">
 <h2 id="ticker-search-heading">Find trade cards</h2>
 <form id="ticker-search-form"><label for="ticker-search-input">Search up to five tickers</label>
@@ -21,4 +27,4 @@
 <div class="pager"><button type="button" id="page-prev">Previous</button><span id="page-state"></span><button type="button" id="page-next">Next</button></div></section>
 <section id="review-card" aria-live="polite"><p class="muted">Select a ticker to review its thesis and expression.</p></section>
 <footer>Published decisions first · evidence on demand · no provider calls on page load</footer>
-</main><script src="/static/review-app.js" defer></script></body></html>
+</main><script src="/static/review-app.js" defer></script><script src="/static/convexity-watchlist.js" defer></script></body></html>
