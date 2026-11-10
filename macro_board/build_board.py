@@ -896,7 +896,7 @@ def _dated(usmi: dict) -> list[dict]:
     return [{"metric": m, "value": v, "observed": d or "not dated in packet"} for m, v, d in rows if v is not None]
 
 
-def build_intel(external: dict, packet: dict | None) -> dict:
+def build_intel(external: dict, packet: dict | None, *, max_events: int | None = 8) -> dict:
     """Pick the human-relevant fields from each advisory source (display only)."""
     def data(name):
         read = external.get(name)
@@ -932,15 +932,35 @@ def build_intel(external: dict, packet: dict | None) -> dict:
         }
     events = data("event_payload")
     if isinstance(events, dict):
+        def event_clock(event):
+            # Native Event exports put the source cutoff in this observation
+            # window. Do not replace it with a receipt clock or an event-ID date.
+            perception = event.get("market_perception")
+            perception = perception if isinstance(perception, dict) else {}
+            window = perception.get("observation_window")
+            window = window if isinstance(window, dict) else {}
+            candidates = (event.get("information_cutoff_utc"),
+                          window.get("information_cutoff_utc"),
+                          event.get("original_report_release_time_utc"),
+                          event.get("release_time_utc"))
+            for value in candidates:
+                try:
+                    stamp=datetime.fromisoformat(str(value or '').replace('Z','+00:00'))
+                    if stamp.tzinfo is not None:return stamp.astimezone(timezone.utc)
+                except (ValueError,TypeError):pass
+            return datetime.min.replace(tzinfo=timezone.utc)
+        all_events=sorted(events.get("events") or [],key=event_clock,reverse=True)
+        displayed=all_events if max_events is None else all_events[:max(0,int(max_events))]
         intel["events"] = {
             "classification": (events.get("regime_summary") or {}).get("classification"),
             "narrative": (events.get("regime_summary") or {}).get("core_narrative"),
             "verdict": events.get("final_verdict"),
-            "events": [{k: e.get(k) for k in ("event_name", "country_or_institution", "release_time_utc", "status",
+            "events": [{k: e.get(k) for k in ("event_id", "information_cutoff_utc", "event_name", "country_or_institution", "release_time_utc", "status",
                                                 "actual", "forecast", "previous", "surprise_direction", "surprise_score",
                                                 "expected_magnitude", "why_it_matters_to_us_markets")}
-                       for e in events.get("events") or []][:8],
+                       for e in displayed],
             "counter_case": (events.get("counter_case") or {}).get("summary"),
+            "coverage": {"total_events":len(all_events),"displayed_events":len(displayed),"omitted_historical_events":len(all_events)-len(displayed),"ordering":"LATEST_SOURCE_OBSERVATION_FIRST"},
         }
     enrichment = data("enrichment")
     if isinstance(enrichment, dict):
