@@ -347,6 +347,27 @@ def load_data_payload(market_dir: Path, update_keys=None, prior_macro: dict | No
     return payload
 
 
+def current_usmi_prompt_view(packet: dict) -> dict:
+    """Complete current fields/revision; old revision blocks remain in archived source."""
+    revision=(packet.get('source_payload') or {}).get('packet_revision')
+    import re
+    def current(value):
+        if isinstance(value,dict):
+            out={}
+            for key,item in value.items():
+                if key in ('source_payload','timeline_since_monday','revision_history','historical_revisions'):
+                    continue
+                match=re.match(r'^rev[_ ]?(\d+)(?:_|$)',key,re.I)
+                if match and revision is not None and int(match.group(1))!=revision: continue
+                out[key]=current(item)
+            return out
+        if isinstance(value,list): return [current(x) for x in value]
+        return value
+    view=current(packet)
+    view['source_revision']=revision
+    view['projection_policy']='CURRENT_FIELDS_AND_LATEST_REVISION; FULL_HISTORY_RETAINED_IN_SOURCE_ARCHIVE'
+    return view
+
 def format_data_for_prompt(payload: dict) -> str:
     parts = []
     data  = payload["data"]
@@ -369,11 +390,11 @@ def format_data_for_prompt(payload: dict) -> str:
             "Where it conflicts with confirmed CSV/JSON market data, retain the canonical "
             "value and disclose the conflict."
         )
-        advisory = dict(data["us_money_index_advisory"])
+        advisory = current_usmi_prompt_view(data["us_money_index_advisory"])
         # The normalised view already retains every validated v2 domain block.
         # Do not duplicate the verbatim source payload in the model context.
         advisory.pop("source_payload", None)
-        parts.append(json.dumps(advisory, indent=2, default=str)[:18000])
+        parts.append(json.dumps(advisory, indent=2, default=str))
 
     # Governed inputs are represented by complete records and semantic
     # summaries.  This replaces the legacy character slicing that could omit
@@ -1885,6 +1906,8 @@ def main():
     parser = argparse.ArgumentParser(description="AVSHUNTER Automated Macro JSON Builder")
     parser.add_argument("--dropbox",  default=str(DROPBOX_DIR))
     parser.add_argument("--force",   action="store_true")
+    parser.add_argument("--health-exit-code", action="store_true",
+                        help="Exit 2 for degraded evidence after publication; exit 1 for schema failure")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--us-money-index",
@@ -1961,6 +1984,14 @@ def main():
     try:
         prior_macro = _load_existing_macro(output_path) if update_keys and not args.update_all else {}
         payload  = load_data_payload(market_path, update_keys=update_keys if not args.update_all else None, prior_macro=prior_macro)
+        from contracts.macro_health import capture_research_context
+        _research_bound = capture_research_context(macro_path)
+        for feed,entry in _research_bound.items():
+            if entry['status']=='AVAILABLE':
+                key=feed+'_research_advisory'
+                payload['data'][key]=entry['packet']
+                payload['files_found'].append(Path(entry['source_path']).name)
+                payload.setdefault('files_found_by_key',{})[key]=entry['source_path']
         if _usmi is not None and _usmi_path is not None:
             payload["data"]["us_money_index_advisory"] = _usmi
             payload["files_found"].append(_usmi_path.name)
@@ -1979,6 +2010,10 @@ def main():
                 [item for item in payload["files_missing"] if ":using_prior_macro_json" not in item],
                 data=payload["data"],
             )
+        payload['input_manifest'] = build_macro_input_manifest(
+            payload['files_found_by_key'],
+            [item for item in payload['files_missing'] if ':using_prior_macro_json' not in item],
+            data=payload['data'])
         data_str = format_data_for_prompt(payload)
         log.info("Formatted data payload: %d chars", len(data_str))
     except (RuntimeError, MacroInputContractError) as e:
@@ -2219,6 +2254,8 @@ def main():
                 "error": str(_usmi_error),
             }
 
+    from contracts.macro_health import attach_research_context, assess_macro_health
+    macro_json = attach_research_context(macro_json, macro_path, bound=_research_bound)
     # Normalise horizon routing before validation (ensures 11_20d always present)
     macro_json = normalise_horizon_routing(macro_json)
     validate_macro_output_coherence(macro_json, payload)
@@ -2247,6 +2284,16 @@ def main():
         "input_consumption_ledger": build_macro_prompt_context(payload)["input_consumption_ledger"],
         "validation":    "PASS" if all_pass else f"FAIL - missing: {missing}",
     }
+
+    raw_report = payload.get("data", {}).get("report_json", {})
+    if isinstance(raw_report, str):
+        raw_report = json.loads(raw_report)
+    macro_json["_builder_metadata"]["schema_validation"] = "PASS" if all_pass else "FAIL"
+    macro_json["macro_health"] = assess_macro_health(macro_json, report=raw_report)
+    if all_pass and macro_json["macro_health"]["status"] == "DEGRADED":
+        macro_json["_builder_metadata"]["validation"] = "DEGRADED"
+    macro_json["_builder_metadata"]["input_consumption_status"] = (
+        "COMPLETE_WITH_DEGRADED_EVIDENCE" if macro_json["macro_health"]["issues"] else "COMPLETE")
 
     # Archive and publish the immutable input identity before advancing the
     # macro latest pointer.
@@ -2294,11 +2341,13 @@ def main():
     # Summary
     print()
     print("=" * 60)
-    print("BUILD COMPLETE")
+    print("BUILD " + macro_json["macro_health"]["status"])
     print("=" * 60)
     print(f"  Output     : {output_path}")
     # Keep terminal output compatible with the default Windows cp1252 codepage.
-    print(f"  Validation : {'PASS' if all_pass else 'FAIL'}")
+    print(f"  Schema     : {'PASS' if all_pass else 'FAIL'}")
+    print(f"  Health     : {macro_json['macro_health']['status']}")
+    print(f"  Issues     : {','.join(macro_json['macro_health']['issues']) or 'NONE'}")
     print()
     print("  Key fields:")
     for f in ["regime_state","dir_bias","vol_mode",
@@ -2312,5 +2361,10 @@ def main():
     print("=" * 60)
 
 
+    if args.health_exit_code:
+        return 1 if not all_pass else 2 if macro_json['macro_health']['issues'] else 0
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -1,0 +1,14 @@
+{
+  "version": "source_recovery_v1",
+  "authority": "ADVISORY_ONLY",
+  "fred": {"attempts": 3, "timeout_seconds": 30, "manifest_max_age_hours": 24,
+    "max_observation_age_days": {"D": 7, "W": 14, "BW": 21, "M": 75, "Q": 140, "A": 400}},
+  "futures": {
+    "maintenance_start_hour_et": 17,
+    "reopen_hour_et": 18,
+    "reopen_grace_minutes": 20,
+    "stale_after_minutes": 60,
+    "refresh_poll_seconds": 30,
+    "refresh_max_wait_seconds": 1200
+  }
+}

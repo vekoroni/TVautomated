@@ -1,0 +1,30 @@
+{
+  "contract_version": "macro_delivery_config_v1",
+  "expected_feeds": [
+    "usmi",
+    "news",
+    "events"
+  ],
+  "max_packet_bytes": 10485760,
+  "timeout_seconds": 30,
+  "max_attempts": 3,
+  "https_hosts": [],
+  "default_manifest": "dropbox/macro/incoming/manifest.json",
+  "state_directory": "data/macro/delivery",
+  "macro_directory": "dropbox/macro",
+  "export_queue_directory": "dropbox/macro/exports",
+  "producer_chat_ids": {
+    "usmi": "6ae19fab-20f0-83ed-a8e2-34dbfb1993d8",
+    "news": "6ab60538-7910-83eb-a256-c506a15ebcf6",
+    "events": "6ad717cd-2750-83eb-9a8b-8a241766caa0"
+  },
+  "publication_mode": "FULL",
+  "capture_policy": {
+    "seconds_per_run": 180,
+    "max_no_progress_runs": 3,
+    "resume_incomplete_without_confirmation": true,
+    "identity_binding": "SOURCE_CHAT_MESSAGE_SHA256_BYTE_LENGTH",
+    "native_attempts_per_export": 1
+  },
+  "auto_publish_command": "scripts/publish_macro_data_only.py --board --if-changed"
+}

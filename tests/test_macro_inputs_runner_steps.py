@@ -36,7 +36,7 @@ def test_gex_runs_first_and_bonds_run_after_the_producers_and_bonds_is_verbose()
     # 19 Oct 2026: bonds' Polygon calls seconds before the six producers coincided with HTTP 429s that wiped
     # out market intelligence; bonds now run once the producers have finished (only the board reads its state).
     text = _plan("-Session", "PreOpen")
-    gex, vix, bonds, fred = _order(text, ["GEX (stored chains)", "VIX engine v4.1", "Bond macro + calendar",
+    gex, vix, bonds, fred = _order(text, ["GEX (", "VIX engine v4.1", "Bond macro + calendar",
                                           "FRED monitor v2.6"])
     assert gex < vix < bonds < fred
     assert "bond_macro_intelligence.py --verbose" in text
@@ -51,9 +51,9 @@ def test_the_rotation_flag_runs_after_the_packet_and_before_the_board_with_its_e
 
 def test_each_new_step_can_be_skipped_and_the_old_switches_still_work():
     text = _plan("-Session", "PreOpen", "-SkipGex", "-SkipBonds", "-SkipRotationFlag")
-    assert "GEX (stored chains)" not in text and "Bond macro" not in text and "Rapid rotation flag" not in text
+    assert "GEX (" not in text and "Bond macro" not in text and "Rapid rotation flag" not in text
     old = _plan("-Session", "PreOpen", "-WithGex", "-WithBonds")
-    assert old.count("GEX (stored chains)") == 1 and old.count("Bond macro + calendar") == 1
+    assert old.count("GEX (") == 1 and old.count("Bond macro + calendar") == 1
 
 
 def test_now_starts_a_manual_run_at_once_and_shows_the_readiness_report_first():

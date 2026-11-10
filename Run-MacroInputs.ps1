@@ -55,6 +55,8 @@
 # -AllowIntraday; (3) not after -LatestStartET (exit 4); wait until -StartAtET; (4) if
 # intelligent_orchestrator.py or a backfill is running, wait up to -PipelineWaitMinutes
 # (never past -LatestStartET) and stop with exit 5 if it is still running.
+# Clock changes (10 Nov 2026): a run started during regular hours whose start time is after 16:15 ET (PostClose)
+# waits for that start time instead of stopping with exit 3, so a UK-time task survives the UK/US clock changes.
 #
 # Three phases:
 #   1. setup (in order): GEX from stored chains (no API calls).
@@ -90,6 +92,8 @@ param(
     [switch]$SkipRotationFlag,
     [switch]$Now,                # manual run: readiness report, Y/N, then start at once (see header)
     [switch]$Yes,                # with -Now: do not ask
+    [string]$MacroDeliveryManifest = "", # local/synced manifest or configured HTTPS manifest
+    [switch]$ResearchDeliveryOnly, # exact-byte transfer + advisory view; no provider/model jobs
     [switch]$SkipMacroJson,
     [switch]$SkipBoard,
     [switch]$AllowIntraday,
@@ -207,10 +211,16 @@ $forced = $Force -and -not $offSession          # weekends already start at once
 $lateBy = if ($forced -and $etNow -gt $latestAt) { $etNow - $latestAt } else { [TimeSpan]::Zero }
 
 # -- Steps --------------------------------------------------------------------------------------
+$deliveryPolicy = Get-Content -LiteralPath (Join-Path $repoRoot "config/macro_delivery_v1.json") -Raw | ConvertFrom-Json
+$dataOnlyPublication = $deliveryPolicy.publication_mode -eq "DATA_ONLY"
 $setup = @()
 if (-not $SkipGex)   { $setup += New-Step "gex"   "GEX (stored chains)"   (Join-Path $repoRoot "scripts\build_local_gex.py") }
 # Bonds run after the producers (see the publish steps): 19 Oct 2026, their Polygon calls seconds before the six
 # producers coincided with HTTP 429s that wiped out market intelligence. Only the board reads the bond state.
+
+$deliveryArgs = @()
+if ($MacroDeliveryManifest) { $deliveryArgs += @("--manifest", $MacroDeliveryManifest) }
+$setup += New-Step "research_delivery" "Macro research JSON delivery" (Join-Path $repoRoot "scripts\sync_macro_feeds.py") $deliveryArgs @(0, 2, 3) "exit 2 = DEGRADED; exit 3 = DEFERRED writer busy, retain accepted files"
 
 $producers = @(
     (New-Step "vix"     "VIX engine v4.1"            (Join-Path $colab "avshunter_vix_engine_v4_1.py")),
@@ -224,13 +234,20 @@ $producers = @(
 $publish = @()
 if (-not $SkipBonds) { $publish += New-Step "bonds" "Bond macro + calendar" (Join-Path $repoRoot "bond_macro_intelligence.py") @("--verbose") }
 $publish += New-Step "fred" "FRED monitor v2.6 (+ merge)" (Join-Path $colab "avshunter_fred_monitor_v2_6.py")
-if (-not $SkipMacroJson) { $publish += New-Step "packet" "Macro packet (build_macro_json)" (Join-Path $repoRoot "build_macro_json.py") @("--force") }
+if (-not $SkipMacroJson -and $dataOnlyPublication) { $publish += New-Step "packet" "Macro packet (data-only; no model)" (Join-Path $repoRoot "scripts/publish_macro_data_only.py") }
+if (-not $SkipMacroJson -and -not $dataOnlyPublication) { $publish += New-Step "packet" "Macro packet (build_macro_json)" (Join-Path $repoRoot "build_macro_json.py") @("--force", "--health-exit-code") @(0, 2) "exit 2 = DEGRADED macro evidence; inspect macro_health" }
 if (-not $SkipRotationFlag) {
     $publish += New-Step "rrf" "Rapid rotation flag" (Join-Path $repoRoot "rapid_rotation_flag.py") @() @(0, 1, 2) "exit 1/2 = flag level, not a failure"
 }
 if (-not $SkipBoard)     { $publish += New-Step "board"  "ETF macro board"                  (Join-Path $repoRoot "Run-MacroBoard.ps1")  @("-NoOpen") }
 
 # -- Plan ---------------------------------------------------------------------------------------
+if ($ResearchDeliveryOnly) {
+    $setup = @($setup | Where-Object { $_.Key -eq "research_delivery" -or $_.Name -eq "Macro research JSON delivery" })
+    $producers = @()
+    $publish = @()
+}
+
 if ($PlanOnly) {
     Write-Host "Run-MacroInputs plan (nothing is run):"
     Write-Host ("  session        : {0}{1}" -f $runLabel, $(if ($forced) { "  (FORCED)" } else { "" }))
@@ -287,7 +304,11 @@ if ($Now) {
     }
     if ($inRegularHours -and -not $offSession) { $AllowIntraday = $true }   # confirmed after the partial-bars warning
 }
-if ($inRegularHours -and -not $AllowIntraday -and -not $offSession) {
+# A scheduled run that starts early, before its own start time, waits instead of refusing when that start
+# time is after the regular-hours guard (10 Nov 2026: the UK-time PostClose task began at 15:15 ET after the
+# US clocks changed on 1 Nov and was refused every evening). It still never runs while bars are forming.
+$waitsPastGuard = (-not $forced) -and ($startAt.TimeOfDay -ge $RegularGuard) -and ($etNow -lt $startAt)
+if ($inRegularHours -and -not $AllowIntraday -and -not $offSession -and -not $waitsPastGuard) {
     Write-Host (("[STOPPED] It is {0:HH:mm} ET, inside US regular hours (09:30-16:15): today's bars are still forming. " -f $etNow) +
                 "Run PreOpen before 09:30 or PostClose after 16:15, or pass -AllowIntraday.")
     exit 3
@@ -337,7 +358,7 @@ function Add-Result($Step, [int]$Code, [TimeSpan]$Elapsed, [string]$Mode) {
         Step     = $Step.Name
         Mode     = $Mode
         Exit     = $Code
-        Status   = $(if ($Code -eq 0) { "OK" } elseif ($okCodes -contains $Code) { "OK (exit $Code)" } elseif ($Code -eq 124) { "TIMEOUT" } else { "FAILED" })
+        Status   = $(if ($Step.Key -eq "research_delivery" -and $Code -eq 3) { "DEFERRED" } elseif ($Code -eq 0) { "OK" } elseif ($okCodes -contains $Code) { "OK (exit $Code)" } elseif ($Code -eq 124) { "TIMEOUT" } else { "FAILED" })
         Duration = "{0:hh\:mm\:ss}" -f $Elapsed
     }
 }
@@ -356,19 +377,34 @@ function Invoke-StepInline($Step) {
     # pipeline - so merge the streams, stringify, and send to the host.
     $ErrorActionPreference = "Continue"
     $global:LASTEXITCODE = 0
+    $isResearchDelivery = $Step.Key -eq "research_delivery"
+    $deliveryDeferred = $false
     try {
         if ($Step.Script -like "*.ps1") {
-            & $Step.Script @($Step.Args) 2>&1 | ForEach-Object { "$_" } | Out-Host
+            & $Step.Script @($Step.Args) 2>&1 | ForEach-Object {
+                $text = "$_"
+                if ($isResearchDelivery -and $text -match 'DELIVERY_WRITER_BUSY|writer already locked') { $deliveryDeferred = $true }
+                $text | Out-Host
+            }
         } else {
-            & $venvPython $Step.Script @($Step.Args) 2>&1 | ForEach-Object { "$_" } | Out-Host
+            & $venvPython $Step.Script @($Step.Args) 2>&1 | ForEach-Object {
+                $text = "$_"
+                if ($isResearchDelivery -and $text -match 'DELIVERY_WRITER_BUSY|writer already locked') { $deliveryDeferred = $true }
+                $text | Out-Host
+            }
         }
         $code = $LASTEXITCODE
         if ($null -eq $code) { $code = 0 }
     } catch {
         Write-Host "[ERROR] $($_.Exception.Message)"
+        if ($isResearchDelivery -and $_.Exception.Message -match 'DELIVERY_WRITER_BUSY|writer already locked') { $deliveryDeferred = $true }
         $code = 1
     }
     $ErrorActionPreference = "Stop"
+    if ($isResearchDelivery -and ($deliveryDeferred -or $code -eq 3)) {
+        Write-Host '[DEFERRED] Research delivery writer is busy; continuing with the accepted files.'
+        $code = 3
+    }
     Add-Result $Step $code ((Get-Date) - $started) "in order"
 }
 
@@ -522,10 +558,16 @@ try {
     if (-not $offSession -and $Session -eq "PreOpen" -and $finishedET.TimeOfDay -ge $PreOpenWarn) {
         Write-Host ("[WARN] PreOpen run finished at {0:HH:mm} ET - after 09:25, close to the open and the morning pipeline." -f $finishedET)
     }
-    $failed = @($script:results | Where-Object { $_.Status -notlike "OK*" })
+    $failed = @($script:results | Where-Object { $_.Status -notlike "OK*" -and $_.Status -ne "DEFERRED" })
     if ($failed.Count -gt 0) {
         Write-Host ("[FAILED] {0} of {1} steps failed: {2}" -f $failed.Count, $script:results.Count, (($failed | ForEach-Object { $_.Step }) -join "; "))
         $exitCode = 1
+        break run
+    }
+    $researchDegraded = @($script:results | Where-Object { $_.Step -in @('Macro research JSON delivery', 'Futures reopening refresh', 'Macro packet (build_macro_json)') -and $_.Exit -eq 2 })
+    if ($researchDegraded.Count -gt 0) {
+        Write-Host '[DEGRADED] Macro evidence is missing, pending, stale or rejected; see macro_health and data/macro/delivery/latest_receipt.json.'
+        $exitCode = 2
         break run
     }
     Write-Host ("[COMPLETE] {0}{1} run: all {2} steps succeeded - log: {3}" -f $runLabel, $(if ($forced) { " FORCED" } else { "" }), $script:results.Count, $logFile)

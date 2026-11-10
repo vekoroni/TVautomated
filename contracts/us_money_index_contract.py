@@ -6,6 +6,8 @@ from copy import deepcopy
 from datetime import date, datetime, timezone
 import hashlib
 import json
+import math
+import re
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -14,8 +16,11 @@ CONTRACT_VERSIONS = {
     "avshunter_us_money_index_v1_0",
     "us_money_index_v1_0",
     "avshunter_us_money_index_v2_0",
+    "avshunter_us_money_index_v2_1",
 }
 V2_CONTRACT_VERSION = "avshunter_us_money_index_v2_0"
+REBASELINE_CONTRACT_VERSION = "avshunter_us_money_index_v2_1"
+V2_CONTRACT_VERSIONS = {V2_CONTRACT_VERSION, REBASELINE_CONTRACT_VERSION}
 V2_PACKET_TYPE = "US_MONEY_INDEX_CONSOLIDATED"
 V2_MERGE_MODE = "AUGMENT_ONLY_DO_NOT_REPLACE"
 AUTHORITY = "ADVISORY_ONLY"
@@ -58,6 +63,18 @@ def _parse_date(value: Any, field: str) -> date:
         raise USMoneyIndexValidationError(f"{field} must be YYYY-MM-DD") from error
 
 
+def _window_bound(value: Any, field: str) -> tuple[date, datetime | None]:
+    """V2 producers use dates or precise observation-window timestamps; retain both losslessly."""
+    text=str(value or '').strip()
+    if len(text)==10:
+        return _parse_date(text,field),None
+    if len(text)<20 or text[10:11]!='T':
+        raise USMoneyIndexValidationError(f"{field} must be YYYY-MM-DD or a timezone-aware ISO timestamp")
+    _parse_date(text[:10],field)
+    instant=_parse_timestamp(text,field)
+    return instant.date(),instant
+
+
 def _mapping(value: Any, field: str, *, required: bool = True) -> Mapping[str, Any]:
     if isinstance(value, Mapping):
         return value
@@ -85,6 +102,8 @@ def _number(
         result = float(value)
     except (TypeError, ValueError) as error:
         raise USMoneyIndexValidationError(f"{field} must be numeric") from error
+    if not math.isfinite(result):
+        raise USMoneyIndexValidationError(f"{field} must be finite")
     if minimum is not None and result < minimum:
         raise USMoneyIndexValidationError(f"{field} must be >= {minimum}")
     if maximum is not None and result > maximum:
@@ -157,7 +176,9 @@ def _v2_metrics(state: Mapping[str, Any], as_of: str) -> dict[str, Any]:
     cross = _mapping(state.get("cross_asset"), "cross_asset")
     equities = _mapping(cross.get("equities"), "cross_asset.equities")
     cash = _mapping(equities.get("last_us_cash_session"), "cross_asset.equities.last_us_cash_session")
-    global_session = _mapping(equities.get("current_global_session"), "cross_asset.equities.current_global_session")
+    session_value = equities.get("current_global_session")
+    global_session = ({} if isinstance(session_value, str) and session_value.strip()
+                      else _mapping(session_value, "cross_asset.equities.current_global_session"))
     rates = _mapping(cross.get("rates"), "cross_asset.rates")
     fx = _mapping(cross.get("usd_fx"), "cross_asset.usd_fx")
     liquidity = _mapping(cross.get("liquidity"), "cross_asset.liquidity")
@@ -204,14 +225,32 @@ V2_STATE_FLAGS = ("regime_change_since_monday", "monetisation_change_since_monda
 _FLAG_TRUE_PREFIXES = ("CONFIRMED",)
 _FLAG_FALSE_PREFIXES = ("UNCONFIRMED", "NOT_CONFIRMED", "NONE")
 _FLAG_EXACT = {"TRUE": True, "YES": True, "FALSE": False, "NO": False}
+# Explicit producer-schema compatibility only. This describes market risk-off,
+# not systemic funding seizure. Do not generalise REV*/MATERIAL text to truth.
+_FIELD_TEXT_ALIASES = {
+    "risk_off_transition": {
+        "REV43_MATERIAL_PRICE_AND_SPX_IMPLIED_VOLATILITY_TRANSMISSION_AFTER_VIX_CLEARS_18_AND20_WHILE_OIL_EXTENDS_ABOVE107": True,
+    },
+}
 
 
-def _state_flag(value: Any, field: str) -> tuple[bool, str]:
+def _state_flag(value: Any, field: str) -> tuple[bool | None, str]:
     """(value, basis) for a current_state flag: a boolean, or producer text read through the explicit vocabulary."""
     if isinstance(value, bool):
         return value, "BOOLEAN"
+    if isinstance(value, Mapping) and value.get("status") == "UNRESOLVED" and value.get("detail"):
+        return None, "UNRESOLVED_PRODUCER_DESCRIPTION"
+    # Known v2 producer shape: descriptive risk state is not a boolean fact.
+    # Preserve ambiguity rather than declaring either a transition or its absence.
+    if (field == "risk_off_transition" and isinstance(value, str)
+            and value.startswith(("ELEVATED_MACRO_RISK_OFF_", "RISK_OFF_TRANSITION_ELEVATED_"))):
+        return None, "UNRESOLVED_PRODUCER_DESCRIPTION"
+    if field=="risk_off_transition" and isinstance(value,str) and re.match(r"^RISK_OFF_TRANSITION_SCORE(?:100|[1-9]?\d)OF100(?:__|;|$)",value):
+        return None, "UNRESOLVED_PRODUCER_DESCRIPTION"
     if isinstance(value, str) and value.strip():
         lead = value.split(";", 1)[0].strip().upper()
+        if lead in _FIELD_TEXT_ALIASES.get(field, {}):
+            return _FIELD_TEXT_ALIASES[field][lead], "EXPLICIT_REV43_PRODUCER_ALIAS"
         if lead in _FLAG_EXACT:
             return _FLAG_EXACT[lead], "PARSED_FROM_PRODUCER_TEXT"
         if lead.startswith(_FLAG_FALSE_PREFIXES):          # checked first: UNCONFIRMED also contains CONFIRMED
@@ -223,6 +262,17 @@ def _state_flag(value: Any, field: str) -> tuple[bool, str]:
         f"TRUE/FALSE/YES/NO; got {str(value)[:60]!r}")
 
 
+def _is_rebaseline(state: Mapping[str, Any]) -> bool:
+    return state.get("contract_version") == REBASELINE_CONTRACT_VERSION
+
+
+def _packet_state_flag(state: Mapping[str, Any], field: str) -> tuple[bool | None, str]:
+    current = _mapping(state.get("current_state"), "current_state")
+    if _is_rebaseline(state) and field in current and current[field] is None:
+        return None, "UNASSESSED_REBASELINE"
+    return _state_flag(current.get(field), field)
+
+
 def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str]]:
     if str(state.get("packet_type") or "").strip().upper() != V2_PACKET_TYPE:
         raise USMoneyIndexValidationError(f"packet_type must be {V2_PACKET_TYPE}")
@@ -230,15 +280,15 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
         raise USMoneyIndexValidationError(f"merge_mode must be {V2_MERGE_MODE}")
 
     window = _mapping(state.get("analysis_window"), "analysis_window")
-    start = _parse_date(window.get("start"), "analysis_window.start")
-    end = _parse_date(window.get("end"), "analysis_window.end")
-    if end < start:
+    start, start_instant = _window_bound(window.get("start"), "analysis_window.start")
+    end, end_instant = _window_bound(window.get("end"), "analysis_window.end")
+    if end < start or (start_instant is not None and end_instant is not None and end_instant < start_instant):
         raise USMoneyIndexValidationError("analysis_window.end cannot precede start")
     as_of_utc = _parse_timestamp(window.get("as_of_utc"), "analysis_window.as_of_utc")
     as_of_local = _parse_timestamp(window.get("as_of_local"), "analysis_window.as_of_local")
     if as_of_utc != as_of_local:
         raise USMoneyIndexValidationError("analysis_window UTC/local timestamps must identify the same instant")
-    if end > as_of_utc.date():
+    if end > as_of_utc.date() or (end_instant is not None and end_instant > as_of_utc) or (start_instant is not None and start_instant > as_of_utc):
         raise USMoneyIndexValidationError("analysis_window.end cannot be after analysis_window.as_of_utc")
     _required_text(window.get("market_context"), "analysis_window.market_context")
 
@@ -257,9 +307,37 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
 
     current = _mapping(state.get("current_state"), "current_state")
     _required_text(current.get("US_MONEY_INDEX_STATE"), "current_state.US_MONEY_INDEX_STATE")
-    _number(current.get("state_confidence"), "current_state.state_confidence", minimum=0, maximum=1)
+    rebaseline = _is_rebaseline(state)
+    if rebaseline:
+        lineage = _mapping(state.get("baseline_lineage"), "baseline_lineage")
+        for key, expected in {
+            "baseline_id": "USMI_REBASELINE_20261110_V1",
+            "status": "NEW_BASELINE_HISTORY_INCOMPLETE",
+            "prior_canonical_revision_reported": 73,
+            "prior_canonical_bytes_recovered": False,
+            "revision_semantics": "DELIVERY_SEQUENCE_NOT_RECOVERED_HISTORY",
+            "source_chat": "6ae19fab-20f0-83ed-a8e2-34dbfb1993d8",
+        }.items():
+            if key not in lineage or type(lineage[key]) is not type(expected) or lineage[key] != expected:
+                raise USMoneyIndexValidationError(f"baseline_lineage.{key} must identify the authorized incomplete-history rebaseline")
+        _required_text(lineage.get("source_message"), "baseline_lineage.source_message")
+        # The native rebaseline puts the complete safety block in current_state.
+        # Require one explicit complete block and reject conflicting duplicates.
+        safety = {"automatic_execution": False, "manual_review_required": True,
+                  "execution_permission": EXECUTION_PERMISSION, "authority": AUTHORITY}
+        blocks = (state, current)
+        if not any(all(key in block and type(block[key]) is type(expected) and block[key] == expected
+                       for key, expected in safety.items()) for block in blocks):
+            raise USMoneyIndexValidationError("rebaseline requires explicit disabled execution and manual review")
+        if any(key in block and (type(block[key]) is not type(expected) or block[key] != expected)
+               for block in blocks for key, expected in safety.items()):
+            raise USMoneyIndexValidationError("rebaseline safety blocks conflict")
+        if "state_confidence" not in current or current["state_confidence"] is not None:
+            raise USMoneyIndexValidationError("rebaseline state_confidence must remain explicitly null")
+    else:
+        _number(current.get("state_confidence"), "current_state.state_confidence", minimum=0, maximum=1)
     for field in V2_STATE_FLAGS:
-        _state_flag(current.get(field), field)                 # refuses unknown values, naming the field
+        _packet_state_flag(state, field)
 
     quality = _mapping(state.get("data_quality"), "data_quality")
     _required_text(quality.get("overall"), "data_quality.overall")
@@ -269,6 +347,18 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
             raise USMoneyIndexValidationError(f"data_quality.{field} must contain non-empty strings")
 
     score = _mapping(state.get("risk_off_transmission_score"), "risk_off_transmission_score")
+    if rebaseline:
+        if ("current_score" not in score or score["current_score"] is not None
+                or "risk_off_transmission_score" not in current or current["risk_off_transmission_score"] is not None
+                or score.get("components") != {}
+                or score.get("assessment_status") != "UNASSESSED_METHODOLOGY_NOT_RECOVERED"):
+            raise USMoneyIndexValidationError("rebaseline score must remain explicitly null and unassessed; no invented components")
+        if quality.get("overall") != "PARTIAL_UNVERIFIED_REBASELINE":
+            raise USMoneyIndexValidationError("rebaseline must remain PARTIAL_UNVERIFIED_REBASELINE")
+        return as_of_utc, as_of_utc, [
+            "NEW_BASELINE_HISTORY_INCOMPLETE", "RISK_SCORE_AND_CONFIDENCE_UNASSESSED",
+            "TASK_REPORTED_EVIDENCE_NOT_INDEPENDENTLY_VERIFIED", "SOURCE_OBSERVATIONS_NOT_SYNCHRONISED",
+        ]
     headline = _number(score.get("current_score"), "risk_off_transmission_score.current_score", minimum=0, maximum=100)
     state_score = _number(current.get("risk_off_transmission_score"), "current_state.risk_off_transmission_score", minimum=0, maximum=100)
     if headline != state_score:
@@ -398,7 +488,7 @@ def normalise_us_money_index_sidecar(
     version = str(state.get("contract_version") or "").strip()
     if version not in CONTRACT_VERSIONS:
         raise USMoneyIndexValidationError(f"unsupported contract_version: {version or 'MISSING'}")
-    is_v2 = version == V2_CONTRACT_VERSION
+    is_v2 = version in V2_CONTRACT_VERSIONS
     quality_issues: list[str] = []
     if is_v2:
         generated, market_as_of, quality_issues = _validate_v2(state)
@@ -409,6 +499,18 @@ def normalise_us_money_index_sidecar(
     if permission != EXECUTION_PERMISSION:
         raise USMoneyIndexValidationError("execution_permission must be NONE_INTELLIGENCE_ONLY")
     forbidden = _find_forbidden(state)
+    # Native rev63+ includes an explicit *absence* of a selected contract.
+    # Accept only this exact null placeholder with execution explicitly false;
+    # non-null selections and authority fields everywhere else still fail closed.
+    compatibility_path = "$.options_monetisation.rev63_financing_risk_and_options_monetisation.selected_contract"
+    options = state.get("options_monetisation")
+    financing = options.get("rev63_financing_risk_and_options_monetisation") if isinstance(options, Mapping) else None
+    if (is_v2 and isinstance(financing, Mapping)
+            and financing.get("selected_contract", object()) is None
+            and financing.get("execution_approved") is False
+            and compatibility_path in forbidden):
+        forbidden.remove(compatibility_path)
+        quality_issues.append("Native options research selected_contract=null retained as absence only; execution_approved=false; no contract selection authority")
     if forbidden:
         raise USMoneyIndexValidationError("authority fields are forbidden: " + ", ".join(forbidden))
     if not is_v2:
@@ -426,11 +528,15 @@ def normalise_us_money_index_sidecar(
     if is_v2:
         # ACK 8 Oct 2026: publish each flag as a boolean with how it was read; producer text is kept as detail.
         for field in V2_STATE_FLAGS:
-            value, basis = _state_flag(state_block.get(field), field)
+            value, basis = _packet_state_flag(state, field)
             if basis != "BOOLEAN":
                 state_block[f"{field}_detail"] = state_block.get(field)
                 quality_issues.append(f"current_state.{field} read from producer text as {value}")
             state_block[field], state_block[f"{field}_basis"] = value, basis
+    if is_v2:
+        session_value = state.get("cross_asset", {}).get("equities", {}).get("current_global_session")
+        if isinstance(session_value, str):
+            quality_issues.append("cross_asset.equities.current_global_session is narrative-only; numeric session metrics unavailable")
     sources = state.get("source_references") if isinstance(state.get("source_references"), list) else []
     metrics = (
         _v2_metrics(state, market_as_of.isoformat())
@@ -440,6 +546,8 @@ def normalise_us_money_index_sidecar(
     )
     unverified = [key for key, item in metrics.items() if not isinstance(item, Mapping) or not item.get("source")]
     quality = "VERIFIED" if metrics and not unverified and sources else "PARTIAL_UNVERIFIED"
+    if _is_rebaseline(state):
+        quality = "PARTIAL_UNVERIFIED"
     policy = state.get("tier_logic") if isinstance(state.get("tier_logic"), Mapping) else {}
     normalized = {
         "contract_version": "us_money_index_v1_0",
@@ -452,7 +560,7 @@ def normalise_us_money_index_sidecar(
         "generated_at_utc": generated.isoformat(),
         "market_data_as_of_utc": market_as_of.isoformat(),
         "market_as_of_session": (
-            _mapping(state.get("analysis_window"), "analysis_window").get("end")
+            _window_bound(_mapping(state.get("analysis_window"), "analysis_window").get("end"), "analysis_window.end")[0].isoformat()
             if is_v2 else market_as_of.date().isoformat()
         ),
         "market_status": (
@@ -467,7 +575,7 @@ def normalise_us_money_index_sidecar(
         "state": deepcopy(dict(state_block)),
         "metrics": deepcopy(dict(metrics)),
         "sector_routing": _v2_sector_routing(state) if is_v2 else _normalise_sector_routing(state),
-        "scenarios": deepcopy(state.get("scenarios") or state.get("decision_tree") or {}),
+        "scenarios": deepcopy(state.get("scenarios") or state.get("decision_tree") or (state.get("forward_triggers", {}).get("scenarios") if is_v2 else {}) or {}),
         "risk_flags": deepcopy(state.get("risk_flags") or []),
         "supportive_flags": deepcopy(state.get("supportive_flags") or []),
         "proposed_policy": deepcopy(dict(policy)),
@@ -488,11 +596,47 @@ def normalise_us_money_index_sidecar(
     return normalized
 
 
+def validate_us_money_index_packet(value: Any) -> dict[str, Any]:
+    """Report independent shape failures together, before another paid synthesis."""
+    errors: list[str] = []
+    def check(function):
+        try:
+            function()
+        except (ValueError, TypeError) as error:
+            errors.append(str(error))
+    if isinstance(value, Mapping) and value.get('contract_version') in V2_CONTRACT_VERSIONS:
+        current = value.get('current_state')
+        if isinstance(current, Mapping):
+            for name in V2_STATE_FLAGS:
+                check(lambda name=name: _packet_state_flag(value, name))
+        cross = value.get('cross_asset')
+        if isinstance(cross, Mapping):
+            for name in ('equities', 'rates', 'usd_fx', 'liquidity', 'oil_inflation', 'credit', 'volatility'):
+                check(lambda name=name: _mapping(cross.get(name), 'cross_asset.' + name))
+            equities = cross.get('equities')
+            if isinstance(equities, Mapping):
+                session = equities.get('current_global_session')
+                if not (isinstance(session, str) and session.strip()):
+                    check(lambda: _mapping(session, 'cross_asset.equities.current_global_session'))
+    packet = None
+    try:
+        packet = normalise_us_money_index_sidecar(value)
+    except (ValueError, TypeError) as error:
+        errors.append(str(error))
+    return {'valid': not errors, 'errors': list(dict.fromkeys(errors)), 'packet': packet}
+
+
 def load_us_money_index_sidecar(path: str | Path) -> dict[str, Any]:
     source = Path(path)
-    with source.open("r", encoding="utf-8-sig") as handle:
-        value = json.load(handle)
-    return normalise_us_money_index_sidecar(value, source_path=source)
+    raw = source.read_bytes()
+    value = json.loads(raw.decode('utf-8-sig'))
+    report = validate_us_money_index_packet(value)
+    if not report['valid']:
+        raise USMoneyIndexValidationError('; '.join(report['errors']))
+    packet = report['packet']
+    packet['source_path'] = str(source.resolve())
+    packet['source_file_sha256'] = hashlib.sha256(raw).hexdigest()
+    return packet
 
 
 def attach_us_money_index(macro: Mapping[str, Any], sidecar: Mapping[str, Any]) -> dict[str, Any]:
@@ -521,6 +665,13 @@ def attach_us_money_index(macro: Mapping[str, Any], sidecar: Mapping[str, Any]) 
             }
         }
     extras["us_money_index"] = packet
+    if packet.get('source_file_sha256'):
+        extras.setdefault('research_source_manifest', {})['usmi'] = {
+            'sha256': packet['source_file_sha256'],
+            'source_path': packet.get('source_path'),
+            'packet_revision': (packet.get('source_payload') or {}).get('packet_revision'),
+            'as_of_utc': packet.get('as_of_utc'),
+        }
     result["extras"] = extras
     result["us_money_index_available"] = True
     result["us_money_index_packet_id"] = sidecar.get("packet_id", "")

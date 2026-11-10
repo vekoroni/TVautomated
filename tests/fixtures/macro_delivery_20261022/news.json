@@ -1,0 +1,2403 @@
+{
+  "contract_version": "macro_enrichment_delta_v1_2",
+  "target_macro_contract_version": "macro_contract_v1_0",
+  "packet_type": "MACRO_ENRICHMENT_DELTA",
+  "merge_mode": "AUGMENT_ONLY_DO_NOT_REPLACE",
+  "batch_id": "AVSHUNTER_MACRO_ENRICHMENT_DELTA_2026_10_21_US_CLOSE_212233UTC",
+  "source": "AVSHUNTER_NEWS_TERMINAL_V1_5__US_CLOSE_PUBLIC_SOURCE_ENRICHMENT",
+  "as_of_utc": "2026-10-21T21:22:33Z",
+  "report_date": "2026-10-21",
+  "schema_hygiene": {
+    "rebuilt_from": "avshunter_macro_enrichment_delta_2026-10-21_pre_us_open_123821UTC.json",
+    "json_syntax_validated": true,
+    "reason_for_rebuild": "US_CLOSE_MATERIAL_REFRESH__POSITIVE_GAP_HELD__TECH_LED_PARTIAL_BREADTH__OIL_REVERSED__VIX_LOWER",
+    "normalisation_actions": [
+      "21 Oct pre-London: Reuters 04:37 UTC/ AP 04:53 UTC supersede earlier live Asia snapshots; Hong Kong and Shanghai moved from positive to slightly negative.",
+      "Europe pan-region and DAX futures +0.4%, FTSE futures flat are indications only; Europe and London cash remain unopened.",
+      "UK September CPI/PPI/RPI and public-sector finance releases remain pending at 07:00 BST; no result inferred.",
+      "Current credit, full curve, vol term/skew and long-option chain economics remain MISSING; seven catalysts stay TBD/BLOCK.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion.",
+      "21 Oct pre-London: no stale price or catalyst promotion."
+    ],
+    "quant_engineering_review": {
+      "structure_status": "PASS_EXACT_RECURSIVE_KEYS_TYPES_LIST_LENGTHS",
+      "json_validity_status": "PASS",
+      "merge_risk": "LOW_IF_ENRICHMENT_NAMESPACE_ONLY__REVIEW_BEFORE_INGEST",
+      "stale_field_risk": "DATED_CLOSES_TIMESTAMPED__POST_CLOSE_NOT_CASH_CONFIRMATION__OPTIONS_OAS_MISSING",
+      "enum_hygiene": "PASS",
+      "protected_field_risk": "LOW",
+      "main_change_vector": "US_GAP_HELD__TECH_AND_CHIPS_LED__BREADTH_POSITIVE_BUT_UNEVEN__OIL_FADED__VIX_LOWER",
+      "top_level_field_count": 23,
+      "original_top_level_fields_preserved": true
+    }
+  },
+  "source_freshness": {
+    "status": "MATERIAL_CHANGE__US_CASH_RALLY_CONFIRMED__TECH_LED_PARTIAL_BREADTH__OIL_REVERSED__VOL_LOWER",
+    "date_quality": "21OCT_FINAL_US_CASH__OIL_SETTLEMENT__CBOE_CLOSE__TREASURY_POINTS_ASYNCHRONOUS__POST_CLOSE_EARNINGS_SEPARATE",
+    "manual_review_required": true,
+    "note": "US cash is complete. SPY/QQQ/DIA/IWM/RSP and 11 sector ETFs are dated close observations. Oil is settlement. VIX is dated Cboe spot. Treasury points are not a verified common-time official curve. Meta/Tesla reactions occurred after cash and are separated."
+  },
+  "ticker_handoff_policy": {
+    "pipeline_ticker_file": "PLAIN_TICKERS_ONLY",
+    "allowed_candidate_columns": [
+      "ticker"
+    ],
+    "do_not_add_candidate_metadata_to_ticker_file": true,
+    "linkage_method": "Pipeline scoring may match plain tickers against macro_exposure_index_build."
+  },
+  "protected_macro_fields_do_not_override": [
+    "contract_version",
+    "regime_state",
+    "dir_bias",
+    "trend_energy",
+    "usd_state",
+    "rates_impulse",
+    "liquidity_pulse",
+    "regime_drift_status",
+    "macro_conviction",
+    "vol_mode",
+    "risk_on_off_switch",
+    "sector_tilt",
+    "net_liquidity_score",
+    "vix_regime_score",
+    "gex_regime_score",
+    "macro_momentum_score",
+    "regime_label",
+    "regime_probability",
+    "vix_spot",
+    "macro_filter",
+    "sector_lead",
+    "sector_avoid",
+    "size_multiplier",
+    "trigger_required",
+    "horizon_routing",
+    "sector_rotation",
+    "put_gate",
+    "macro_quant_packet"
+  ],
+  "merge_controls": {
+    "can_add_narrative_overlay": true,
+    "can_strengthen_existing_theme": true,
+    "can_add_event_guard": true,
+    "can_add_macro_exposure_index": true,
+    "can_add_scoring_hints": true,
+    "can_override_macro_filter": false,
+    "can_change_size_multiplier": false,
+    "can_change_trigger_required": false,
+    "can_change_horizon_routing": false,
+    "can_unblock_put_gate": false,
+    "can_override_sector_lead_or_sector_avoid": false
+  },
+  "narrative_overlay": {
+    "alert_level": "AMBER",
+    "fragility_score": 3.8,
+    "overlay_summary": "MATERIAL CHANGE: the positive US opening gap held. QQQ +1.06% led SPY +0.53%, DIA +0.64%, RSP +0.34% and IWM +0.25%. Technology +1.67% and semiconductors about +2% led, while communication services, real estate, staples and healthcare fell. Breadth was positive but not clean: Nasdaq recorded 216 new lows versus 53 new highs and total volume was below its 20-day average. Brent settled back at $108.82, VIX fell to 16.68 and HYG gained while LQD was flat. The rally confirmed risk appetite but remained concentrated and fragile.",
+    "relationship_to_base_macro": "PREOPEN_BASE_CONFIRMED__POSITIVE_GAP_HELD__PARTIAL_BULLISH_BREADTH_UPGRADE__NOT_FULL_BROAD_RISK_ON",
+    "final_desk_verdict_primary": "GLOBAL_RISK_ON_US_SUPPORTIVE",
+    "final_desk_verdict_secondary": "TECH_LED_PARTIAL_BREADTH__COMMUNICATION_REAL_ESTATE_DEFENSIVES_LAG__POST_CLOSE_EVENT_RISK",
+    "confirmed": [
+      "CONFIRMED US CASH: S&P 500 +0.58% to 7,757.17, Nasdaq +1.05% to 26,702.86, Dow +0.69% to 52,856.09 and Russell 2000 +0.3% to 2,781.02.",
+      "CONFIRMED ETF CLOSES: QQQ +1.06%, SPY +0.53%, DIA +0.64%, RSP +0.34% and IWM +0.25%; SPY/QQQ/DIA closed above their opening prints while IWM closed below its opening print but above the prior close.",
+      "CONFIRMED LEADERSHIP: XLK +1.67%; SOXX +2.07%, SMH +1.86% and Reuters SOX +2.0%. Industrials +0.90% and financials +0.54% also participated.",
+      "CONFIRMED LAGGARDS: XLC -1.12%, XLRE -0.77%, XLP -0.72% and XLV -0.51%; Reuters communication services sector -1.3%.",
+      "CONFIRMED BREADTH: advancers led decliners 1.37-to-1 on NYSE and 1.3-to-1 on Nasdaq; Nasdaq still printed 53 new highs against 216 new lows. Volume was 16.11bn shares versus 17.10bn 20-day average.",
+      "CONFIRMED CROSS-ASSET: Brent settled $108.82 (+0.03%) and WTI $97.15 (-0.7%); the intraday move above $110 was rejected by settlement.",
+      "CONFIRMED VOL/CREDIT PROXIES: Cboe VIX 16.68 (-3.64%); HYG +0.18%, LQD approximately flat, TLT +0.14%, UUP approximately flat and GLD +0.34%.",
+      "CONFIRMED POST-CLOSE, NOT CASH: Tesla reported positive free cash flow and rose about 1.7% after hours; Reuters reported Meta about +3% late. These affect the next session, not the completed cash verdict.",
+      "21 Oct US close: no further confirmed claim."
+    ],
+    "assumptions": [
+      "The pre-open base case was validated: QQQ led and the indicated gap held, with modest participation from equal weight, small caps and the Dow.",
+      "The bullish upgrade was only partial because participation was positive but weaker than QQQ and several sectors closed lower.",
+      "HYG strength and lower VIX suggest benign risk appetite, but ETF prices are not substitutes for IG/HY OAS, CDX or volatility term/skew.",
+      "Oil's retreat from intraday highs reduced the inflation shock during cash hours and helped the market absorb the 20Y auction.",
+      "Nasdaq new-low dominance and below-average volume imply unresolved internal damage beneath the headline rally.",
+      "Post-close Meta/Tesla reactions may alter Thursday's gap and must be revalidated in Asia/Europe and US premarket.",
+      "No additional assumption."
+    ],
+    "missing": [
+      "Same-day broad IG/HY OAS, CDX IG/HY and issuer-level credit dispersion are MISSING; HYG/LQD are price proxies only.",
+      "VIX9D/VIX3M term structure, SKEW, dealer gamma and realised/implied decomposition are MISSING.",
+      "Every long call/put candidate lacks verified strike IV/rank, skew, OI, volume, bid-ask, Greeks and intraday premium path; options remain WAIT.",
+      "A common-timestamp official US 2Y/10Y/30Y closing curve and exact 2s10s/10s30s changes are MISSING; observed yields are asynchronous.",
+      "Full constituent-level advance/decline, up/down volume and equal-weight sector breadth are incomplete beyond reported exchange ratios.",
+      "Current copper, iron ore, natural gas and industrial-metals settlement confirmation are MISSING.",
+      "Complete Meta/Tesla calls, guidance and post-close price discovery are incomplete and not US cash confirmation.",
+      "Executable next-session gaps and liquidity are MISSING until overnight and premarket trading develops."
+    ],
+    "base_macro_conflicts": [
+      {
+        "conflict_id": "21OCT_HEADLINE_RALLY_VS_NASDAQ_NEW_LOWS",
+        "severity": "HIGH",
+        "required_resolution": "Reconcile positive A/D with 216 Nasdaq new lows versus 53 new highs."
+      },
+      {
+        "conflict_id": "21OCT_QQQ_LEAD_VS_EQUAL_WEIGHT_LAG",
+        "severity": "MEDIUM",
+        "required_resolution": "Require RSP/IWM participation to persist across the next session."
+      },
+      {
+        "conflict_id": "21OCT_TECH_STRENGTH_VS_COMMUNICATION_WEAKNESS",
+        "severity": "HIGH",
+        "required_resolution": "Distinguish AI infrastructure winners from telecom/streaming losses."
+      },
+      {
+        "conflict_id": "21OCT_LOWER_VIX_VS_MISSING_TERM_SKEW",
+        "severity": "MEDIUM",
+        "required_resolution": "Do not infer durable calm without VIX term, skew and dealer positioning."
+      },
+      {
+        "conflict_id": "21OCT_STABLE_RATES_VS_SOFT_20Y_AUCTION",
+        "severity": "MEDIUM",
+        "required_resolution": "Monitor next-session long-end reaction to the slight auction tail."
+      },
+      {
+        "conflict_id": "21OCT_CLOSE_EXTRA_GUARD",
+        "severity": "MEDIUM",
+        "required_resolution": "Revalidate in Asia and the next US premarket."
+      },
+      {
+        "conflict_id": "21OCT_CLOSE_EXTRA_GUARD",
+        "severity": "MEDIUM",
+        "required_resolution": "Revalidate in Asia and the next US premarket."
+      },
+      {
+        "conflict_id": "21OCT_CLOSE_EXTRA_GUARD",
+        "severity": "MEDIUM",
+        "required_resolution": "Revalidate in Asia and the next US premarket."
+      },
+      {
+        "conflict_id": "21OCT_CLOSE_EXTRA_GUARD",
+        "severity": "MEDIUM",
+        "required_resolution": "Revalidate in Asia and the next US premarket."
+      },
+      {
+        "conflict_id": "21OCT_CLOSE_EXTRA_GUARD",
+        "severity": "MEDIUM",
+        "required_resolution": "Revalidate in Asia and the next US premarket."
+      }
+    ],
+    "sector_assessment": {
+      "Information Technology": {
+        "bias": "BULLISH",
+        "intensity": "HIGH",
+        "etf": "XLK",
+        "variable_and_transmission": "21 Oct US close: XLK +1.67%; SOXX +2.07% and SMH +1.86% confirmed AI/chip leadership.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "HIGH",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLK next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Communication Services": {
+        "bias": "BEARISH",
+        "intensity": "HIGH",
+        "etf": "XLC",
+        "variable_and_transmission": "21 Oct US close: XLC -1.12%; Netflix, AT&T, T-Mobile, Verizon and Alphabet losses overwhelmed the index rally.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "HIGH",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLC next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Consumer Discretionary": {
+        "bias": "NEUTRAL",
+        "intensity": "MEDIUM",
+        "etf": "XLY",
+        "variable_and_transmission": "21 Oct US close: XLY +0.03%; Tesla strength was offset by broader consumer and rate sensitivity.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "HIGH",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLY next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Consumer Staples": {
+        "bias": "BEARISH",
+        "intensity": "MEDIUM",
+        "etf": "XLP",
+        "variable_and_transmission": "21 Oct US close: XLP -0.72%; defensives did not participate despite inflation and consumer concerns.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "MEDIUM",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLP next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Energy": {
+        "bias": "MIXED",
+        "intensity": "MEDIUM",
+        "etf": "XLE",
+        "variable_and_transmission": "21 Oct US close: XLE +0.27%, but crude rejected intraday highs and WTI settled lower.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "HIGH",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLE next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Financials": {
+        "bias": "BULLISH",
+        "intensity": "MEDIUM",
+        "etf": "XLF",
+        "variable_and_transmission": "21 Oct US close: XLF +0.54%; positive breadth and stable long yields supported the group, with credit OAS still missing.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "HIGH",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLF next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Industrials": {
+        "bias": "BULLISH",
+        "intensity": "HIGH",
+        "etf": "XLI",
+        "variable_and_transmission": "21 Oct US close: XLI +0.90%; cyclical participation broadened the rally beyond technology.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "MEDIUM",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLI next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Healthcare": {
+        "bias": "BEARISH",
+        "intensity": "MEDIUM",
+        "etf": "XLV",
+        "variable_and_transmission": "21 Oct US close: XLV -0.51%; Abbott's outlook cut and rotation toward technology weighed.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "MEDIUM",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLV next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Materials": {
+        "bias": "NEUTRAL",
+        "intensity": "LOW",
+        "etf": "XLB",
+        "variable_and_transmission": "21 Oct US close: XLB +0.16%; positive but weak participation, with China and metals confirmation absent.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "MEDIUM",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLB next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Real Estate": {
+        "bias": "BEARISH",
+        "intensity": "HIGH",
+        "etf": "XLRE",
+        "variable_and_transmission": "21 Oct US close: XLRE -0.77%; yields above 5% and hot UK inflation kept duration pressure active.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "HIGH",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLRE next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      },
+      "Utilities": {
+        "bias": "MIXED",
+        "intensity": "LOW",
+        "etf": "XLU",
+        "variable_and_transmission": "21 Oct US close: XLU +0.32%; modest gain despite high yields, without clear defensive leadership.",
+        "first_second_order": "Immediate: post-close Meta/Tesla and overnight transmission. Short term: oil, long yields, credit and earnings. Medium term: AI returns and financing conditions.",
+        "options_behaviour": "WAIT: close direction is observed, but strike IV/skew/OI/volume/spreads/Greeks/premium path are MISSING.",
+        "priced_risk": "MEDIUM",
+        "anis": 0,
+        "fips": 0,
+        "route": "MACRO_ONLY",
+        "confirmation": "Verify XLU next-session gap, breadth, credit and option-chain economics.",
+        "invalidation": "Next-session gap reverses, leadership narrows further, credit widens or rates/oil reaccelerate.",
+        "manual_check": true
+      }
+    },
+    "pathways": {
+      "base": {
+        "subjective_probability_range": "45-60%",
+        "condition": "Technology leadership persists but broader indices consolidate as markets digest Meta/Tesla and high financing costs.",
+        "indices": "QQQ relative lead; SPY/DIA constructive; RSP/IWM positive but lagging.",
+        "sectors": "Technology/industrials/financials lead; communication services, real estate and defensives lag.",
+        "rates_usd_vol": "10Y near 5.12%, oil below intraday highs, VIX lower; OAS and term/skew unavailable.",
+        "confirmation": "Asia/Europe transmit gains, Meta/Tesla hold, QQQ/RSP/IWM breadth persists and HYG remains firm.",
+        "invalidation": "AI winners fade, new lows expand, long yields/oil rise or credit weakens."
+      },
+      "bullish": {
+        "subjective_probability_range": "20-35%",
+        "condition": "Post-close earnings extend AI optimism and the rally broadens into equal weight and small caps with stable rates/credit.",
+        "indices": "QQQ/SPY advance with RSP/IWM/DIA closing the leadership gap.",
+        "sectors": "Technology broadens into industrials, financials, discretionary and materials.",
+        "rates_usd_vol": "Stable/falling yields, contained oil, tighter credit and benign vol term.",
+        "confirmation": "Fewer Nasdaq new lows, stronger volume, positive sector breadth and stable HYG/CDX.",
+        "invalidation": "Post-earnings gaps fail or breadth remains concentrated."
+      },
+      "bearish": {
+        "subjective_probability_range": "15-30%",
+        "condition": "The AI relief rally proves temporary and higher financing costs or earnings guidance revive valuation concerns.",
+        "indices": "QQQ reverses; SPY loses the 21 Oct gap; IWM/RSP weaken first if credit tightens.",
+        "sectors": "Communication services and real estate weakness spreads into technology and consumer cyclicals.",
+        "rates_usd_vol": "Higher 10Y/30Y, firmer USD/oil, wider credit and rising VIX/skew.",
+        "confirmation": "SOXX/SMH gap failure, negative A/D, expanding new lows and weak HYG.",
+        "invalidation": "Meta/Tesla follow-through and broad cash participation absorb financing risks."
+      }
+    },
+    "evidence_grades": {
+      "CONFIRMED": "Final index/ETF closes, Reuters breadth/volume, oil settlements, Cboe VIX and dated post-close reactions.",
+      "WEAK": "HYG gain and lower VIX imply benign risk appetite, but do not establish tight OAS or benign vol term.",
+      "ABSENCE": "No broad OAS/CDX, VIX term/skew/gamma, complete option chain or common-time official closing curve.",
+      "CONTRADICTION": "Positive A/D and all-index gains versus 216 Nasdaq new lows and four falling sectors; AI winners versus telecom/streaming losses.",
+      "FRAGILITY": "10Y above 5%, slight 20Y auction tail, high oil, below-average volume, AI financing sensitivity and post-close event risk.",
+      "SOURCE GAPS": "IG/HY microstructure, full Treasury curve, option-chain economics, dealer positioning and complete post-close guidance."
+    },
+    "manual_checks": [
+      "Reconcile Meta and Tesla earnings calls/guidance with after-hours prices; do not treat extended trading as cash confirmation.",
+      "At the next Asia/Europe handoff verify whether AI gains broaden or reverse.",
+      "Refresh US 2Y/10Y/30Y at one timestamp and calculate 2s10s/10s30s after the soft 20Y auction.",
+      "Check IG/HY OAS, CDX and rate-adjusted HYG/LQD; ETF price alone is insufficient.",
+      "Check VIX9D/VIX3M, SKEW, dealer gamma and realised/implied volatility.",
+      "Track SPY/QQQ/IWM/DIA/RSP opening gaps, SOXX/SMH and all 11 sectors next session.",
+      "Check whether Nasdaq new lows contract from 216 and volume improves above the 20-day average.",
+      "For every long call/put verify expiry/strike IV/rank, skew, OI, volume, spread, Greeks and achievable premium path."
+    ],
+    "confirmation_dashboard": {
+      "SPY_QQQ": "CONFIRMS__SPY_PLUS_0P53_QQQ_PLUS_1P06__GAPS_HELD",
+      "IWM": "PARTIAL_CONFIRMATION__PLUS_0P25__CLOSED_BELOW_OPEN",
+      "RSP_breadth": "PARTIAL_CONFIRMATION__PLUS_0P34__LAGGED_SPY_QQQ",
+      "semiconductors": "CONFIRMS__SOXX_PLUS_2P07_SMH_PLUS_1P86_SOX_PLUS_2P0",
+      "banks": "CONFIRMS_PARTIALLY__XLF_PLUS_0P54__OAS_MISSING",
+      "energy": "MIXED__XLE_PLUS_0P27__WTI_SETTLED_MINUS_0P7",
+      "defensives": "CONTRADICTS_BROAD_RISK_ON__XLP_XLV_XLRE_LOWER",
+      "US_2Y_10Y_30Y": "APPROX_2Y_4P79_TO_4P82__10Y_5P12__30Y_5P42__COMMON_TIME_CURVE_MISSING",
+      "USD": "UUP_APPROX_FLAT__EXACT_DXY_CLOSE_MISSING",
+      "oil": "BRENT_108P82_FLAT__WTI_97P15_MINUS_0P7__INTRADAY_HIGHS_REJECTED",
+      "IG_HY_HYG_LQD": "HYG_PLUS_0P18_LQD_FLAT__OAS_CDX_MISSING",
+      "VIX_term": "VIX_16P68_MINUS_3P64__TERM_SKEW_GAMMA_MISSING",
+      "cash_advance_decline": "CONFIRMS_PARTIALLY__NYSE_1P37_TO_1_NASDAQ_1P3_TO_1__NASDAQ_NEW_LOWS_DOMINATE",
+      "opening_gap": "CONFIRMS__SPY_QQQ_DIA_HELD__IWM_LAGGED"
+    }
+  },
+  "macro_json_merge_block": {
+    "global_session_date": "2026-10-21",
+    "latest_confirmed_cash_session": "21OCT_US_CASH_FINAL__POST_CLOSE_META_TESLA_SEPARATE",
+    "asia_risk_tone": "MIXED",
+    "asia_risk_tone_detail": "KOSPI/Nikkei strength transmitted into US AI leadership; Hong Kong/China weakness remained a contradiction but did not block the US rally.",
+    "tokyo_signal": "NIKKEI_PLUS_0P85_FINAL__NORTH_ASIA_AI_HANDOFF_CONFIRMED_BY_US_CHIPS",
+    "hong_kong_china_signal": "HSI_MINUS_0P9_SHANGHAI_MINUS_0P6_FINAL__US_MATERIALS_ONLY_PLUS_0P16",
+    "europe_signal": "EUROPE_CASH_POSITIVE_EARLIER__US_CASH_CONFIRMED_RISK_APPETITE_WITH_SECTOR_DISPERSION",
+    "london_signal": "HOT_UK_CPI_REMAINS_RATE_RISK__US_REAL_ESTATE_LAG_CONFIRMS_DURATION_PRESSURE",
+    "global_us_equity_bias": "RISK_ON_TECH_LED__PARTIAL_BREADTH__NOT_FULL_UNIFORM_CONFIRMATION",
+    "global_us_equity_bias_detail": "QQQ +1.06%, SPY +0.53%, DIA +0.64%, RSP +0.34%, IWM +0.25%; positive A/D but Nasdaq new lows dominated and four sectors fell.",
+    "global_us_options_bias": "WAIT",
+    "global_us_options_bias_detail": "Direction is confirmed but no long call/put is qualified without strike IV/skew/OI/volume/spreads/Greeks and premium path.",
+    "usd_transmission": "UUP +0.03% proxy indicates little dollar change; exact DXY close and full FX complex MISSING.",
+    "rates_transmission": "10Y ended near 5.12%; 2Y about 4.79-4.82 and 30Y about 5.42 from asynchronous sources. 20Y auction tailed slightly at 5.469% versus 5.459% WI; common-time curve MISSING.",
+    "commodity_transmission": "Brent settled $108.82 (+0.03%), WTI $97.15 (-0.7%) after rejecting early highs; GLD +0.34%. Metals/gas MISSING.",
+    "credit_transmission": "HYG +0.18%, LQD flat: benign ETF-price proxy, but broad IG/HY OAS and CDX MISSING.",
+    "volatility_transmission": "Cboe VIX 16.68 (-3.64%) and VXX -0.85%; term structure, skew and dealer gamma MISSING.",
+    "sector_rotation_map": {
+      "favoured": [
+        "LEADERSHIP_CANDIDATE: technology/semiconductors after XLK +1.67% and SOXX +2.07%; next-session validation required.",
+        "RELATIVE_OUTPERFORMER: industrials +0.90% and financials +0.54%; credit OAS remains missing."
+      ],
+      "conditional_favoured": [
+        "Discretionary if Tesla follow-through broadens beyond one stock.",
+        "Energy only if crude reclaims intraday highs without reigniting yield stress.",
+        "Small caps/equal weight if IWM/RSP participation strengthens with stable credit."
+      ],
+      "vulnerable": [
+        "Communication services after XLC -1.12% and telecom/streaming weakness.",
+        "Real estate while long yields remain above 5%.",
+        "Staples/healthcare if rotation stays pro-growth and company guidance disappoints."
+      ],
+      "watch_only": [
+        "SPY",
+        "QQQ",
+        "IWM",
+        "DIA",
+        "RSP",
+        "SMH",
+        "SOXX",
+        "XLK",
+        "XLC",
+        "XLY",
+        "XLP",
+        "XLE",
+        "XLF",
+        "XLI",
+        "XLV",
+        "XLB",
+        "XLRE",
+        "XLU",
+        "HYG",
+        "LQD",
+        "TLT",
+        "UUP",
+        "GLD",
+        "VXX",
+        "EWJ",
+        "FXI",
+        "EWH",
+        "HISTORICAL_PRIOR_SESSION_ENTRY_SUPERSEDED__NOT_CURRENT_SIGNAL",
+        "DHI",
+        "LEN",
+        "HAL",
+        "CRWV",
+        "NBIS",
+        "GM"
+      ]
+    },
+    "index_bias_map": {
+      "SPY": "SPY +0.53%: BULLISH close; gap held, but RSP lag and options WAIT.",
+      "QQQ": "QQQ +1.06%: BULLISH/HIGH; AI and chips led, concentration risk remains.",
+      "IWM": "IWM +0.25%: MIXED/PARTIAL; positive close but below open and lagged large caps.",
+      "DIA": "DIA +0.64%: BULLISH/MEDIUM; confirmed broader blue-chip participation.",
+      "RSP": "RSP +0.34%: PARTIAL_BREADTH; positive but lagged SPY/QQQ.",
+      "SMH": "SMH +1.86%: BULLISH/HIGH; next-session follow-through required.",
+      "SOXX": "SOXX +2.07%: BULLISH/HIGH; options economics still MISSING.",
+      "XLK": "XLK +1.67%: LEADERSHIP_CANDIDATE; no automatic call promotion.",
+      "XLC": "XLC -1.12%: UNDERPERFORMANCE_RISK amid Netflix/telecom weakness.",
+      "XLY": "XLY +0.03%: NEUTRAL despite Tesla strength.",
+      "XLP": "XLP -0.72%: UNDERPERFORMANCE_RISK.",
+      "XLE": "XLE +0.27%: MIXED as crude faded.",
+      "XLF": "XLF +0.54%: RELATIVE_OUTPERFORMER; OAS missing.",
+      "XLI": "XLI +0.90%: RELATIVE_OUTPERFORMER.",
+      "XLV": "XLV -0.51%: UNDERPERFORMANCE_RISK.",
+      "XLB": "XLB +0.16%: NEUTRAL/LOW participation.",
+      "XLRE": "XLRE -0.77%: UNDERPERFORMANCE_RISK from yields.",
+      "XLU": "XLU +0.32%: MIXED/LOW; not clear defensive leadership.",
+      "HYG": "HYG +0.18%: benign price proxy; OAS/CDX MISSING.",
+      "LQD": "LQD flat: neutral price proxy; spread confirmation MISSING.",
+      "TLT": "TLT +0.14%: modest duration support despite 20Y auction tail.",
+      "UUP": "UUP +0.03%: approximately flat dollar proxy.",
+      "GLD": "GLD +0.34%: modest positive gold confirmation.",
+      "VXX": "VXX -0.85%: lower front-vol proxy; term/skew MISSING.",
+      "FXI": "FXI: current US-listed close not independently verified; China handoff weak.",
+      "EWH": "EWH: current US-listed close not independently verified; Hong Kong handoff weak.",
+      "EWJ": "EWJ: current US-listed close not independently verified; Japan handoff supportive."
+    },
+    "candidate_tickers": [
+      "SPY",
+      "QQQ",
+      "IWM",
+      "DIA",
+      "RSP",
+      "SOXX",
+      "SMH",
+      "XLK",
+      "XLI",
+      "XLF",
+      "XLC",
+      "XLRE",
+      "XLP",
+      "XLV",
+      "XLE",
+      "XLY",
+      "HYG",
+      "LQD",
+      "TLT",
+      "GLD",
+      "SPCX",
+      "SMCI",
+      "NVDA",
+      "NFLX",
+      "T",
+      "META",
+      "TSLA",
+      "CRWV"
+    ],
+    "macro_merge_summary": "US_CLOSE_CONFIRMED_RALLY__TECH_AND_CHIPS_LED__BREADTH_POSITIVE_BUT_UNEVEN__OIL_FADED__VIX_LOWER__OPTIONS_CREDIT_MICROSTRUCTURE_WAIT",
+    "confidence_score": 82,
+    "missing_data": [
+      "Same-day broad IG/HY OAS, CDX IG/HY and issuer-level credit dispersion are MISSING; HYG/LQD are price proxies only.",
+      "VIX9D/VIX3M term structure, SKEW, dealer gamma and realised/implied decomposition are MISSING.",
+      "Every long call/put candidate lacks verified strike IV/rank, skew, OI, volume, bid-ask, Greeks and intraday premium path; options remain WAIT.",
+      "A common-timestamp official US 2Y/10Y/30Y closing curve and exact 2s10s/10s30s changes are MISSING; observed yields are asynchronous.",
+      "Full constituent-level advance/decline, up/down volume and equal-weight sector breadth are incomplete beyond reported exchange ratios.",
+      "Current copper, iron ore, natural gas and industrial-metals settlement confirmation are MISSING.",
+      "Complete Meta/Tesla calls, guidance and post-close price discovery are incomplete and not US cash confirmation.",
+      "Executable next-session gaps and liquidity are MISSING until overnight and premarket trading develops."
+    ],
+    "manual_review_required": true
+  },
+  "theme_deltas": [
+    {
+      "theme_id": "WEEKEND_THEME_1_2026_10_17",
+      "theme_name": "Two reported Al Jubayl tanker attacks",
+      "delta_type": "CONFIRMED",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme WEEKEND_THEME_1_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_1_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_1_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_1_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Confirm vessel identity/damage/cargo and Sunday Egypt parliament/Saudi request; distinguish verified attacks from IRGC allegation.",
+        "20 Oct close and next-session validation: At next open: oil/freight/insurance, USD, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA/RSP, 11 GICS and candidate IV/skew/OI/liquidity/intrahold premium."
+      ],
+      "invalidation_conditions": [
+        "Verified no cargo loss, no additional attacks, oil/freight retracement and no Saudi request/authorization.",
+        "If broad IG/HY and oil worsen together or cash breadth collapses, upgrade macro risk after confirmation, never automatically execute."
+      ],
+      "event_guards": [
+        "WEEKEND_GUARD_1_2026_10_17"
+      ]
+    },
+    {
+      "theme_id": "WEEKEND_THEME_2_2026_10_17",
+      "theme_name": "Conditional Egyptian defence authorization request",
+      "delta_type": "CONFIRMED",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme WEEKEND_THEME_2_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_2_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_2_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_2_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_2_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Confirm vessel identity/damage/cargo and Sunday Egypt parliament/Saudi request; distinguish verified attacks from IRGC allegation.",
+        "20 Oct close and next-session validation: At next open: oil/freight/insurance, USD, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA/RSP, 11 GICS and candidate IV/skew/OI/liquidity/intrahold premium."
+      ],
+      "invalidation_conditions": [
+        "Verified no cargo loss, no additional attacks, oil/freight retracement and no Saudi request/authorization.",
+        "If broad IG/HY and oil worsen together or cash breadth collapses, upgrade macro risk after confirmation, never automatically execute."
+      ],
+      "event_guards": [
+        "WEEKEND_GUARD_2_2026_10_17"
+      ]
+    },
+    {
+      "theme_id": "WEEKEND_THEME_3_2026_10_17",
+      "theme_name": "Unverified IRGC supertanker claim",
+      "delta_type": "SOURCE_GAP",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme WEEKEND_THEME_3_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_3_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_3_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_3_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Confirm vessel identity/damage/cargo and Sunday Egypt parliament/Saudi request; distinguish verified attacks from IRGC allegation.",
+        "20 Oct close and next-session validation: At next open: oil/freight/insurance, USD, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA/RSP, 11 GICS and candidate IV/skew/OI/liquidity/intrahold premium."
+      ],
+      "invalidation_conditions": [
+        "Verified no cargo loss, no additional attacks, oil/freight retracement and no Saudi request/authorization.",
+        "If broad IG/HY and oil worsen together or cash breadth collapses, upgrade macro risk after confirmation, never automatically execute."
+      ],
+      "event_guards": [
+        "WEEKEND_GUARD_3_2026_10_17"
+      ]
+    },
+    {
+      "theme_id": "WEEKEND_THEME_4_2026_10_17",
+      "theme_name": "Weekend cross-asset/option market gap",
+      "delta_type": "FRAGILITY",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme WEEKEND_THEME_4_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_4_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_4_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_4_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme WEEKEND_THEME_4_2026_10_17; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Confirm vessel identity/damage/cargo and Sunday Egypt parliament/Saudi request; distinguish verified attacks from IRGC allegation.",
+        "20 Oct close and next-session validation: At next open: oil/freight/insurance, USD, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA/RSP, 11 GICS and candidate IV/skew/OI/liquidity/intrahold premium."
+      ],
+      "invalidation_conditions": [
+        "Verified no cargo loss, no additional attacks, oil/freight retracement and no Saudi request/authorization.",
+        "If broad IG/HY and oil worsen together or cash breadth collapses, upgrade macro risk after confirmation, never automatically execute."
+      ],
+      "event_guards": [
+        "WEEKEND_GUARD_4_2026_10_17",
+        "WEEKEND_GUARD_4_2026_10_17"
+      ]
+    },
+    {
+      "theme_id": "ASIA_19OCT_THEME_1",
+      "theme_name": "China Q3 growth beats forecast; domestic read-through incomplete",
+      "delta_type": "CONFIRMED",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme ASIA_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Verify time-aligned Asia closes, London oil/FX/rates, US cash and IG/HY.",
+        "20 Oct close and next-session validation: Verify option IV/skew/liquidity and premium path before any candidate upgrade."
+      ],
+      "invalidation_conditions": [
+        "Contrary closes or reversal in oil/yields/credit/breadth.",
+        "Unverified developments remain blocked."
+      ],
+      "event_guards": [
+        "ASIA_19OCT_GUARD_1"
+      ]
+    },
+    {
+      "theme_id": "ASIA_19OCT_THEME_2",
+      "theme_name": "Oil falls on provisional Russian sanctions waiver",
+      "delta_type": "CONFIRMED",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme ASIA_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Verify time-aligned Asia closes, London oil/FX/rates, US cash and IG/HY.",
+        "20 Oct close and next-session validation: Verify option IV/skew/liquidity and premium path before any candidate upgrade."
+      ],
+      "invalidation_conditions": [
+        "Contrary closes or reversal in oil/yields/credit/breadth.",
+        "Unverified developments remain blocked."
+      ],
+      "event_guards": [
+        "ASIA_19OCT_GUARD_2"
+      ]
+    },
+    {
+      "theme_id": "ASIA_19OCT_THEME_3",
+      "theme_name": "Asian technology weakness versus US futures rebound",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme ASIA_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Verify time-aligned Asia closes, London oil/FX/rates, US cash and IG/HY.",
+        "20 Oct close and next-session validation: Verify option IV/skew/liquidity and premium path before any candidate upgrade."
+      ],
+      "invalidation_conditions": [
+        "Contrary closes or reversal in oil/yields/credit/breadth.",
+        "Unverified developments remain blocked."
+      ],
+      "event_guards": [
+        "ASIA_19OCT_GUARD_3"
+      ]
+    },
+    {
+      "theme_id": "ASIA_19OCT_THEME_4",
+      "theme_name": "Egypt Saudi-support parliamentary vote deferred to Monday",
+      "delta_type": "CONFIRMED",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme ASIA_19OCT_THEME_4; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_4; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_4; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_19OCT_THEME_4; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Verify time-aligned Asia closes, London oil/FX/rates, US cash and IG/HY.",
+        "20 Oct close and next-session validation: Verify option IV/skew/liquidity and premium path before any candidate upgrade."
+      ],
+      "invalidation_conditions": [
+        "Contrary closes or reversal in oil/yields/credit/breadth.",
+        "Unverified developments remain blocked."
+      ],
+      "event_guards": [
+        "ASIA_19OCT_GUARD_4"
+      ]
+    },
+    {
+      "theme_id": "PRE_LONDON_19OCT_THEME_1",
+      "theme_name": "Pre-London Hong Kong cash indication invalidated by HKEX holiday; mainland GDP stands separately",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme PRE_LONDON_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "INVALIDATE_19OCT_HSI_CASH_SIGNAL__SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: HK reopening and contemporaneous cash breadth; US FXI/EWH indications are not HK cash.",
+        "20 Oct close and next-session validation: Mainland China and US cross-asset checks without HK cash."
+      ],
+      "invalidation_conditions": [
+        "HKEX calendar is a fixed cash-holiday fact.",
+        "No option/catalyst promotion without independent evidence."
+      ],
+      "event_guards": [
+        "PRE_LONDON_19OCT_GUARD_1"
+      ]
+    },
+    {
+      "theme_id": "PRE_LONDON_19OCT_THEME_2",
+      "theme_name": "Oil relief deepens into pre-London",
+      "delta_type": "CONFIRMED",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme PRE_LONDON_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_2; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Final Asia close and London cash relative breadth.",
+        "20 Oct close and next-session validation: US SPY/QQQ/IWM/DIA/RSP, full curve, IG/HY, VIX term and executable options chain."
+      ],
+      "invalidation_conditions": [
+        "Contrary cash, oil/yield reversal or credit deterioration.",
+        "No option/catalyst promotion without independent evidence."
+      ],
+      "event_guards": [
+        "PRE_LONDON_19OCT_GUARD_2"
+      ]
+    },
+    {
+      "theme_id": "PRE_LONDON_19OCT_THEME_3",
+      "theme_name": "US futures gain despite unresolved Asia tech stress",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme PRE_LONDON_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_19OCT_THEME_3; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Final Asia close and London cash relative breadth.",
+        "20 Oct close and next-session validation: US SPY/QQQ/IWM/DIA/RSP, full curve, IG/HY, VIX term and executable options chain."
+      ],
+      "invalidation_conditions": [
+        "Contrary cash, oil/yield reversal or credit deterioration.",
+        "No option/catalyst promotion without independent evidence."
+      ],
+      "event_guards": [
+        "PRE_LONDON_19OCT_GUARD_3"
+      ]
+    },
+    {
+      "theme_id": "PRE_US_19OCT_THEME_1",
+      "theme_name": "US AI futures rebound faces Europe cash and sovereign-bank divergence",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "vulnerable_universe": [
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY",
+        "CONDITIONAL_ONLY"
+      ],
+      "context_universe": [
+        "Historical theme PRE_US_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_US_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_US_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_US_19OCT_THEME_1; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: US 09:30-10:30 ET cash and cross-asset checks",
+        "20 Oct close and next-session validation: Full IG/HY, VIX and option-chain confirmation before any candidate promotion"
+      ],
+      "invalidation_conditions": [
+        "QQQ gap fades, credit worsens or oil reverses",
+        "No execution or capital authority"
+      ],
+      "event_guards": []
+    },
+    {
+      "theme_id": "US_CLOSE_19OCT_NARROW_REBOUND",
+      "theme_name": "Tech-led cash rebound with failed breadth and reversed oil/rate relief",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "WATCH_ONLY_QQQ",
+        "WATCH_ONLY_XLK",
+        "WATCH_ONLY_XLY"
+      ],
+      "vulnerable_universe": [
+        "WATCH_ONLY_XLRE",
+        "WATCH_ONLY_XLU",
+        "WATCH_ONLY_RSP"
+      ],
+      "context_universe": [
+        "Historical theme US_CLOSE_19OCT_NARROW_REBOUND; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme US_CLOSE_19OCT_NARROW_REBOUND; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme US_CLOSE_19OCT_NARROW_REBOUND; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme US_CLOSE_19OCT_NARROW_REBOUND; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Next cash session positive equal-weight/A-D and sector participation",
+        "20 Oct close and next-session validation: Same-time broad IG/HY and full long-option chain before any candidate promotion"
+      ],
+      "invalidation_conditions": [
+        "Oil/yields rise again or chip bounce reverses",
+        "No execution or capital authority"
+      ],
+      "event_guards": [
+        "PRE_US_19OCT_NAHB_10ET_GUARD"
+      ]
+    },
+    {
+      "theme_id": "ASIA_20OCT_RISK_OFF_AI_OIL_TRANSMISSION",
+      "theme_name": "Asia tech weakness and oil premium challenge prior US tech rebound",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "WATCH_ONLY_ENERGY_IF_CASH_CONFIRMS",
+        "WATCH_ONLY_DEFENSIVES_IF_BREADTH_WEAK"
+      ],
+      "vulnerable_universe": [
+        "WATCH_ONLY_QQQ_SOX",
+        "WATCH_ONLY_FUEL_SENSITIVE",
+        "WATCH_ONLY_XLRE_IF_YIELDS_RISE"
+      ],
+      "context_universe": [
+        "Historical theme ASIA_20OCT_RISK_OFF_AI_OIL_TRANSMISSION; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_20OCT_RISK_OFF_AI_OIL_TRANSMISSION; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_20OCT_RISK_OFF_AI_OIL_TRANSMISSION; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme ASIA_20OCT_RISK_OFF_AI_OIL_TRANSMISSION; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Completed 20 Oct Tokyo/HK/mainland/Korea cash and Europe/London cash open",
+        "20 Oct close and next-session validation: US breadth/credit and long-option chain before candidate promotion"
+      ],
+      "invalidation_conditions": [
+        "Asia reversal, softer oil and broad Europe/US participation",
+        "No execution or capital authority"
+      ],
+      "event_guards": []
+    },
+    {
+      "theme_id": "PRE_LONDON_20OCT_KOREA_DEEPENS_TOKYO_NARROWS",
+      "theme_name": "Pre-London Asia divergence and negative Europe futures",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "WATCH_ONLY_ENERGY_IF_CASH_CONFIRMS",
+        "WATCH_ONLY_DEFENSIVES_IF_BREADTH_WEAK"
+      ],
+      "vulnerable_universe": [
+        "WATCH_ONLY_QQQ_SOX",
+        "WATCH_ONLY_EUROPE_BANKS",
+        "WATCH_ONLY_FUEL_USERS"
+      ],
+      "context_universe": [
+        "Historical theme PRE_LONDON_20OCT_KOREA_DEEPENS_TOKYO_NARROWS; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme PRE_LONDON_20OCT_KOREA_DEEPENS_TOKYO_NARROWS; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Final Asia cash closes and Europe/London actual cash open",
+        "20 Oct close and next-session validation: Synchronous rates, broad credit and long-option chain"
+      ],
+      "invalidation_conditions": [
+        "Europe cash absorbs futures weakness and Asia stabilises",
+        "Oil/France risks fade; no execution"
+      ],
+      "event_guards": []
+    },
+    {
+      "theme_id": "20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF",
+      "theme_name": "Asia AI selloff, Europe cash rotation and US housing-starts miss into US open",
+      "delta_type": "CONTRADICTION",
+      "directional_pressure": "HISTORICAL_LINEAGE_ONLY__21OCT_US_CLOSE_REVALIDATION__NO_PROMOTION",
+      "source_scores": {
+        "anis": 0,
+        "fips": 0,
+        "verdict": "HISTORICAL_CONTEXT_ONLY"
+      },
+      "beneficiary_universe": [
+        "WATCH_ONLY_XLV_XLP_DEFENSIVE",
+        "WATCH_ONLY_XLE_HAL_UPSTREAM"
+      ],
+      "vulnerable_universe": [
+        "WATCH_ONLY_QQQ_SOX_CRWV_NBIS",
+        "WATCH_ONLY_XLF",
+        "WATCH_ONLY_XLY_HOME_BUILDERS_FUEL_USERS"
+      ],
+      "context_universe": [
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING.",
+        "Historical theme 20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF; 20 Oct cash/curve/oil close supersedes any prior dated price. Current company catalyst and option edge MISSING."
+      ],
+      "merge_effect": {
+        "macro_alignment_hint": "SCORING_HINT_ONLY",
+        "do_not_override_macro_filter": true,
+        "do_not_change_size_multiplier": true,
+        "do_not_change_trigger_required": true,
+        "do_not_unblock_put_gate": true,
+        "do_not_override_sector_lead_or_sector_avoid": true,
+        "requires_price_confirmation": true,
+        "requires_options_confirmation": true,
+        "requires_sector_confirmation": true
+      },
+      "confirmation_required": [
+        "20 Oct close and next-session validation: Fresh post-Census US futures and 09:30 ET cash gap/breadth",
+        "20 Oct close and next-session validation: Synchronous 2Y/10Y/30Y, IG/HY, VIX and long-option chain"
+      ],
+      "invalidation_conditions": [
+        "Broad US gap recovery, stable credit, oil reversal and semiconductor participation",
+        "Housing single-month decline not statistically significant at cited margin; no execution"
+      ],
+      "event_guards": []
+    }
+  ],
+  "event_guard_deltas": [
+    {
+      "event_id": "WEEKEND_GUARD_1_2026_10_17",
+      "event_name": "Al Jubayl tanker attacks confirmed",
+      "event_date": "2026-10-17",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "WEEKEND_THEME_1_2026_10_17"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Independent shipping/physical damage and Sunday authorization/Saudi request, then Monday oil/freight, credit, vol and US cash breadth confirm.",
+        "fails": "Claims disproved or no further incident; oil falls, AI/IG-HY stable, breadth and chips recover.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "WEEKEND_GUARD_2_2026_10_17",
+      "event_name": "Egypt parliamentary request conditional",
+      "event_date": "2026-10-17",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "WEEKEND_THEME_2_2026_10_17"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Independent shipping/physical damage and Sunday authorization/Saudi request, then Monday oil/freight, credit, vol and US cash breadth confirm.",
+        "fails": "Claims disproved or no further incident; oil falls, AI/IG-HY stable, breadth and chips recover.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "WEEKEND_GUARD_3_2026_10_17",
+      "event_name": "IRGC supertanker allegation unverified",
+      "event_date": "2026-10-17",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "WEEKEND_THEME_3_2026_10_17"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Independent shipping/physical damage and Sunday authorization/Saudi request, then Monday oil/freight, credit, vol and US cash breadth confirm.",
+        "fails": "Claims disproved or no further incident; oil falls, AI/IG-HY stable, breadth and chips recover.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "WEEKEND_GUARD_4_2026_10_17",
+      "event_name": "Weekend oil/rates/credit contradiction",
+      "event_date": "2026-10-17",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "WEEKEND_THEME_4_2026_10_17"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Independent shipping/physical damage and Sunday authorization/Saudi request, then Monday oil/freight, credit, vol and US cash breadth confirm.",
+        "fails": "Claims disproved or no further incident; oil falls, AI/IG-HY stable, breadth and chips recover.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "WEEKEND_GUARD_5_2026_10_17",
+      "event_name": "Monday opening gap and options validation",
+      "event_date": "2026-10-17",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "WEEKEND_THEME_4_2026_10_17"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Independent shipping/physical damage and Sunday authorization/Saudi request, then Monday oil/freight, credit, vol and US cash breadth confirm.",
+        "fails": "Claims disproved or no further incident; oil falls, AI/IG-HY stable, breadth and chips recover.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "ASIA_19OCT_GUARD_1",
+      "event_name": "China Q3 growth beats forecast; domestic read-through incomplete",
+      "event_date": "2026-10-19",
+      "importance": "MEDIUM",
+      "affected_theme_ids": [
+        "ASIA_19OCT_THEME_1"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Sustained London/US cash and time-aligned cross-asset validation.",
+        "fails": "Oil/yield reversal, weak breadth or contradictory source correction.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "ASIA_19OCT_GUARD_2",
+      "event_name": "Oil falls on provisional Russian sanctions waiver",
+      "event_date": "2026-10-19",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "ASIA_19OCT_THEME_2"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Sustained London/US cash and time-aligned cross-asset validation.",
+        "fails": "Oil/yield reversal, weak breadth or contradictory source correction.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "ASIA_19OCT_GUARD_3",
+      "event_name": "Asian technology weakness versus US futures rebound",
+      "event_date": "2026-10-19",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "ASIA_19OCT_THEME_3"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Sustained London/US cash and time-aligned cross-asset validation.",
+        "fails": "Oil/yield reversal, weak breadth or contradictory source correction.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "ASIA_19OCT_GUARD_4",
+      "event_name": "Egypt Saudi-support parliamentary vote deferred to Monday",
+      "event_date": "2026-10-19",
+      "importance": "MEDIUM",
+      "affected_theme_ids": [
+        "ASIA_19OCT_THEME_4"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Sustained London/US cash and time-aligned cross-asset validation.",
+        "fails": "Oil/yield reversal, weak breadth or contradictory source correction.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "PRE_LONDON_19OCT_GUARD_1",
+      "event_name": "HK cash holiday invalidates pre-London Hang Seng indication; mainland data separate",
+      "event_date": "2026-10-19",
+      "importance": "MEDIUM",
+      "affected_theme_ids": [
+        "PRE_LONDON_19OCT_THEME_1"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "HKEX 19 Oct cash holiday; HSI +0.52% belongs to prior session, while mainland China evidence is independently assessed.",
+        "fails": "Any pipeline carrying HSI +0.52% as 19 Oct cash confirmation requires correction.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "PRE_LONDON_19OCT_GUARD_2",
+      "event_name": "Oil relief deepens into pre-London",
+      "event_date": "2026-10-19",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "PRE_LONDON_19OCT_THEME_2"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Sustained London/US cash and aligned cross-asset evidence.",
+        "fails": "Cash/futures divergence, oil reversal or credit stress.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "PRE_LONDON_19OCT_GUARD_3",
+      "event_name": "US futures gain despite unresolved Asia tech stress",
+      "event_date": "2026-10-19",
+      "importance": "MEDIUM",
+      "affected_theme_ids": [
+        "PRE_LONDON_19OCT_THEME_3"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Sustained London/US cash and aligned cross-asset evidence.",
+        "fails": "Cash/futures divergence, oil reversal or credit stress.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "PRE_US_19OCT_NAHB_10ET_GUARD",
+      "event_name": "October NAHB HMI actual 29 versus 32 prior; housing fragility observed",
+      "event_date": "2026-10-19",
+      "importance": "MEDIUM",
+      "affected_theme_ids": [
+        "PRE_US_19OCT_THEME_1"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "HMI 29 and falling components confirm weak builder sentiment; 19 Oct real estate -1.2% observed but causal attribution unproven.",
+        "fails": "Earlier pre-release result-pending state superseded; do not treat housing weakness as sole cause of REIT price move.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "ASIA_20OCT_CASH_COMPLETION_AND_EUROPE_OPEN_GUARD",
+      "event_name": "Complete Asia cash and validate Europe/London opening transmission",
+      "event_date": "2026-10-20",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "ASIA_20OCT_RISK_OFF_AI_OIL_TRANSMISSION"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Final Asia downside persists and Europe cash banks/tech/miners weaken while oil and credit worsen.",
+        "fails": "Asia reversal or Europe cash absorbs futures weakness with broad participation and stable credit.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "PRE_LONDON_20OCT_FUTURES_TO_CASH_GUARD",
+      "event_name": "Validate Tuesday Europe futures against actual London/continental cash",
+      "event_date": "2026-10-20",
+      "importance": "HIGH",
+      "affected_theme_ids": [
+        "PRE_LONDON_20OCT_KOREA_DEEPENS_TOKYO_NARROWS"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "Europe/London opens weak with broad bank/tech/fuel-user pressure, Asia final losses persist and broad credit deteriorates.",
+        "fails": "Europe cash outperforms futures, Asia final losses recover, oil eases and credit remains stable.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    },
+    {
+      "event_id": "20OCT_US_OPEN_GAP_HOUSING_CREDIT_GUARD",
+      "event_name": "Check US opening-gap auction after housing against credit, rates and oil",
+      "event_date": "2026-10-20",
+      "importance": "CRITICAL",
+      "affected_theme_ids": [
+        "20OCT_EUROPE_TO_US_AI_OIL_HOUSING_HANDOFF"
+      ],
+      "pipeline_effect": "HISTORICAL_GUARD_ONLY__NEXT_SESSION_REVALIDATION__NO_OVERRIDE__NO_EXECUTION",
+      "scenario_map": {
+        "confirms": "QQQ down-gap accepted with SOX/neocloud weakness, RSP/A-D negative, bank/homebuilder pressure, widening IG/HY and higher VIX while oil remains elevated.",
+        "fails": "US cash rejects down-gap with broad sector participation, stable credit, orderly curve and oil reversal.",
+        "data_missing": "21 Oct UK result, cash confirmation, credit and option microstructure MISSING."
+      }
+    }
+  ],
+  "macro_exposure_index_build": {
+    "purpose": "16 Oct US-close intelligence and conditional next-session candidate review only; no trading execution or capital allocation.",
+    "index_key": "ticker",
+    "roles": [
+      "BENEFICIARY",
+      "VULNERABLE",
+      "CONTEXT_ONLY",
+      "NORMALISED_CATALYST_RECORD"
+    ],
+    "ticker_role_map_hint": {
+      "BENEFICIARY": [
+        "DIA_IF_DOW_ROTATION_HOLDS_AND_CREDIT_STABLE",
+        "IWM_IF_RUSSELL_BREADTH_HOLDS_AND_HY_STABLE",
+        "XLV_IF_HEALTHCARE_RELATIVE_STRENGTH_PERSISTS"
+      ],
+      "VULNERABLE": [
+        "QQQ_SMH_SOXX_IF_CHIP_NEW_LOW_STRESS_PERSISTS",
+        "IWM_IF_BROAD_HY_WIDENS_DESPITE_TODAY_REBOUND",
+        "XLY_IF_OIL_INFLATION_SQUEEZES_REAL_DEMAND",
+        "XLRE_IF_YIELDS_REBOUND_FROM_15OCT_LEVELS"
+      ],
+      "CONTEXT_ONLY": [
+        "SPY",
+        "QQQ",
+        "IWM",
+        "DIA",
+        "RSP",
+        "EWJ",
+        "EWH",
+        "FXI",
+        "HYG",
+        "LQD",
+        "TLT",
+        "VXX"
+      ],
+      "NORMALISED_CATALYST_RECORD": [
+        "TMUS",
+        "T",
+        "VZ",
+        "NVDA",
+        "DAL",
+        "HUM",
+        "SOXX"
+      ]
+    },
+    "normalised_catalyst_records": [
+      {
+        "ticker": "TMUS",
+        "company": "T-Mobile US, Inc.",
+        "sector": "Communication Services",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "TMUS: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "TMUS: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "TMUS: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      },
+      {
+        "ticker": "T",
+        "company": "AT&T Inc.",
+        "sector": "Communication Services",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "T: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "T: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "T: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      },
+      {
+        "ticker": "VZ",
+        "company": "Verizon Communications Inc.",
+        "sector": "Communication Services",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "VZ: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "VZ: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "VZ: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      },
+      {
+        "ticker": "NVDA",
+        "company": "NVIDIA Corporation",
+        "sector": "Information Technology",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "NVDA: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "NVDA: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "NVDA: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      },
+      {
+        "ticker": "DAL",
+        "company": "Delta Air Lines, Inc.",
+        "sector": "Industrials",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "DAL: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "DAL: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "DAL: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      },
+      {
+        "ticker": "HUM",
+        "company": "Humana Inc.",
+        "sector": "Healthcare",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "HUM: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "HUM: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "HUM: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      },
+      {
+        "ticker": "SOXX",
+        "company": "iShares Semiconductor ETF",
+        "sector": "Information Technology",
+        "catalyst_type": "UNVERIFIED_INHERITED_CONTEXT",
+        "catalyst_status": "TBD",
+        "catalyst_date": "TBD",
+        "event_window_start": "TBD",
+        "event_window_end": "TBD",
+        "catalyst_direction_bias": "NONE_UNTIL_VERIFIED",
+        "catalyst_source_confidence": "MISSING_CURRENT_CATALYST_SOURCE",
+        "catalyst_binary_score": 0,
+        "source_tier": "MISSING",
+        "source_url": "MISSING_CURRENT_COMPANY_CATALYST",
+        "ticker_role": "MANUAL_REVIEW_CANDIDATE",
+        "event_status": "BLOCK_CURRENT_CATALYST_UNVERIFIED",
+        "tradability_route": "BLOCK",
+        "failure_risk": "Macro/futures handoff is not a company catalyst; UK data and cash sessions can reverse it.",
+        "already_priced_risk": "HIGH",
+        "source_count": 0,
+        "directional_bias": "MACRO_CONTEXT_ONLY_NO_CATALYST_PROMOTION",
+        "idea_type": "17 Oct weekend macro scenario watch, no independent company catalyst",
+        "beneficiary_role": "MANUAL_REVIEW_CANDIDATE",
+        "why_analyse": "SOXX: inherited manual-review watch only; no promotion.",
+        "anis_total_score": 0,
+        "fips_score": 0,
+        "verdict": "NO_ACTION",
+        "suggested_avshunter_review": "BLOCK",
+        "upload_priority": "NONE",
+        "key_risk": "Do not convert macro oil sensitivity or an old event link into a fresh ticker catalyst or options signal.",
+        "confirmed_data": "SOXX: no current independent company catalyst confirmed; prior evidence is lineage.",
+        "assumptions": "Monday sector and option-premium impact conditional on physical shipping, oil, credit, yields and cash confirmation.",
+        "forward_impact_horizon": "0-2 sessions immediate; 3-10 days short; 2-8 weeks only if AI funding or oil risk persists",
+        "expected_future_impact": "Potential Monday gap then 1–3-day oil/freight/inflation and cross-sector rotation; no confirmed company event.",
+        "second_order_impact": "Check 11 GICS sectors, 2Y/10Y/30Y, IG/HY, VIX term, SPY/QQQ/IWM/DIA and candidate long-option premium.",
+        "confirmation_signals": "Physical vessel damage/cargo, Sunday Egypt parliamentary and Saudi request, Monday oil/freight/insurance, USD, curve, IG/HY, VIX term, four indices/11 sectors and option premium path.",
+        "invalidation_signals": "Asia rebound reverses, oil/credit stress deepens, or contrary primary company evidence emerges.",
+        "missing_data": "CURRENT_CATALYST__CASH_CONFIRMATION__CREDIT__OPTION_IV_SKEW_LIQUIDITY_PREMIUM_PATH",
+        "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+        "capital_grade": "NO",
+        "date_quality": "17OCT_EVENT_FACTS__16OCT_CASH_HISTORICAL__MONDAY_UNOBSERVED",
+        "needs_manual_confirmation": true,
+        "event_date": "TBD",
+        "event_time": "WEEKEND_MARKET_CLOSED",
+        "narrative": "SOXX: weekend macro watch; inherited company catalyst TBD/BLOCK, no trading execution.",
+        "event_type": "MACRO_SESSION_TRANSMISSION",
+        "event_category": "GULF_TANKER_ATTACK_AND_CONDITIONAL_EGYPT_AUTHORIZATION",
+        "source_name": "UKMTO primary reports https://www.ukmto.org/; EU maritime alert 148/26 https://mscio.eu/alerts/184; AP two-vessel report https://apnews.com/article/aaf6d7e5367f99869eaf4b419c66e0df; Reuters Egypt conditional request https://www.reuters.com/world/middle-east/egypts-sisi-seeks-parliaments-backing-help-defend-saudi-arabia-if-asked-2026-10-17/; IRGC claim only, independently unverified https://www.euronews.com/2026/10/17/super-tanker-ablaze-after-striking-mine-in-strait-of-hormuz-irgc-says; Reuters 16 Oct US cash https://www.reuters.com/business/wall-st-futures-mixed-tech-wobbles-again-tesla-gains-2026-10-16/; Reuters 16 Oct oil settlement https://www.reuters.com/business/autos-transportation/oil-edges-down-investors-weigh-possible-us-sanctions-shadow-fleet-2026-10-16/; US Treasury 16 Oct indicative par https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202610&type=daily_treasury_yield_curve; AVSHUNTER US Economic Event payload 17 Oct version 2, read 17 Oct; event scores not promoted",
+        "impact_channel": "Gulf shipping -> oil/freight/insurance -> USD, 2Y/10Y/30Y, credit, volatility -> indices/11 sectors -> conditional long-option premium",
+        "event_credibility_score": 0,
+        "price_sensitivity_score": 0,
+        "timing_urgency_score": 0,
+        "sector_readthrough_score": 0,
+        "options_monetisation_score": 0,
+        "avshunter_fit_score": 0,
+        "narrative_quality_score": 0,
+        "confidence_score": 0,
+        "manual_check_required": true,
+        "weak_signals": "Hypothesized Monday oil and IV repricing; no live market confirmation.",
+        "absence_signals": "No verified supertanker identity/cargo loss, Saudi request, Egypt authorization, broad IG/HY or chain.",
+        "contradiction_signals": "Friday haven Treasury rally versus fresh oil/inflation risk; limited verified tanker damage versus unverified catastrophic claim.",
+        "fragility_score": 4.8,
+        "alert_level": "RED",
+        "final_desk_verdict": "BLOCK_COMPANY_CATALYST__MACRO_CONTEXT_ONLY"
+      }
+    ]
+  },
+  "validation_rules": [
+    "17 Oct UKMTO site lists two Al Jubayl 16 Oct tanker attacks; MSCIO alert 148/26 validates RPG 19:22 UTC 78NM NE, crew safe; AP corroborates.",
+    "First UKMTO report 68NM NE, unknown projectile, crew evacuated safely and no reported environmental impact at report time; full physical loss not established.",
+    "Reuters 17 Oct: Sisi requested Egyptian parliamentary authority for possible defensive support IF asked; parliament announced 18 Oct 10:00 UTC sitting, agenda not disclosed.",
+    "No formal Saudi request, granted authority or Egyptian deployment verified; mark ABSENCE, not CONFIRMED intervention.",
+    "IRGC claim of unnamed >2m-barrel supertanker mine/fire is REPORTED_UNVERIFIED; no identity, cargo loss or independent confirmation.",
+    "No Saturday US cash or Treasury/credit/volatility options trade; Friday numbers do not establish weekend repricing or Monday gap.",
+    "Friday 16 Oct US cash S&P -1.09%, Nasdaq -2.15%, Dow -0.34%, Russell about -1.7%, SOX -3.8% are historical baseline.",
+    "Friday Europe/London and Asia prices historical; no Saturday or Monday cash market confirmation across sessions.",
+    "Friday Brent $109.86/WTI $101.41 were settlements before Saturday reports; not live quotes and not assigned reaction direction.",
+    "Friday Treasury indicative 2Y/10Y/30Y 4.74/5.09/5.43%, 2s10s +35bp; no weekend curve confirmation.",
+    "Friday afternoon DXY 101.87 -0.17% historical; USD haven demand Monday only a hypothesis.",
+    "Friday broad IG/HY OAS/CDX unavailable; issuer CoreWeave bond/CDS stress does not prove broader credit contagion.",
+    "Friday pipeline VIX 21.09 at 14:10 ET was intraday, not official final; Saturday spot/term and Monday VIX futures unconfirmed.",
+    "Long single-leg 1–5/6–10/11–20 DTE calls/puts require live IV/skew/OI/call-put/volume/bid-ask/Greeks and executable intrahold option-price path.",
+    "All 11 GICS Friday delayed ETF proxies remain dated; no weekend price; sector leadership conditional on Monday underlying and oil/rate transmission.",
+    "Base/bull/bear 50/20/30 subjective scenarios, not calibrated forecast, company-catalyst score or capital allocation.",
+    "Seven inherited company catalysts still TBD/BLOCK/source_count 0/binary score 0; separate economic-event payload LONG_PUTS_FAVOURED not promoted to execution.",
+    "JSON syntax and exact recursive structure, immutable versions/protected fields/merge controls and NONE_NEWS_TERMINAL_ONLY validated before handoff."
+  ],
+  "audit": {
+    "required_audit_keys": [
+      "batch_id",
+      "source",
+      "contract_version",
+      "theme_id",
+      "delta_type",
+      "event_guard_ids",
+      "merge_decision",
+      "protected_fields_preserved",
+      "execution_permission",
+      "session_transmission",
+      "macro_transmission"
+    ],
+    "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+    "protected_fields_preserved": true,
+    "merge_decision": "MERGE_US_CLOSE_MACRO_CONTEXT_ONLY__NO_CATALYST_PROMOTION__NO_EXECUTION",
+    "engineer_review_notes": "Exact recursive key/type/list-length parity validated against the latest pre-US-open baseline. Dated prices are timestamped close context. Post-close reactions are separated. Options and credit microstructure remain unqualified.",
+    "source_urls": {
+      "REUTERS_GLOBAL_MARKETS_2026_09_21": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "REUTERS_US_MARKETS_2026_09_21": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "REUTERS_EUROPE_2026_09_21": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "REUTERS_LONDON_2026_09_21": "https://www.cboe.com/tradable-products/vix/",
+      "REUTERS_CHINA_YUAN_2026_09_21": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "REUTERS_US_CHINA_TALKS_2026_09_21": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "REUTERS_GOLD_2026_09_21": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "CBOE_VIX_2026_09_21": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "CBOE_VIX_FUTURES_2026_09_21": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "MARKETSCREENER_RUSSELL_2000_2026_09_21": "https://www.cboe.com/tradable-products/vix/",
+      "PRIOR_PACKET_LINEAGE": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "ASIA_19OCT_MARKET": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "ASIA_19OCT_CHINA": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "ASIA_19OCT_EGYPT": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "ASIA_19OCT_OIL": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "ASIA_19OCT_REUTERS_ASIA": "https://www.cboe.com/tradable-products/vix/",
+      "ASIA_19OCT_TREASURY": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "ASIA_19OCT_SHIPPING": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "PRE_LONDON_19OCT_REUTERS_MARKET": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "PRE_LONDON_19OCT_REUTERS_MARKET_BOARD": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "PRE_LONDON_19OCT_REUTERS_OIL": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "PRE_LONDON_19OCT_REUTERS_CHINA": "https://www.cboe.com/tradable-products/vix/",
+      "PRE_LONDON_19OCT_REUTERS_CHINA_PROPERTY": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "PRE_LONDON_19OCT_REUTERS_EGYPT": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "HKEX_HOLIDAY_19OCT": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "REUTERS_US_PREMARKET_19OCT": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "REUTERS_GLOBAL_19OCT": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "REUTERS_EUROPE_19OCT": "https://www.cboe.com/tradable-products/vix/",
+      "REUTERS_UK_19OCT": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "REUTERS_CHINA_GDP_19OCT": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "NAHB_OCTOBER_19_2026_RELEASE_SCHEDULE": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "US_CLOSE_19OCT_REUTERS": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "US_CLOSE_19OCT_AP": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "EUROPE_CLOSE_19OCT_REUTERS": "https://www.cboe.com/tradable-products/vix/",
+      "TREASURY_CURVE_19OCT": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "CBOE_VIX_19OCT": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "NAHB_HMI_19OCT": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "AI_DEBT_SP_GLOBAL_19OCT": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "ASIA_20OCT_REUTERS": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "ASIA_20OCT_REUTERS_BOARD": "https://www.cboe.com/tradable-products/vix/",
+      "ASIA_20OCT_OIL": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "ASIA_20OCT_EUROPE_FUTURES": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "ASIA_20OCT_CHINA_LPR": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "ASIA_20OCT_FX": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "PRE_LONDON_20OCT_REUTERS_UPDATED": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "PRE_LONDON_20OCT_REUTERS_MORNING_BID": "https://www.cboe.com/tradable-products/vix/",
+      "ASIA_CLOSE_RTHK": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "KOREA_ELICE_REUTERS": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "EUROPE_CASH_REUTERS": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "LONDON_CASH_REUTERS": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "UK_JOBS_REUTERS": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "US_HOUSING_CENSUS": "https://www.cboe.com/tradable-products/vix/",
+      "US_FUTURES_REUTERS": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "OIL_REUTERS": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "FX_REUTERS": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "US_FINAL_AP": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "US_ROTATION_REUTERS_PRELIM": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "US_AP_DETAILS": "https://www.cboe.com/tradable-products/vix/",
+      "TREASURY_CURVE_20OCT": "https://www.reuters.com/business/media-telecom/tesla-revenue-beats-estimates-deliveries-rebound-energy-storage-grows-2026-10-21/",
+      "OIL_SETTLEMENT_REUTERS_20OCT": "https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics",
+      "EUROPE_CLOSE_REUTERS_20OCT": "https://www.reuters.com/legal/transactional/nasdaq-futures-lead-gains-spacex-super-micro-results-lift-ai-trade-2026-10-21/",
+      "FX_REUTERS_20OCT": "https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d",
+      "CBOE_VIX_20OCT": "https://www.reuters.com/business/energy/oil-rises-middle-east-supply-worries-2026-10-21/",
+      "US_CENSUS_HOUSING_20OCT": "https://www.cboe.com/tradable-products/vix/"
+    }
+  },
+  "binary_options_analysis_policy": {
+    "policy_name": "WEEKEND_GULF_EVENT_OPTIONS_RESEARCH_WAIT_2026_10_17",
+    "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+    "capital_grade": "NO",
+    "does_not_override_base_macro": true,
+    "does_not_unblock_put_gate": true,
+    "does_not_grant_execution_permission": true,
+    "macro_can_invert_direction": false,
+    "macro_not_applicable_means_abstain": true,
+    "macro_alignment_states": {
+      "CALL_CONFIRMED": "NONE: Monday energy/defence call profitability and option chains unobserved.",
+      "CALL_UNCONFIRMED_NEEDS_LOCAL_CONFIRMATION": "XLE/XOM or defence long-call research only if oil holds after reopen, sector cash participates, IV/skew/OI/spreads and executable intrahold premium justify paid price.",
+      "PUT_CONFIRMED": "NONE: Monday QQQ/IWM/SMH/DAL put premiums unobserved even with RED macro event risk.",
+      "PUT_ELEVATED_CONFIRMATION": "QQQ/IWM/SMH/transport single-leg put research only if oil, credit, VIX term, opening gap and breadth align, with acceptable paid IV and intrahold exit.",
+      "VOL_EXPANSION": "Weekend news can lift Monday implied volatility, but no live option chain or final Friday VIX term; elevated IV may destroy long-premium edge.",
+      "VOL_CRUSH": "De-escalation or unverified supertanker disproval can reverse oil and crush puts; analyse maximum favourable option path and executable capture, not terminal-only return.",
+      "NO_DIRECTIONAL_MACRO_EDGE": "Confirmed event facts, conditional market pathways. No weekend US cash or options edge is confirmed.",
+      "MACRO_NOT_APPLICABLE": "For 1–5, 6–10, 11–20 DTE single-leg calls/puts require live underlying, IV/skew/OI/put-call/volume/bid-ask/Greeks/dealer and executable intrahold premium capture; MISSING."
+    }
+  },
+  "market_data_snapshot": {
+    "snapshot_source": "https://www.reuters.com/world/china/global-markets-view-europe-2026-10-21/; https://www.reuters.com/world/china/global-markets-global-markets-2026-10-21/; https://apnews.com/article/stocks-markets-rates-oil-earnings-ai-4fa93685cd49e51e7ff0d840fdd38b0d; https://www.ons.gov.uk/releases/consumerpriceinflationukaugust2026; https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming",
+    "date_quality": "21OCT_FINAL_US_CASH__OIL_SETTLEMENT__CBOE_CLOSE__POST_CLOSE_REACTIONS_SEPARATE",
+    "as_of_utc": "2026-10-21T21:22:33Z",
+    "global_session": {
+      "asia": "21 Oct final split: Korea/Japan gains transmitted into US AI/chips; Hong Kong/China weakness remained a materials/breadth constraint.",
+      "tokyo": "Nikkei +0.85% final; US SOXX/SMH gains confirmed the technology handoff.",
+      "hong_kong_china": "Hang Seng -0.9% and Shanghai -0.6% final; XLB only +0.16%, so China cyclicals did not validate broad global risk-on.",
+      "europe": "European cash gains preceded the US rally, but French/UK rate risks remain relevant.",
+      "london": "Hot UK CPI remained a duration warning; US XLRE -0.77% was consistent with rate pressure.",
+      "us_reference": "US cash complete: QQQ +1.06%, SPY +0.53%, DIA +0.64%, RSP +0.34%, IWM +0.25%. Post-close Meta/Tesla are separate next-session inputs."
+    },
+    "instrument_snapshot": {
+      "SPY": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "SPY: +0.53%; gap held. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "QQQ": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "QQQ: +1.06%; tech led. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "IWM": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "IWM: +0.25%; lagged and closed below open. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "DIA": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "DIA: +0.64%; constructive. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "RSP": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "RSP: +0.34%; partial breadth. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "SMH": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "SMH: +1.86%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "SOXX": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "SOXX: +2.07%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLE": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLE: +0.27%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XOM": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XOM: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "NVDA": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "NVDA: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "AMD": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "AMD: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "INTC": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "INTC: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "META": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "META: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "DAL": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "DAL: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "FCX": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "FCX: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "JPM": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "JPM: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "HYG": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "HYG: +0.18% proxy. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "LQD": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "LQD: flat proxy. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "TLT": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "TLT: +0.14%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "UUP": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "UUP: +0.03%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "GLD": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "GLD: +0.34%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "VXX": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "VXX: -0.85%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLRE": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLRE: -0.77%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLU": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLU: +0.32%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLY": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLY: +0.03% flat. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLP": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLP: -0.72%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLV": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLV: -0.51%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLF": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLF: +0.54%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLI": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLI: +0.90%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLB": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLB: +0.16%. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLC": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLC: -1.12% laggard. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "XLK": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "XLK: +1.67% leader. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "EWJ": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "EWJ: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "FXI": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "FXI: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      },
+      "EWH": {
+        "bias": "21OCT_US_CLOSE__CASH_COMPLETE__OPTIONS_WAIT__NO_EXECUTION",
+        "brief_note": "EWH: current close not independently verified. Dated close context only. Long calls/puts require live IV, skew, OI, volume, spreads, Greeks and premium-path validation."
+      }
+    },
+    "macro_reference_snapshot": {
+      "equities": "Final US: S&P +0.58%, Nasdaq +1.05%, Dow +0.69%, Russell +0.3%. ETF closes: QQQ +1.06%, SPY +0.53%, DIA +0.64%, RSP +0.34%, IWM +0.25%.",
+      "breadth": "NYSE A/D 1.37-to-1 and Nasdaq 1.3-to-1 positive, but Nasdaq 53 new highs versus 216 new lows; volume 16.11bn versus 17.10bn average.",
+      "rates": "10Y near 5.12%; 2Y about 4.79-4.82 and 30Y about 5.42 from asynchronous observations. 20Y auction 5.469% versus 5.459% WI; common-time curve MISSING.",
+      "usd": "UUP +0.03% proxy approximately flat. Exact DXY and full FX close MISSING.",
+      "oil": "Settlement: Brent $108.82 (+0.03%), WTI $97.15 (-0.7%); early gains above $110 faded.",
+      "gold": "GLD +0.34%; Reuters spot gold +0.3% near $4,137.94. Copper, iron ore and gas MISSING.",
+      "credit": "HYG +0.18%, LQD flat. Broad IG/HY OAS and CDX MISSING; ETF prices are proxies only.",
+      "volatility": "Cboe VIX 16.68 (-3.64%), VXX -0.85%. VIX term/skew/dealer gamma MISSING.",
+      "macro_data": "No major new US macro release drove cash. Oil inventories beat draw expectations; UK CPI was hot. Meta/Tesla released post-close and require next-session validation."
+    },
+    "source_gaps": [
+      "Same-day broad IG/HY OAS, CDX IG/HY and issuer-level credit dispersion are MISSING; HYG/LQD are price proxies only.",
+      "VIX9D/VIX3M term structure, SKEW, dealer gamma and realised/implied decomposition are MISSING.",
+      "Every long call/put candidate lacks verified strike IV/rank, skew, OI, volume, bid-ask, Greeks and intraday premium path; options remain WAIT.",
+      "A common-timestamp official US 2Y/10Y/30Y closing curve and exact 2s10s/10s30s changes are MISSING; observed yields are asynchronous.",
+      "Full constituent-level advance/decline, up/down volume and equal-weight sector breadth are incomplete beyond reported exchange ratios.",
+      "Current copper, iron ore, natural gas and industrial-metals settlement confirmation are MISSING.",
+      "Complete Meta/Tesla calls, guidance and post-close price discovery are incomplete and not US cash confirmation.",
+      "Executable next-session gaps and liquidity are MISSING until overnight and premarket trading develops."
+    ]
+  },
+  "trading_risk_overlay": {
+    "overlay_type": "PRE_LONDON_MIXED_ASIA_WITH_POSITIVE_EUROPE_FUTURES_AND_UK_DATA_GATE",
+    "overall_trading_risk": "MEDIUM_HIGH_CONCENTRATED_RALLY_AND_POST_CLOSE_EVENT_RISK",
+    "tradeability_status": "ANALYSIS_ONLY__CASH_DIRECTION_CONFIRMED__OPTIONS_AND_CREDIT_MICROSTRUCTURE_WAIT",
+    "execution_permission": "NONE_NEWS_TERMINAL_ONLY",
+    "capital_grade": "NO",
+    "core_warning": "The rally held and breadth was positive, but technology concentration, Nasdaq new-low dominance, below-average volume and missing OAS/options data prevent automatic promotion.",
+    "red_team_challenge": "SpaceX/SMCI-driven relief may be a short-covering or earnings-specific rebound rather than proof that AI financing concerns are resolved. Post-close Meta/Tesla reactions can reset the next opening auction."
+  }
+}
