@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import math
 import sqlite3
+import shutil
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -359,40 +361,64 @@ class PhantomDatabase:
             )
             return [float(r["iv"]) for r in cur.fetchall() if r["iv"] is not None]
 
-    def preload_tickers(self, tickers: List[str], dte_min: float = 7, dte_max: float = 60) -> None:
-        """Batch-load IV history and latest chain rows for all tickers in one DB connection."""
-        unique = list({t.upper() for t in tickers if t})
+    def ensure_scoring_index(self, *, min_free_gib: float = 15) -> bool:
+        """One-time covering index; never changes a chain fact or score model.
+
+        Keep this off the ingestion path. Abort/roll back construction if the
+        existing disk reserve is crossed, including temporary sort/WAL growth.
+        """
+        with self.connect() as conn:
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE name='idx_chain_scoring_iv'").fetchone():
+                return False
+            last_check = 0.0
+            stopped = False
+            def guard():
+                nonlocal last_check, stopped
+                clock = time.monotonic()
+                if clock - last_check >= 1:
+                    last_check = clock
+                    stopped = shutil.disk_usage(self.db_path.parent).free < min_free_gib * 1024**3
+                return int(stopped)
+            if guard():
+                raise RuntimeError('Phantom scoring index stopped at disk reserve')
+            conn.set_progress_handler(guard, 100000)
+            try:
+                conn.execute('CREATE INDEX idx_chain_scoring_iv ON chain_snapshots'
+                             '(ticker,quote_date,option_symbol,dte,iv) WHERE iv IS NOT NULL')
+            finally:
+                conn.set_progress_handler(None, 0)
+        return True
+
+    def preload_tickers(self, tickers: List[str], dte_min: float = 7, dte_max: float = 60,
+                        *, as_of: Optional[str] = None) -> None:
+        """Exact scoring inputs, without materialising raw chain payloads.
+
+        Stream history (same observations/order, no sampling), and seek each
+        ticker's latest date through the primary key instead of grouping the
+        entire historical population. Only fields used by IV/gamma scoring are
+        cached. Repeated calls replace caches; replay never reads future rows.
+        """
+        unique = sorted({t.upper() for t in tickers if t})
         if not unique:
             return
-        placeholders = ",".join(["?"] * len(unique))
         with self.connect() as conn:
-            cur = conn.execute(
-                f"SELECT ticker, iv FROM chain_snapshots"
-                f" WHERE ticker IN ({placeholders}) AND iv IS NOT NULL AND dte BETWEEN ? AND ?",
-                unique + [dte_min, dte_max],
-            )
-            for row in cur.fetchall():
-                t = row["ticker"].upper()
-                self._iv_cache.setdefault(t, []).append(float(row["iv"]))
-
-            cur = conn.execute(
-                f"""
-                SELECT cs.* FROM chain_snapshots cs
-                JOIN (
-                    SELECT ticker, MAX(quote_date) AS max_qd
-                    FROM chain_snapshots WHERE ticker IN ({placeholders})
-                    GROUP BY ticker
-                ) t ON cs.ticker=t.ticker AND cs.quote_date=t.max_qd
-                """,
-                unique,
-            )
-            for row in cur.fetchall():
-                t = row["ticker"].upper()
-                self._chain_cache.setdefault(t, []).append(dict(row))
-
-        for t in unique:
-            self._iv_cache.setdefault(t, [])
-            self._chain_cache.setdefault(t, [])
+            cutoff = " AND quote_date<=?" if as_of else ""
+            for ticker in unique:
+                date_params = [ticker, as_of] if as_of else [ticker]
+                self._iv_cache[ticker] = [float(row[0]) for row in conn.execute(
+                    "SELECT iv FROM chain_snapshots WHERE ticker=? AND iv IS NOT NULL"
+                    " AND dte BETWEEN ? AND ?" + cutoff + " ORDER BY quote_date,option_symbol",
+                    [ticker, dte_min, dte_max] + ([as_of] if as_of else []),
+                )]
+                latest = conn.execute(
+                    "SELECT MAX(quote_date) FROM chain_snapshots WHERE ticker=?" + cutoff,
+                    date_params,
+                ).fetchone()[0]
+                self._chain_cache[ticker] = [dict(row) for row in conn.execute(
+                    "SELECT ticker,quote_date,option_symbol,side,iv,gamma,open_interest"
+                    " FROM chain_snapshots WHERE ticker=? AND quote_date=? ORDER BY option_symbol",
+                    (ticker, latest),
+                )] if latest else []
 
     def batch_write_phantom_scores(self, run_id: str, scores: List[tuple]) -> None:
         """Write all phantom scores for a run in a single transaction."""

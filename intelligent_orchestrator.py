@@ -4154,7 +4154,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             _hp = horizon_dir / f"horizon_{_bucket}_{run_id}.csv"
             if not _hp.exists():
                 continue
-            _hdf = _pd_hp.read_csv(_hp, low_memory=False)
+            _hdf = _pd_hp.read_csv(_hp, low_memory=False, keep_default_na=False, na_values=[''])
             if _hdf.empty or "ticker" not in _hdf.columns:
                 continue
             _hdf["ticker"] = _hdf["ticker"].astype(str).str.strip().str.upper()
@@ -4176,7 +4176,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             return False
 
         route_df = _pd_hp.concat(horizon_frames, ignore_index=True)
-        target_df = _pd_hp.read_csv(target_csv, low_memory=False)
+        target_df = _pd_hp.read_csv(target_csv, low_memory=False, keep_default_na=False, na_values=[''])
 
         if target_df.empty or "ticker" not in target_df.columns:
             logger.warning("Horizon patch skipped for %s — target has no ticker rows", label)
@@ -4231,6 +4231,23 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         ).fillna("HORIZON_UNAVAILABLE")
         # Step 3 (ACK 4 Oct 2026, decision 2): the planned hold is the evidence runway or nothing - never the
         # governed 20. Rows without evidence carry no hold, and the source says why.
+        # Contract selection owns the measured hold. The router must not erase
+        # a calibrated/pooled hold merely because narrower duration evidence
+        # was unavailable. Never recover from legacy buckets or hold labels.
+        _hold_bases = ("DURATION_EVIDENCE", "POOLED_EVIDENCE", "VOLATILITY_TIME_TO_LEVEL")
+        _owned_holds = []
+        for _row in patched.to_dict("records"):
+            _owned = None
+            for _value_field, _basis_field in (
+                ("planned_hold_sessions", "planned_hold_source"),
+                ("contract_runway_hold_sessions", "contract_runway_basis"),
+            ):
+                _basis = str(_row.get(_basis_field) or "")
+                _value = _pd_hp.to_numeric(_row.get(_value_field), errors="coerce")
+                if _basis.startswith(_hold_bases) and _pd_hp.notna(_value) and 0 <= _value < float('inf'):
+                    _owned = (round(float(_value)), _basis)
+                    break
+            _owned_holds.append(_owned)
         patched["planned_hold_sessions"] = _pd_hp.array([_pd_hp.NA] * len(patched), dtype="Int64")
         patched["planned_hold_source"] = "NO_EVIDENCE_HOLD"
         # Step 4b (ACK 3 Oct 2026, option B): a daily trade-side event's q80 time to its level is the runway
@@ -4248,6 +4265,10 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             _has_move = _ev_move.notna()
             patched.loc[_has_move, "anticipated_move_sessions"] = _ev_move[_has_move].round().astype("Int64")
             patched.loc[_has_move, "anticipated_move_source"] = "DURATION_EVIDENCE_Q50"
+        for _index, _owned in zip(patched.index, _owned_holds):
+            if _owned is not None:
+                patched.at[_index, "planned_hold_sessions"] = _owned[0]
+                patched.at[_index, "planned_hold_source"] = _owned[1]
         # Step 3 (ACK 4 Oct 2026, decision 1a): EV3 values at the nearest grid point at or below the evidence hold.
         from vanguard.ev3_stage0 import grid_hold_for
         _ev3 = [grid_hold_for(None if _pd_hp.isna(h) else h) for h in patched["planned_hold_sessions"]]

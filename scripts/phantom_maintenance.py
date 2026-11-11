@@ -222,16 +222,9 @@ def drain_pending(db_path, iv_cache_path=None, *, max_pairs=500, min_free_gib=15
             if shutil.disk_usage(db_path.parent).free < min_free_gib*1024**3:
                 raise RuntimeError('IV maintenance stopped at disk reserve; pending receipts retained')
             report=derive_iv_history(db_path,cache,day,selected,execute=True)
-            # PASS requires actual chain rows; invalid-IV populations are an
-            # explicit terminal quality state, not silently pending forever.
-            with sqlite3.connect(db_path,timeout=60) as c:
-                updates=[]
-                for ticker in selected:
-                    valid=c.execute('''SELECT 1 FROM chain_snapshots WHERE ticker=? AND quote_date=?
-                        AND iv BETWEEN 0.01 AND 5.0 AND underlying_price>0 AND strike>0 LIMIT 1''',(ticker,day)).fetchone()
-                    status='COMPLETE' if valid else 'IV_UNAVAILABLE'
-                    updates.append((status,now(),None if valid else 'NO_VALID_ATM_INPUT',ticker,day))
-                c.executemany('''UPDATE phantom_maintenance_pairs SET status=?,updated_at_utc=?,last_error=?,attempts=attempts+1
-                   WHERE ticker=? AND quote_date=?''',updates)
+            # The derivation owner acknowledges committed pairs. Missing raw
+            # chains are not terminal no-data: retain their pending receipt.
+            if report['tickers_derived'] != len(selected):
+                raise RuntimeError('IV maintenance missing stored chains; unmatched receipts remain pending')
             reports.append(report)
     return {'status':'FINISHED_BOUNDED_BATCH','pairs':len(pairs),'reports':reports}
