@@ -14,7 +14,7 @@ All seven items are built, tested and committed. Every acceptance check passed o
 | B4 | PASS | WARN on CPNG contract and first profit; matching rows pass; no 25% rule left |
 | B6 | PASS | HSBC and CPNG `lab_card.json` equal the Lab API (145 fields, 4 families); batches 1 and 3 in one session folder |
 | B7 | PASS | After `packs -Batch 1` then `-Batch 3`: batch 1 still ready, `packs_ready_batches` = 1, 3, one folder |
-| B10 | PASS (dry run) | Lists HSBC (card, no decision file) and CPNG (has one). The HSBC record is not yet created: see section 7 |
+| B10 | PASS | Lists HSBC (card, no decision file) and CPNG (has one). On ACK's go-ahead (12 Nov, 23:05Z) the HSBC record was created; CPNG's file is byte-for-byte unchanged |
 
 **The live daily flow is still on the old hand-off.** I saved `handoff_source = LEGACY` in `day_settings.json` after testing, because the triage scheduled task still expects the old columns. Section 6 has the one line that switches it on.
 
@@ -198,7 +198,7 @@ Settings: `data\scratch\workaround\lab_handoff_settings.json` (optional; default
 | # | Item | State |
 |---|---|---|
 | 1 | Switch the live flow to the Lab hand-off | Left on LEGACY. One line in section 6, after the triage prompt is updated |
-| 2 | Create `decisions\HSBC.json` in `split_2026-11-12_cap5` | Dry run only. It adds a file to an existing legacy folder; say go and I run it without `--dry-run` |
+| 2 | Create `decisions\HSBC.json` in `split_2026-11-12_cap5` | Done on ACK's go-ahead. State `CARD_BUILT_DECISION_MISSING`, no artifact link (none in the HTML). The decision itself (TRADE / WATCH / PASS) is still to be written. The same run wrote `cards_2026-11-12.csv` and `order_tickets_2026-11-12.md` there (neither existed before) |
 | 3 | `tests\test_x17_check_triage_spread_gate.py` | Fails (pins the removed 25% rule). Retire or rewrite; outside my files |
 | 4 | Strategy layer, hand-off comparison, pre-close scan, S6 replay | Still read the old layout. Not run on a Lab hand-off. Adapt or retire |
 | 5 | Evening or Morning publication | The evening step builds from whatever `COMPLETE` publication exists and labels its stage. After the Morning republish it refuses until `-Refresh`. Confirm this is the flow you want |
@@ -215,4 +215,4 @@ All under Lane B's own folders; nothing in `data\output\runs\`.
 - `data\scratch\workaround\day_settings.json` (new: cap 5, hand-off source LEGACY)
 - `data\scratch\workaround\today_context.json` and `.md` (rewritten by `avs_day.ps1 status`, as every step does)
 - `data\scratch\workaround\mining\guard_rerun_2026-11-11.csv` (rewritten by the evening step's trade guard, same inputs)
-- No `split_*` folder was changed.
+- `split_2026-11-12_cap5`: three files added on ACK's go-ahead (`decisions\HSBC.json`, `cards_2026-11-12.csv`, `order_tickets_2026-11-12.md`). Nothing in it was overwritten.
