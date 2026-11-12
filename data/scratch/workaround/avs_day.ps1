@@ -1,5 +1,5 @@
 ﻿<#
-AVSHUNTER daily mini-automation (v3.2, 17 Oct 2026: option closes left to the post-close monitor, one writer; history in git). Nothing to edit: every date, run id and folder is read from the files.
+AVSHUNTER daily mini-automation (v3.4, 20 Oct 2026: no step is a gate, FAIL and readiness lines are advisory (ACK); trade-guard store replay of every open ticker forecast after the evening and eod steps, mining\race_replay_store.py --batch; v3.3, 18 Oct 2026: strategy layer S1-S6 after the hand-off, S6 replay at eod; v3.2 17 Oct: option closes left to the post-close monitor, one writer; history in git). Nothing to edit: every date, run id and folder is read from the files.
 Run from any PowerShell window:
     & C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\data\scratch\workaround\avs_day.ps1 <step>
 
@@ -9,18 +9,22 @@ Steps
               (finished run: builds now and reuses the run's chains from Phantom; running run: waits for Vanguard and the options stage)
     preopen   check yesterday's pre-close and ledger decisions, score yesterday, rebuild the macro board, measure Phantom coverage,
               re-apply the premium cap if it changed, refresh the comparison
+    strategy  score every hand-off thesis on S1-S6 (strategy_layer.py): strategy_layer_<session>.csv/.md in the hand-off folder
+              (the evening step runs it automatically; run it again after a cap change or a re-pick)
     packs     build ticker packs: batch 1 of today's hand-off (-Batch 2 for batch 2, or -Tickers IGV NAT ...)
     board     rebuild the macro board (e.g. after CPI) and refresh today_context: re-tag money before more deep dives
     checktriage  check the scheduled triage's output (no credits): PASS / WARN / FAIL. Start the deep dives only on PASS or WARN
     preclose  collect the day's card decisions into order tickets, then run the pre-close trigger scan (about 20:10 UK)
-    eod       end of day (after 21:00 UK): re-collect decisions, score today's ledger, list cards with no recorded order
+    guard     rerun hold-matched odds (target vs stop to each forecast's exit date) for every open row of mining\ticker_forecast_log.csv
+              on the canonical price store: mining\guard_rerun_<last store bar>.csv (the evening and eod steps run it automatically)
+    eod       end of day (after 21:00 UK): re-collect decisions, score today's ledger, S6 profit-capture replay, list cards with no recorded order
               (option closes are written by the post-close monitor to monitor\option_closes.csv)
 Options
     -Cap 3    change the premium cap (saved in day_settings.json and used from then on; default 5)
 Every step ends by rewriting today_context.json, which the chat prompts read instead of placeholders.
 #>
 param(
-    [Parameter(Position = 0)][ValidateSet('status', 'evening', 'preopen', 'packs', 'board', 'checktriage', 'preclose', 'eod')][string]$Step = 'status',
+    [Parameter(Position = 0)][ValidateSet('status', 'evening', 'preopen', 'strategy', 'packs', 'board', 'checktriage', 'preclose', 'eod', 'guard')][string]$Step = 'status',
     [double]$Cap = 0,
     [int]$Batch = 1,
     [string[]]$Tickers
@@ -65,6 +69,7 @@ function Get-Context {
         $boardBuilt = if ($m) { $m.Matches[0].Groups[1].Value } else { $board.LastWriteTimeUtc.ToString('yyyy-MM-ddTHH:mmZ') + ' (file time)' }
     }
     $prompts = Join-Path $split "deep_dive_prompts_$session.md"
+    $strat = Join-Path $split "strategy_layer_$session.csv"
     $cards = Join-Path $split "cards_$session.csv"
     $tickets = Join-Path $split "order_tickets_$session.md"
     $pre = Get-ChildItem (Join-Path $W 'preclose') -Filter "preclose_${session}_*.md" -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
@@ -78,6 +83,7 @@ function Get-Context {
         $packsMissing = @($b1 | Where-Object { -not (Test-Path (Join-Path $packs.FullName "$($_)_pack.zip")) })
         $packsReady = ($b1.Count -gt 0) -and ($packsMissing.Count -eq 0)
     }
+    $guard = Get-ChildItem (Join-Path $W 'mining') -Filter 'guard_rerun_*.csv' -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
     $chk = Join-Path $split "check_triage_$session.md"
     $chkVerdict = if (Test-Path $chk) { ((Get-Content $chk -TotalCount 1) -split ': ')[-1] } else { $null }
     [ordered]@{
@@ -101,11 +107,13 @@ function Get-Context {
         triage_check        = $chkVerdict
         macro_board_built   = $boardBuilt
         deep_dive_prompts   = $(if (Test-Path $prompts) { $prompts } else { $null })   # null = B3 has not saved it yet
+        strategy_layer      = $(if (Test-Path $strat) { $strat } else { $null })       # null = avs_day.ps1 strategy has not run
         cards               = $(if (Test-Path $cards) { $cards } else { $null })
         order_tickets       = $(if (Test-Path $tickets) { $tickets } else { $null })
         preclose_today      = $(if ($pre) { "$W\preclose\$($pre.Name)" } else { $null })
         preclose_previous   = $(if ($preprev) { "$W\preclose\$($preprev.Name)" } else { $null })
         lab_book            = "data\output\runs\$($run.Name)\intelligence_lab"
+        guard_rerun         = $(if ($guard) { "$W\mining\$($guard.Name)" } else { $null })   # newest trade-guard store replay
     }
 }
 
@@ -118,6 +126,21 @@ function Write-Context {
     Write-Host 'today_context.json (read by the chat prompts)'
     $c.GetEnumerator() | ForEach-Object { Write-Host ('  {0,-20} {1}' -f $_.Key, ($_.Value -join ', ')) }
     return $c
+}
+
+function Invoke-Strategy($folder) {
+    if (Test-Path (Join-Path $folder 'handoff.csv')) {
+        & $Py "$W\strategy_layer.py" --folder $folder
+        if ($LASTEXITCODE -ne 0) { "Strategy layer failed (exit $LASTEXITCODE): triage can run, cards will have no S1-S6 row" }
+    }
+}
+
+function Invoke-Guard {
+    # Trade guard (20 Oct 2026): store replay of every open forecast row; read-only on the price store and the log
+    if (Test-Path "$W\mining\ticker_forecast_log.csv") {
+        & $Py "$W\mining\race_replay_store.py" --batch
+        if ($LASTEXITCODE -ne 0) { "Guard rerun failed (exit $LASTEXITCODE): cards keep their own odds; run avs_day.ps1 guard again" }
+    } else { 'No mining\ticker_forecast_log.csv yet: guard rerun skipped' }
 }
 
 function Invoke-Compare($c) {
@@ -157,6 +180,9 @@ switch ($Step) {
             & $Py "$W\build_mining_handoff.py" --ledger $c.ledger --out $out
             if ($LASTEXITCODE -ne 0) { "Hand-off build failed (exit $LASTEXITCODE)"; break }
         }
+        if (-not (Test-Path "$out\strategy_layer_$($c.session).csv")) { Invoke-Strategy $out } else { "Strategy layer already built: $out" }
+        "== Trade guard: open forecasts on tonight's price store"
+        Invoke-Guard
         $c = Write-Context
         Invoke-Compare $c
         $null = Write-Context
@@ -194,11 +220,20 @@ switch ($Step) {
             "  Cap changed: re-picking contracts from $($opt.Name) (saved chains, no credits)"
             & $Py "$W\avshunter_options_standalone.py" --ledger $c.ledger --offline-chain "$($opt.FullName)\chain_raw.csv.gz" --max-premium $S.cap
             if ($LASTEXITCODE -eq 0) { & $Py "$W\build_mining_handoff.py" --ledger $c.ledger --out $want }
+            if ($LASTEXITCODE -eq 0) { Invoke-Strategy $want }
         } else { "  Hand-off already at this cap: $want" }
         "== 6. Comparison with the previous hand-off (now with outcomes)"
         $c = Write-Context
         Invoke-Compare $c
         $null = Write-Context
+    }
+
+    'strategy' {
+        $c = Get-Context
+        if (-not $c.split_handoff_built) { "No hand-off for $($c.session) yet: run avs_day.ps1 evening first"; break }
+        Invoke-Strategy $c.split_handoff
+        $c = Write-Context
+        "Strategy layer: $($c.strategy_layer)  (read the .md beside it; checktriage turns its challenges into WARN lines)"
     }
 
     'packs' {
@@ -217,6 +252,12 @@ switch ($Step) {
         $null = Write-Context
     }
 
+    'guard' {
+        Invoke-Guard
+        $c = Write-Context
+        "Guard rerun: $($c.guard_rerun)  (open it in the card chat; HOLD_MISMATCH and odds changes are judged there)"
+    }
+
     'board' {
         & (Join-Path $Root 'Run-MacroBoard.ps1')
         $c = Write-Context
@@ -229,7 +270,7 @@ switch ($Step) {
         $ok = $LASTEXITCODE -eq 0
         $c = Write-Context
         if ($ok) { "Triage check $($c.triage_check). Deep dives: open a new chat linked to this computer and type:  Run deep dive rank 1 from $($c.deep_dive_prompts)" }
-        else { 'Triage check FAIL: do not start the deep dives. Fix the lines above (re-run the triage in a chat with the B3 prompt), then run checktriage again.' }
+        else { "Triage check FAIL (advisory, not a gate): the deep dives can still run; each card carries the FAIL lines on its status strip. To fix: re-run the triage in a chat with the B3 prompt, then checktriage again. Any ticker without a triage row: use the 'Any ticker, any time' prompt in deep_dive_launcher.md." }
     }
 
     'preclose' {
@@ -245,6 +286,8 @@ switch ($Step) {
         $c = Get-Context
         & $Py "$W\collect_decisions.py" --folder $c.split_handoff
         & $Py "$W\track_outcomes.py" $c.ledger
+        Invoke-Guard
+        & $Py "$W\strategy_layer.py" --s6-calibrate   # S6: replay every split hand-off contract, lessons\s6_capture_<date>.md
         # Option closes: written by the post-close monitor (monitor\option_closes.csv); the local capture_option_closes.py
         # was retired from this step by ACK on 17 Oct 2026 so the file has one writer.
         $c = Write-Context

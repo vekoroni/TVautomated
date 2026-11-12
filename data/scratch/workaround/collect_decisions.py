@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect the day's card decisions into one list and one order-ticket sheet (v2, 16 Oct 2026). Read-only on every input.
+"""Collect the day's card decisions into one list and one order-ticket sheet (v2, 16 Oct 2026; 18 Oct: carries strategy_tags / strategy_primary). Read-only on every input.
 
 v2 (16 Oct, approved by ACK): every ticket sheet opens with the execution rules from the week review (mid first, one lift
 to the card line at 15:55 ET, spread <= 25% of mid, no orders 09:30-09:45 ET, resting exit within 5 minutes of a fill,
@@ -99,6 +99,8 @@ def load_cards(folder: Path) -> dict:
             "window_end": j.get("window_end") or "",
             "macro_dependency": json.dumps(j["macro_dependency"]) if isinstance(j.get("macro_dependency"), (dict, list)) else s(j.get("macro_dependency")),
             "one_contract_exit": json.dumps(j["one_contract_exit"]) if isinstance(j.get("one_contract_exit"), dict) else s(j.get("one_contract_exit")),
+            "strategy_tags": s(j.get("strategy_tags")),          # 18 Oct: S1-S6 strategy layer, so outcomes can be scored by strategy
+            "strategy_primary": s(j.get("strategy_primary")),
             "schema_missing": ", ".join(k for k in STANDARD_FIELDS if k not in OPTIONAL_UNTIL_FILLED and j.get(k) in (None, "", [], {})
                                         and not (k == "contract" and first(j, CONTRACT_KEYS))),
         }

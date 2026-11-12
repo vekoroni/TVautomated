@@ -20,6 +20,8 @@ Checks
              path, with no unfilled placeholders
   packs      every name has a pack in packs_folder (else the avs_day.ps1 packs -Tickers line to paste)
   inbox      lessons\\fix_inbox\\<session>_triage.md exists
+  strategy   strategy_layer_<session>.csv exists (WARN if not); each triaged name's strategy challenges (pin risk at an
+             OI wall, IV rich, target beyond own vol, event exit, extended event) are listed as WARN lines for its deep dive
 
 Run (PowerShell, repo root), or let avs_day.ps1 checktriage run it:
     venv\\Scripts\\python.exe data\\scratch\\workaround\\check_triage.py
@@ -36,7 +38,7 @@ from pathlib import Path
 
 import pandas as pd
 
-VERSION = "check_triage_v2"   # v2 17 Oct: spread-gate check (X17-02)
+VERSION = "check_triage_v3"   # v2 17 Oct: spread-gate check (X17-02); v3 18 Oct: strategy layer (S1-S6) challenges
 SPREAD_GATE_PCT = 25.0        # W16-02, ACK 16 Oct: no order over 25% of mid
 WORK = Path("data") / "scratch" / "workaround"
 OCC = re.compile(r"\b([A-Z]{1,6})\s*(\d{2})(\d{2})(\d{2})([CP])(\d{8})\b")
@@ -198,6 +200,27 @@ def main() -> int:
             if "OUTPUT" not in body.upper():
                 warns.append(f"prompts {t}: no OUTPUT block")
         notes.append(f"prompts file {prm.name}: {len(text):,} characters, {len(heads)} headings")
+
+    # strategy layer (v3, 18 Oct): never a gate. Its challenges become WARN lines the deep dive must answer.
+    sl = folder / f"strategy_layer_{session}.csv"
+    if not sl.exists():
+        warns.append(f"{sl.name} is missing: run avs_day.ps1 strategy before the deep dives (cards will have no S1-S6 row)")
+    else:
+        L = pd.read_csv(sl, dtype=str, keep_default_na=False)
+        L["ticker"] = L["ticker"].str.upper().str.strip()
+        by = {t: r for t, r in zip(L["ticker"], L.to_dict("records"))}
+        nos = [t for t in T["ticker"] if t not in by]
+        if nos:
+            warns.append("no strategy-layer row for: " + ", ".join(nos))
+        for t in T.sort_values("_rank")["ticker"]:
+            r = by.get(t)
+            if r and r.get("challenge"):
+                for c in r["challenge"].split(" | "):
+                    warns.append(f"{t} strategy [{r.get('strategy_tags')}]: {c}")
+        if "strategy_tags" not in T.columns:
+            notes.append("triage has no strategy_tags column (optional): the deep dives read strategy_layer_<session>.csv directly")
+        conf = [t for t in T["ticker"] if by.get(t, {}).get("confluence") == "CONFLUENCE"]
+        notes.append(f"strategy confluence (2+ families): {', '.join(conf) or 'none'}")
 
     # packs and inbox
     if packs and packs.exists():
