@@ -1,0 +1,294 @@
+# Triage check, session 2026-11-12: PASS WITH WARNINGS
+
+check_triage_v4, 2026-11-12 22:32 local.
+
+## WARN: the deep dive must answer these
+
+- UHS: no contract (none (spread); reason: PRIORITY CARD; money group WITH; no contract passes the spread gate inside the cap; IN_RAN)
+- UHS: triage first profit 212.1684 is not the Lab first profit (anticipated_level_q50) 227.5668
+- CPNG: trade_contract CPNG270319P00018000 is not the Lab contract CPNG270219P00017000 (the Lab does not publish contract alternatives yet, Codex A8)
+- CPNG: triage first profit 13.4579 is not the Lab first profit (anticipated_level_q50) 10.9258
+- HLF: live liquidity tier B (SPREAD_14.1PCT; quote 1.65/1.9, OI 14828): tradeable with care
+- HLF: triage first profit 16.9476 is not the Lab first profit (anticipated_level_q50) 18.2416
+- ULCC: live liquidity tier C (SPREAD_20.3PCT_OVER_20; quote 1.55/1.9, OI 263): not tradeable at this quote; a Lab alternative, or no trade
+- ULCC: triage first profit 9.551 is not the Lab first profit (anticipated_level_q50) 11.0221
+- LI: live liquidity tier B (PREMIUM_UNDER_1.5_SPREAD_0.13_WIDE; quote 1.33/1.46, OI 1207): tradeable with care
+- LI: trade_contract LI270115P00013000 is not the Lab contract LI270115P00012000 (the Lab does not publish contract alternatives yet, Codex A8)
+- LI: triage first profit 11.0549 is not the Lab first profit (anticipated_level_q50) 9.9698
+- NN: live liquidity tier B (SPREAD_16.3PCT; quote 2.25/2.65, OI 991): tradeable with care
+- NN: trade_contract NN261218P00010000 is not the Lab contract NN270115P00009000 (the Lab does not publish contract alternatives yet, Codex A8)
+- NN: triage first profit 7.1353 is not the Lab first profit (anticipated_level_q50) 5.8206
+- ACM: live liquidity tier B (SPREAD_18.2PCT; quote 3.5/4.2, OI 152): tradeable with care
+- ACM: triage first profit 74.5426 is not the Lab first profit (anticipated_level_q50) 77.7883
+- PGNY: no contract (none (spread); reason: money group WITH; no contract passes the spread gate inside the cap; BEYOND_CHASE)
+- PGNY: triage first profit 43.2336 is not the Lab first profit (anticipated_level_q50) 49.1853
+- URGN: no contract (none (spread); reason: money group WITH; no contract passes the spread gate inside the cap; IN_RANGE)
+- URGN: triage target 46.851 is not the Lab target (anticipated_level) 46.8177
+- URGN: triage first profit 36.4755 is not the Lab first profit (anticipated_level_q50) 39.0523
+- IPAR: no contract (none (spread); reason: money group WITH; alternate in cluster 'Staples calls (XLP leading)' (chosen: HLF); no con)
+- IPAR: triage first profit 148.2884 is not the Lab first profit (anticipated_level_q50) 154.2896
+- FLS: no contract (none (spread); reason: money group WITH; alternate in cluster 'Industrial capex calls' (chosen: ACM); no contract)
+- FLS: triage first profit 91.1478 is not the Lab first profit (anticipated_level_q50) 97.0955
+- NTGR: live liquidity tier C (OI_5_UNDER_100; quote 3.8/4.3, OI 5): not tradeable at this quote; a Lab alternative, or no trade
+- NTGR: trade_contract NTGR261218P00024000 is not the Lab contract NTGR261218P00021000 (the Lab does not publish contract alternatives yet, Codex A8)
+- NTGR: triage first profit 19.3967 is not the Lab first profit (anticipated_level_q50) 18.7034
+- BROS: live liquidity tier B (SPREAD_15.1PCT; quote 2.45/2.85, OI 1073): tradeable with care
+- BROS: trade_contract BROS270115P00035000 is not the Lab contract BROS270115P00030000 (the Lab does not publish contract alternatives yet, Codex A8)
+- BROS: triage first profit 28.7159 is not the Lab first profit (anticipated_level_q50) 22.4217
+- HSBC: triage target 107.311 is not the Lab target (anticipated_level) 107.9199
+- HSBC: triage first profit 98.7555 is not the Lab first profit (anticipated_level_q50) 103.674
+- SHEL: trade_contract SHEL270319C00100000 is not the Lab contract SHEL270115C00100000 (the Lab does not publish contract alternatives yet, Codex A8)
+- SHEL: triage first profit 110.7378 is not the Lab first profit (anticipated_level_q50) 117.8527
+- WD: live liquidity tier C (OI_64_UNDER_100; quote 2.2/2.6, OI 64): not tradeable at this quote; a Lab alternative, or no trade
+- WD: triage first profit 33.0213 is not the Lab first profit (anticipated_level_q50) 26.6026
+- APLE: live liquidity tier B (SPREAD_15.4PCT; quote 0.6/0.7, OI 2809): tradeable with care
+- APLE: triage first profit 20.5502 is not the Lab first profit (anticipated_level_q50) 21.3004
+- HG: live liquidity tier C (OI_2_UNDER_100; quote 3.8/4.2, OI 2): not tradeable at this quote; a Lab alternative, or no trade
+- HG: triage first profit 39.7169 is not the Lab first profit (anticipated_level_q50) 40.2311
+- GT: live liquidity tier B (SPREAD_19.0PCT; quote 0.95/1.15, OI 7996): tradeable with care
+- GT: trade_contract GT270115P00005000 is not the Lab contract GT261218P00004000 (the Lab does not publish contract alternatives yet, Codex A8)
+- GT: triage first profit 3.5409 is not the Lab first profit (anticipated_level_q50) 3.4135
+- TRIP: live liquidity tier C (SPREAD_24.0PCT_OVER_20; quote 1.65/2.1, OI 600): not tradeable at this quote; a Lab alternative, or no trade
+- TRIP: triage first profit 6.4794 is not the Lab first profit (anticipated_level_q50) 5.4888
+- MAA: live liquidity tier B (SPREAD_17.6PCT; quote 2.85/3.4, OI 137): tradeable with care
+- MAA: trade_contract MAA270319P00110000 is not the Lab contract MAA261218P00115000 (the Lab does not publish contract alternatives yet, Codex A8)
+- MAA: triage first profit 110.493 is not the Lab first profit (anticipated_level_q50) 102.796
+- ADAM: no contract (none (spread); reason: money group MIXED; no contract passes the spread gate inside the cap; IN_RANGE)
+- ADAM: triage first profit 4.8966 is not the Lab first profit (anticipated_level_q50) 4.4632
+- HLT: no contract (none (spread); reason: money group MIXED; no contract passes the spread gate inside the cap; BEYOND_CHASE)
+- HLT: triage first profit 392.1072 is not the Lab first profit (anticipated_level_q50) 407.3044
+- SSTK: no contract (none (spread); reason: money group MIXED; no contract passes the spread gate inside the cap; BEYOND_CHASE)
+- SSTK: triage first profit 1.8631 is not the Lab first profit (anticipated_level_q50) 1.0661
+- SKT: no contract (none (spread); reason: money group MIXED; alternate in cluster 'REIT calls (XLRE leading, rate-sensitive)' (chose)
+- SKT: triage first profit 41.642 is not the Lab first profit (anticipated_level_q50) 42.9049
+- HR: no contract (none (spread); reason: money group MIXED; alternate in cluster 'REIT calls (XLRE leading, rate-sensitive)' (chose)
+- HR: triage first profit 20.65 is not the Lab first profit (anticipated_level_q50) 21.7671
+- ADNT: trade_contract ADNT270115P00020000 is not the Lab contract ADNT270115P00017500 (the Lab does not publish contract alternatives yet, Codex A8)
+- ADNT: triage first profit 14.8921 is not the Lab first profit (anticipated_level_q50) 14.1178
+- WM: live liquidity tier C (SPREAD_23.5PCT_OVER_20; quote 0.75/0.95, OI 407): not tradeable at this quote; a Lab alternative, or no trade
+- WM: trade_contract WM261218P00220000 is not the Lab contract WM270115P00240000 (the Lab does not publish contract alternatives yet, Codex A8)
+- WM: triage first profit 220.4325 is not the Lab first profit (anticipated_level_q50) 211.5134
+- INGR: live liquidity tier C (OI_3_UNDER_100; quote 3.6/4.5, OI 3): not tradeable at this quote; a Lab alternative, or no trade
+- INGR: triage first profit 90.2216 is not the Lab first profit (anticipated_level_q50) 87.6132
+- BILL: no contract (none (spread); reason: money group AGAINST; no contract passes the spread gate inside the cap; IN_RANGE; AGAINST )
+- BILL: triage first profit 61.5448 is not the Lab first profit (anticipated_level_q50) 63.9089
+- UHS: earnings Tastytrade 2026-10-27 vs hand-off 2027-02-24: the deep dive confirms which
+- CPNG: earnings Tastytrade 2026-11-03 vs hand-off 2027-02-25: the deep dive confirms which
+- HLF: earnings Tastytrade 2026-11-02 vs hand-off 2027-02-17: the deep dive confirms which
+- ULCC: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-11: the deep dive confirms which
+- PGNY: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-25: the deep dive confirms which
+- URGN: earnings Tastytrade 2026-11-04 vs hand-off 2027-03-02: the deep dive confirms which
+- IPAR: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-23: the deep dive confirms which
+- FLS: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-04: the deep dive confirms which
+- NTGR: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-03: the deep dive confirms which
+- BROS: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-11: the deep dive confirms which
+- HSBC: earnings Tastytrade 2026-10-27 vs hand-off 2027-02-23: the deep dive confirms which
+- SHEL: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-04: the deep dive confirms which
+- WD: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-25: the deep dive confirms which
+- APLE: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-22: the deep dive confirms which
+- HG: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-18: the deep dive confirms which
+- GT: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-09: the deep dive confirms which
+- TRIP: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-11: the deep dive confirms which
+- MAA: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-03: the deep dive confirms which
+- ADAM: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-17: the deep dive confirms which
+- HLT: earnings Tastytrade 2026-10-27 vs hand-off 2027-02-10: the deep dive confirms which
+- SSTK: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-16: the deep dive confirms which
+- SKT: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-24: the deep dive confirms which
+- HR: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-11: the deep dive confirms which
+- ADNT: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-03: the deep dive confirms which
+- WM: earnings Tastytrade 2026-10-27 vs hand-off 2027-01-27: the deep dive confirms which
+- INGR: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-02: the deep dive confirms which
+- BILL: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-04: the deep dive confirms which
+- batch 1: no pack for: HLF ULCC LI NN ACM URGN IPAR FLS NTGR BROS SHEL WD APLE HG GT TRIP MAA ADAM HLT SSTK SKT HR ADNT WM INGR BILL  ->  avs_day.ps1 packs -Tickers HLF ULCC LI NN ACM URGN IPAR FLS NTGR BROS SHEL WD APLE HG GT TRIP MAA ADAM HLT SSTK SKT HR ADNT WM INGR BILL
+- batch 2: not in the Lab hand-off (the Lab does not publish them as GO_LIMIT or MANUAL_REVIEW): LAW
+- GILD: trade_contract GILD261218C00175000 is not the Lab contract GILD270115C00175000 (the Lab does not publish contract alternatives yet, Codex A8)
+- GILD: triage first profit 187.1111 is not the Lab first profit (anticipated_level_q50) 204.4922
+- RCAT: trade_contract RCAT270115P00005000 is not the Lab contract RCAT270115P00013000 (the Lab does not publish contract alternatives yet, Codex A8)
+- RCAT: triage first profit 3.77 is not the Lab first profit (anticipated_level_q50) 3.25
+- EL: live liquidity tier B (SPREAD_12.1PCT; quote 3.1/3.5, OI 1250): tradeable with care
+- EL: trade_contract EL270115C00120000 is not the Lab contract EL270115C00115000 (the Lab does not publish contract alternatives yet, Codex A8)
+- EL: triage first profit 117.2579 is not the Lab first profit (anticipated_level_q50) 122.1858
+- AMGN: live liquidity tier C (SPREAD_21.1PCT_OVER_20; quote 3.6/4.45, OI 103): not tradeable at this quote; a Lab alternative, or no trade
+- AMGN: trade_contract AMGN261218C00510000 is not the Lab contract AMGN270115C00470000 (the Lab does not publish contract alternatives yet, Codex A8)
+- AMGN: triage first profit 495.1851 is not the Lab first profit (anticipated_level_q50) 520.8907
+- BHE: no contract (none (spread); reason: money WITH (XLK OUT, put); no contract passes the spread gate; 0.11 ATR from a confirming )
+- BHE: triage first profit 59.8159 is not the Lab first profit (anticipated_level_q50) 54.6518
+- CXDO: no contract (none (spread); reason: money WITH (XLK OUT, put); alt of batch-1 Comms-equipment puts (NN chosen); no contract pa)
+- CXDO: triage first profit 4.7076 is not the Lab first profit (anticipated_level_q50) 4.3653
+- BR: no contract (none (spread); reason: money WITH (XLI IN); no in-cap contract passes the gate; weekly rung IN_RANGE; morning gat)
+- BR: triage first profit 205.1373 is not the Lab first profit (anticipated_level_q50) 215.676
+- CBLL: no contract (none (spread); reason: money WITH (XLV IN); chosen Medtech calls (IRMD alt); no contract passes the gate; weekly )
+- CBLL: triage first profit 31.6598 is not the Lab first profit (anticipated_level_q50) 35.5196
+- IRMD: no contract (none (spread); reason: money WITH (XLV IN); alt Medtech calls (CBLL chosen); no contract passes; beyond chase; mo)
+- IRMD: triage first profit 94.785 is not the Lab first profit (anticipated_level_q50) 102.99
+- ABCL: no contract (none (spread); reason: money WITH (XLV IN); alt of batch-1 Biotech call (URGN chosen); no contract passes; 0.07 A)
+- ABCL: triage first profit 13.4825 is not the Lab first profit (anticipated_level_q50) 15.015
+- IBEX: no contract (none (spread); reason: money WITH (XLI IN); chosen BPO/outsourcing calls (EXLS alt, AGAINST); no contract passes;)
+- IBEX: triage target 83.9298 is not the Lab target (anticipated_level) 85.7816
+- IBEX: triage first profit 69.6249 is not the Lab first profit (anticipated_level_q50) 78.6932
+- LAND: live liquidity tier B (SPREAD_10.5PCT; quote 0.9/1, OI 1124): tradeable with care
+- LAND: triage first profit 6.7231 is not the Lab first profit (anticipated_level_q50) 6.0862
+- PENN: live liquidity tier B (SPREAD_16.2PCT; quote 0.85/1, OI 1421): tradeable with care
+- PENN: trade_contract PENN270115C00019000 is not the Lab contract PENN261218C00018000 (the Lab does not publish contract alternatives yet, Codex A8)
+- PENN: triage first profit 19.3747 is not the Lab first profit (anticipated_level_q50) 20.5995
+- HAS: live liquidity tier B (SPREAD_17.7PCT; quote 3.6/4.3, OI 443): tradeable with care
+- HAS: trade_contract HAS261218C00125000 is not the Lab contract HAS270115C00155000 (the Lab does not publish contract alternatives yet, Codex A8)
+- HAS: triage first profit 144.0899 is not the Lab first profit (anticipated_level_q50) 164.1597
+- CLB: no contract (none (spread); reason: money MIXED (XLE LAGGING but rel5 +0.68); no contract passes; 0.03 ATR from a confirming c)
+- CLB: triage first profit 8.3248 is not the Lab first profit (anticipated_level_q50) 7.661
+- SBH: no contract (none (spread); reason: money MIXED (XLY); no contract passes; IN_RANGE; morning gate FLAG (no GO in batch 2))
+- SBH: triage first profit 23.3233 is not the Lab first profit (anticipated_level_q50) 27.4266
+- MSGE: no contract (none (spread); reason: money WITH on the board but XLC in CONFLICT -> ranked MIXED; no contract passes; IN_RANGE;)
+- MSGE: triage first profit 85.1 is not the Lab first profit (anticipated_level_q50) 90.41
+- VCTR: no contract (none (spread); reason: money MIXED (XLF rel5 -0.05); no contract passes; IN_RANGE; morning gate FLAG (no GO in ba)
+- VCTR: triage first profit 139.8137 is not the Lab first profit (anticipated_level_q50) 146.2147
+- SPNT: no contract (none (spread); reason: money MIXED (XLF); alt of batch-1 Reinsurer call (HG chosen); no contract passes; morning )
+- SPNT: triage first profit 27.8624 is not the Lab first profit (anticipated_level_q50) 28.6748
+- PAYS: no contract (none (spread); reason: money MIXED (sector conflict XLI/XLF; XLF used); no contract passes; IN_RANGE; morning gat)
+- PAYS: triage first profit 12.3373 is not the Lab first profit (anticipated_level_q50) 15.1947
+- FNLC: no contract (none (spread); reason: money MIXED (XLF); no contract passes; IN_RANGE; morning gate FLAG (no GO in batch 2))
+- FNLC: triage first profit 39.6691 is not the Lab first profit (anticipated_level_q50) 40.6277
+- HDSN: no contract (none (spread); reason: money MIXED (XLB rel5 -0.72); no contract passes; IN_RANGE; morning gate FLAG (no GO in ba)
+- HDSN: triage first profit 3.6767 is not the Lab first profit (anticipated_level_q50) 2.8934
+- IHE: no contract (none (spread); reason: money UNMAPPED (MIXED for ranking; XLV proxy would be WITH); alt Big pharma cluster; no co)
+- IHE: triage first profit 114.9503 is not the Lab first profit (anticipated_level_q50) 118.8206
+- UTL: no contract (none (spread); reason: Confirmed overnight (NEAR->CONFIRMED) so first in its money group; money AGAINST (XLU IN, )
+- UTL: triage first profit 52.14 is not the Lab first profit (anticipated_level_q50) 51.0039
+- EXLS: live liquidity tier C (SPREAD_23.3PCT_OVER_20; quote 0.95/1.2, OI 1143): not tradeable at this quote; a Lab alternative, or no trade
+- EXLS: triage first profit 46.6747 is not the Lab first profit (anticipated_level_q50) 48.482
+- LMNR: live liquidity tier C (OI_17_UNDER_100; quote 2.05/2.4, OI 17): not tradeable at this quote; a Lab alternative, or no trade
+- LMNR: trade_contract LMNR261218P00012500 is not the Lab contract LMNR261218P00010000 (the Lab does not publish contract alternatives yet, Codex A8)
+- LMNR: triage first profit 8.248 is not the Lab first profit (anticipated_level_q50) 6.076
+- XPO: no contract (none (spread); reason: money AGAINST (XLI IN, put); no contract passes; not triggered live; morning gate FLAG (no)
+- XPO: triage first profit 179.055 is not the Lab first profit (anticipated_level_q50) 169.11
+- LAW: no contract (none (spread); reason: money AGAINST (XLK OUT, call); alt of batch-1 Software call (BILL chosen); no contract pas)
+- SAIC: no contract (none (spread); reason: money AGAINST (XLK OUT, call); earnings in the hold; no contract passes; morning gate FLAG)
+- SAIC: triage first profit 164.302 is not the Lab first profit (anticipated_level_q50) 164.4799
+- FEIM: no contract (none (spread); reason: money AGAINST (XLK OUT, call); earnings in the hold; beyond chase; no contract passes; mor)
+- FEIM: triage first profit 78.995 is not the Lab first profit (anticipated_level_q50) 89.76
+- GILD: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-09: the deep dive confirms which
+- EL: earnings Tastytrade 2026-11-02 vs hand-off 2027-02-03: the deep dive confirms which
+- AMGN: earnings Tastytrade 2026-11-03 vs hand-off 2027-02-02: the deep dive confirms which
+- BHE: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-02: the deep dive confirms which
+- CXDO: earnings Tastytrade 2026-11-03 vs hand-off 2027-03-02: the deep dive confirms which
+- BR: earnings Tastytrade 2026-11-03 vs hand-off 2027-02-02: the deep dive confirms which
+- CBLL: earnings Tastytrade 2026-11-03 vs hand-off 2027-02-23: the deep dive confirms which
+- IRMD: earnings Tastytrade 2026-10-30 vs hand-off 2027-02-10: the deep dive confirms which
+- ABCL: earnings Tastytrade 2026-11-09 vs hand-off 2027-02-23: the deep dive confirms which
+- IBEX: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-04: the deep dive confirms which
+- LAND: earnings Tastytrade 2026-11-10 vs hand-off 2027-02-24: the deep dive confirms which
+- PENN: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-25: the deep dive confirms which
+- HAS: earnings Tastytrade 2026-10-20 vs hand-off 2027-02-09: the deep dive confirms which
+- CLB: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-03: the deep dive confirms which
+- SBH: earnings Tastytrade 2026-11-10 vs hand-off 2027-02-08: the deep dive confirms which
+- MSGE: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-03: the deep dive confirms which
+- VCTR: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-03: the deep dive confirms which
+- SPNT: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-25: the deep dive confirms which
+- FNLC: earnings Tastytrade 2026-10-28 vs hand-off 2027-01-20: the deep dive confirms which
+- HDSN: earnings Tastytrade 2026-10-28 vs hand-off 2027-03-03: the deep dive confirms which
+- UTL: earnings Tastytrade 2026-11-02 vs hand-off 2027-02-08: the deep dive confirms which
+- EXLS: earnings Tastytrade 2026-10-27 vs hand-off 2027-02-23: the deep dive confirms which
+- XPO: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-04: the deep dive confirms which
+- batch 2: no pack for: GILD RCAT EL BHE CXDO CBLL IRMD ABCL IBEX LAND PENN HAS CLB SBH MSGE SPNT PAYS FNLC HDSN IHE UTL EXLS LMNR XPO LAW SAIC FEIM  ->  avs_day.ps1 packs -Tickers GILD RCAT EL BHE CXDO CBLL IRMD ABCL IBEX LAND PENN HAS CLB SBH MSGE SPNT PAYS FNLC HDSN IHE UTL EXLS LMNR XPO LAW SAIC FEIM
+- batch 3: not in the Lab hand-off (the Lab does not publish them as GO_LIMIT or MANUAL_REVIEW): VALE
+- BLKB: no contract (none (spread); reason: money group WITH; no contract passes the spread gate inside the cap; IN_RANGE)
+- BLKB: triage target 40.82 is not the Lab target (anticipated_level) 40.9142
+- BLKB: triage first profit 47.61 is not the Lab first profit (anticipated_level_q50) 46.3531
+- BLCO: no contract (none (spread); reason: money group WITH; no contract passes the spread gate inside the cap; NOT_FIRED)
+- BLCO: triage first profit 22.3668 is not the Lab first profit (anticipated_level_q50) 23.3737
+- MCK: no contract (none (spread); reason: money group WITH; no contract passes the spread gate inside the cap; BEYOND_CHASE; morning)
+- MCK: triage first profit 1119.9413 is not the Lab first profit (anticipated_level_q50) 1160.0926
+- PCTY: no contract (none (spread); reason: money group WITH; no contract passes the spread gate inside the cap; BEYOND_CHASE)
+- PCTY: triage first profit 204.8372 is not the Lab first profit (anticipated_level_q50) 221.5054
+- DD: live liquidity tier C (SPREAD_22.2PCT_OVER_20; quote 2.8/3.5, OI 385): not tradeable at this quote; a Lab alternative, or no trade
+- DD: trade_contract DD261218C00160000 is not the Lab contract DD270115C00150000 (the Lab does not publish contract alternatives yet, Codex A8)
+- DD: triage first profit 162.4132 is not the Lab first profit (anticipated_level_q50) 168.8664
+- PEP: trade_contract PEP270115C00150000 is not the Lab contract PEP270115C00145000 (the Lab does not publish contract alternatives yet, Codex A8)
+- PEP: triage first profit 149.5315 is not the Lab first profit (anticipated_level_q50) 153.5131
+- VLTO: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- VLTO: triage first profit 122.1981 is not the Lab first profit (anticipated_level_q50) 125.3712
+- ITT: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- ITT: triage first profit 221.9771 is not the Lab first profit (anticipated_level_q50) 225.1705
+- KYMR: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- KYMR: triage target 186.2777 is not the Lab target (anticipated_level) 174.4897
+- KYMR: triage first profit 160.5589 is not the Lab first profit (anticipated_level_q50) 154.563
+- PH: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- PH: triage first profit 1036.42 is not the Lab first profit (anticipated_level_q50) 1099.94
+- VRTX: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- VRTX: triage first profit 621.5478 is not the Lab first profit (anticipated_level_q50) 672.9596
+- DGX: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- DGX: triage first profit 267.6926 is not the Lab first profit (anticipated_level_q50) 276.6952
+- GWW: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- GWW: triage first profit 1592.7799 is not the Lab first profit (anticipated_level_q50) 1683.8631
+- THC: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- THC: triage first profit 323.8387 is not the Lab first profit (anticipated_level_q50) 354.7074
+- SYRE: no contract (none (spread); reason: money group WITH; cluster alternate (one slot per cluster); no contract passes the spread )
+- SYRE: triage first profit 114.0056 is not the Lab first profit (anticipated_level_q50) 121.1911
+- COIN: trade_contract COIN261218P00115000 is not the Lab contract COIN270115P00140000 (the Lab does not publish contract alternatives yet, Codex A8)
+- COIN: triage first profit 127.5663 is not the Lab first profit (anticipated_level_q50) 119.6727
+- LNC: live liquidity tier B (SPREAD_12.1PCT; quote 1.55/1.75, OI 775): tradeable with care
+- LNC: triage first profit 45.3366 is not the Lab first profit (anticipated_level_q50) 47.6715
+- GPN: trade_contract GPN270115C00105000 is not the Lab contract GPN261218C00095000 (the Lab does not publish contract alternatives yet, Codex A8)
+- GPN: triage first profit 105.6795 is not the Lab first profit (anticipated_level_q50) 110.0391
+- VIK: trade_contract VIK261218C00090000 is not the Lab contract VIK261218C00100000 (the Lab does not publish contract alternatives yet, Codex A8)
+- VIK: triage first profit 95.1584 is not the Lab first profit (anticipated_level_q50) 98.8168
+- TMF: trade_contract TMF261218P00029000 is not the Lab contract TMF270115P00030000 (the Lab does not publish contract alternatives yet, Codex A8)
+- TMF: triage first profit 28.3537 is not the Lab first profit (anticipated_level_q50) 27.5774
+- FDS: no contract (none (spread); reason: money group MIXED/UNMAPPED; no contract passes the spread gate inside the cap; IN_RANGE; e)
+- FDS: triage first profit 361.6528 is not the Lab first profit (anticipated_level_q50) 388.4256
+- CROX: live liquidity tier B (SPREAD_17.8PCT; quote 2.05/2.45, OI 382): tradeable with care
+- CROX: trade_contract CROX261218C00175000 is not the Lab contract CROX261218C00165000 (the Lab does not publish contract alternatives yet, Codex A8)
+- CROX: triage first profit 182.0433 is not the Lab first profit (anticipated_level_q50) 204.1066
+- SGML: live liquidity tier B (SPREAD_14.3PCT; quote 0.65/0.75, OI 870): tradeable with care
+- SGML: trade_contract SGML270115P00005000 is not the Lab contract SGML261218P00006000 (the Lab does not publish contract alternatives yet, Codex A8)
+- SGML: triage first profit 4.526 is not the Lab first profit (anticipated_level_q50) 4.062
+- CAL: no contract (none (spread); reason: money group MIXED/UNMAPPED; no contract passes the spread gate inside the cap; NOT_FIRED; )
+- CAL: triage first profit 12.2396 is not the Lab first profit (anticipated_level_q50) 11.4029
+- AGNC: trade_contract AGNC270115P00008000 is not the Lab contract AGNC261218P00008000 (the Lab does not publish contract alternatives yet, Codex A8)
+- AGNC: triage first profit 8.31 is not the Lab first profit (anticipated_level_q50) 8.1
+- NTRS: no contract (none (spread); reason: money group MIXED/UNMAPPED; cluster alternate (one slot per cluster); no contract passes t)
+- NTRS: triage first profit 186.5587 is not the Lab first profit (anticipated_level_q50) 189.7443
+- UNF: no contract (none (spread); reason: money group AGAINST; no contract passes the spread gate inside the cap; IN_RANGE; no trans)
+- UNF: triage first profit 232.8363 is not the Lab first profit (anticipated_level_q50) 224.7225
+- VNT: no contract (none (spread); reason: money group AGAINST; no contract passes the spread gate inside the cap; NOT_FIRED; no tran)
+- VNT: triage target 49.9662 is not the Lab target (anticipated_level) 49.7341
+- VNT: triage first profit 47.1031 is not the Lab first profit (anticipated_level_q50) 47.3095
+- IMSR: triage first profit 2.2411 is not the Lab first profit (anticipated_level_q50) 2.0422
+- BLKB: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-10: the deep dive confirms which
+- BLCO: earnings Tastytrade 2026-10-28 vs hand-off 2027-02-17: the deep dive confirms which
+- MCK: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-03: the deep dive confirms which
+- PCTY: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-04: the deep dive confirms which
+- PEP: earnings Tastytrade 2026-10-08 vs hand-off 2027-02-02: the deep dive confirms which
+- VLTO: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-02: the deep dive confirms which
+- ITT: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-04: the deep dive confirms which
+- KYMR: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-25: the deep dive confirms which
+- PH: earnings Tastytrade 2026-11-05 vs hand-off 2027-01-28: the deep dive confirms which
+- VRTX: earnings Tastytrade 2026-11-02 vs hand-off 2027-02-11: the deep dive confirms which
+- DGX: earnings Tastytrade 2026-10-22 vs hand-off 2027-02-09: the deep dive confirms which
+- GWW: earnings Tastytrade 2026-11-04 vs hand-off 2027-02-02: the deep dive confirms which
+- THC: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-10: the deep dive confirms which
+- SYRE: earnings Tastytrade 2026-11-03 vs hand-off 2027-02-18: the deep dive confirms which
+- COIN: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-11: the deep dive confirms which
+- LNC: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-18: the deep dive confirms which
+- GPN: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-17: the deep dive confirms which
+- CROX: earnings Tastytrade 2026-10-29 vs hand-off 2027-02-11: the deep dive confirms which
+- AGNC: earnings Tastytrade 2026-10-19 vs hand-off 2027-01-25: the deep dive confirms which
+- NTRS: earnings Tastytrade 2026-10-21 vs hand-off 2027-01-21: the deep dive confirms which
+- VNT: earnings Tastytrade 2026-11-05 vs hand-off 2027-02-11: the deep dive confirms which
+- batch 3: no pack for: BLKB BLCO PCTY DD PEP VLTO ITT KYMR VRTX DGX THC SYRE COIN LNC GPN VIK TMF FDS CROX SGML VALE CAL AGNC NTRS UNF VNT IMSR  ->  avs_day.ps1 packs -Tickers BLKB BLCO PCTY DD PEP VLTO ITT KYMR VRTX DGX THC SYRE COIN LNC GPN VIK TMF FDS CROX SGML VALE CAL AGNC NTRS UNF VNT IMSR
+
+## Notes
+
+- hand-off lab_2026-11-12: Lab publication, 2132 names; triage files read from data\scratch\workaround\handoff\split_2026-11-12_cap5
+- batch 1: batch1_triage_2026-11-12.csv was built from the old hand-off (no lab_revision column): batch membership is not checked. 4 of its 30 names are in the Lab hand-off's batch 1, 26 are in another Lab batch, 0 are not in the Lab hand-off
+- batch 1: prompts file deep_dive_prompts_2026-11-12.md: 352,547 characters, 31 headings
+- batch 1: 30 names on the triage, 30 hand-off batch-1 names, premium cap 5
+- batch 1 deep-dive order: 1 UHS, 2 CPNG, 3 HLF, 4 ULCC, 5 LI, 6 NN, 7 ACM, 8 PGNY, 9 URGN, 10 alt Staples calls (XLP leading) IPAR, 11 alt Industrial capex calls FLS, 12 alt Comms-equipment puts (XLK lagging) NTGR, 13 BROS, 14 HSBC, 15 SHEL, 16 WD, 17 APLE, 18 HG, 19 GT, 20 TRIP, 21 MAA, 22 ADAM, 23 HLT, 24 SSTK, 25 alt REIT calls (XLRE leading, rate-sensitive) SKT, 26 alt REIT calls (XLRE leading, rate-sensitive) HR, 27 alt Auto-parts puts ADNT, 28 WM, 29 INGR, 30 BILL
+- batch 2: batch2_triage_2026-11-12.csv was built from the old hand-off (no lab_revision column): batch membership is not checked. 3 of its 30 names are in the Lab hand-off's batch 2, 26 are in another Lab batch, 1 are not in the Lab hand-off
+- batch 2: prompts file deep_dive_prompts_2026-11-12_b2.md: 395,215 characters, 31 headings
+- batch 2: 30 names on the triage, 30 hand-off batch-2 names, premium cap 5
+- batch 2 deep-dive order: 31 GILD, 32 RCAT, 33 alt Staples calls (XLP leading) EL, 34 alt Big pharma/biotech calls (XLV) AMGN, 35 BHE, 36 alt Comms-equipment puts (XLK lagging) CXDO, 37 BR, 38 CBLL, 39 alt Medtech calls (XLV) IRMD, 40 alt Biotech call ABCL, 41 IBEX, 42 LAND, 43 PENN, 44 HAS, 45 CLB, 46 SBH, 47 MSGE, 48 VCTR, 49 alt Reinsurer call SPNT, 50 PAYS, 51 FNLC, 52 HDSN, 53 alt Big pharma/biotech calls (XLV) IHE, 54 UTL, 55 alt BPO/outsourcing calls EXLS, 56 alt Farmland/agri puts LMNR, 57 XPO, 58 alt Software call LAW, 59 SAIC, 60 FEIM
+- batch 3: batch3_triage_2026-11-12.csv was built from the old hand-off (no lab_revision column): batch membership is not checked. 2 of its 30 names are in the Lab hand-off's batch 3, 27 are in another Lab batch, 1 are not in the Lab hand-off
+- batch 3: prompts file deep_dive_prompts_2026-11-12_b3.md: 397,503 characters, 31 headings
+- batch 3: 30 names on the triage, 30 hand-off batch-3 names, premium cap 5
+- batch 3 deep-dive order: 61 BLKB, 62 BLCO, 63 MCK, 64 PCTY, 65 alt Industrial capex calls DD, 66 alt Staples calls (XLP leading) PEP, 67 alt Industrial capex calls VLTO, 68 alt Industrial capex calls ITT, 69 alt Biotech calls KYMR, 70 alt Industrial capex calls PH, 71 alt Biotech calls VRTX, 72 alt Healthcare services calls (XLV) DGX, 73 alt Industrial capex calls GWW, 74 alt Hospitals (XLV calls) THC, 75 alt Biotech calls SYRE, 76 COIN, 77 LNC, 78 GPN, 79 VIK, 80 TMF, 81 FDS, 82 CROX, 83 SGML, 84 VALE, 85 CAL, 86 alt Mortgage REIT put AGNC, 87 alt Bank call NTRS, 88 UNF, 89 VNT, 90 IMSR
