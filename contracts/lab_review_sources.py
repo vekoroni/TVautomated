@@ -191,7 +191,8 @@ def _canonical_structure_readings(root, run_id, rows, issues, watches, receipt):
 
 
 def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, handoff_validator=None,
-                               validation_receipt: Mapping[str, Any] | None = None):
+                               validation_receipt: Mapping[str, Any] | None = None,
+                               monetisation_packet: Mapping[str, Any] | None = None):
     root = Path(run_dir).resolve(); run_id = _text(book.get("run_id"))
     if root.name != run_id: raise ValueError("Review run-root identity mismatch")
     output = {**book, "rows": [dict(r) for r in book.get("rows", [])]}
@@ -200,6 +201,15 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
     context = _context(root, run_id, issues, watches)
     receipt = {"overlay_state": "NOT_PUBLISHED", "issues": issues, "watch_inputs": watches,
                "validation_events_applied": 0, "validation_event_state": "NOT_PUBLISHED"}
+    if monetisation_packet is not None:
+        from contracts.monetisation_clock import attach_clock
+        morning = root / 'morning_validation' / f'morning_validated_trades_{run_id}.csv'
+        if (not morning.is_file() or hashlib.sha256(morning.read_bytes()).hexdigest()
+                != monetisation_packet.get('source_rows_sha256')):
+            raise ValueError('MONETISATION_MORNING_SOURCE_HASH_MISMATCH')
+        output['rows'], receipt['monetisation_clock'] = attach_clock(
+            output['rows'], monetisation_packet, run_id=run_id)
+        _watch(root, morning, watches)
     _canonical_structure_readings(root, run_id, output["rows"], issues, watches, receipt)
     handoff_path = root / "interpreter/handoff_manifest.json"
     _watch(root, handoff_path, watches)

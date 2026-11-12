@@ -24,12 +24,14 @@ from uuid import uuid4
 import zlib
 from contracts.lab_review_display import display_sector, display_policy, valuation_disclosure
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
+from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
 
 SCHEMA = "lab_review_projection_v1"
 FAMILIES = ("structure", "option_risk", "context", "morning", "audit")
 HOME_FIELDS = tuple("ticker sector sector_etf direction thesis_id trade_lane_candidate_id contract_symbol lab_rank rank_basis rank_group rank_expected_multiple lab_verdict final_action trade_lane trade_lane_setup thesis__readiness thesis__event_status thesis__trigger_age_sessions validation_transition anticipated_move_pct anticipated_sessions_q50 anticipated_value_multiple_q50 anticipated_contract_basis planned_hold_sessions earnings_disclosure".split())
 CARD_FIELDS = tuple(dict.fromkeys((*HOME_FIELDS, *"thesis_phase thesis_event thesis_event_state thesis_event_timeframe thesis_event_scope thesis_event_candidate_id thesis_structure_alignment thesis_trigger_level thesis_trigger_candidate_id thesis__readiness_reason thesis__last_event thesis__last_event_date thesis__last_event_level thesis__top_timeframe thesis__conflicting_count thesis__event_id thesis__event_evidence thesis__entry_opportunity_id thesis__trigger_close_date thesis__event_occurred_at thesis__event_confirmed_at thesis__event_failed_at thesis__policy_qualified_at thesis__setup_first_detected_at thesis__source_bar_end_at thesis__data_received_at thesis__data_provider thesis__discovery_read_at thesis__contract_prepared_at thesis__last_revalidated_at thesis__delivered_at thesis_invalidation_setup_id invalidation_price early_warning_invalidation_level early_warning_setup_id anticipated_level_q50 anticipated_level anticipated_level_basis anticipated_structural_level anticipated_structural_definition anticipated_reachable_level anticipated_sessions_q80 anticipated_time_basis anticipated_evidence_status anticipated_evidence_n anticipated_time_fit anticipated_pays_state anticipated_contract_symbol anticipated_valued_at_utc anticipated_value_multiple_q80 anticipated_value_multiple_earnings_stress anticipated_stress_basis anticipated_move_coverage anticipated_breakeven_move_pct anticipated_authority anticipated_version planned_hold_source expiry dte contract_dte contract_bid contract_ask contract_iv contract_delta contract_oi contract_volume selected_quote_timestamp_utc quote_provider_timestamp_utc quote_freshness bar_data_asof live_price live_price_state live_price_age_seconds live_price_source live_price_as_of live_price_error signal_price validation_event_id morning_execution_mode remaining_runway_state conflict_state evening_thesis_bucket earnings_state earnings_date earnings_report_time earnings_date_confirmation earnings_source earnings_sessions_to_event earnings_inside_hold earnings_inside_contract earnings_unknown_reason valuation_model valuation_version valuation_rate_annual valuation_rate_basis valuation_dividend_yield_annual valuation_dividend_basis valuation_cost_basis valuation_entry_cost_usd_per_share scenario_exit_sessions scenario_iv_basis scenario_target_exit_spot scenario_target_return_on_premium scenario_invalidation_exit_spot scenario_invalidation_return_on_premium scenario_stall_return_on_premium scenario_target_earnings_iv_return_on_premium eod_anticipated_value_multiple_q50 eod_anticipated_pays_state eod_scenario_target_return_on_premium eod_anticipated_valued_at_utc direction_edge_state direction_evidence_state compression_state compression_source compression_timeframe vanguard_context_flags".split())))
 _VERIFY_LOCK = RLock()
+CARD_FIELDS = (*CARD_FIELDS, *MONETISATION_FIELDS)
 CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *RELIABILITY_FIELDS, 'scenario_exit_date',
     'valuation_time_basis', 'anticipated_reach_state', 'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis',
     'contract_value_alternatives', 'doi_alternatives_json')))
@@ -169,6 +171,8 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
                 row['anticipated_reachable_level'] = None
                 row['anticipated_reach_state'] = 'UNASSESSED_NONPHYSICAL_SOURCE_REFERENCE'
             row.update(reliability_fields(row))
+            if not row.get('monetisation_clock_state'):
+                row.update(clock_fields())
             identity = [row.get(k) for k in ("ticker", "thesis_id", "trade_lane_candidate_id", "contract_symbol")]
             identity_counts[_json(identity)] += 1
             # Ordinal conserves duplicate source identities; it is not a thesis ID.

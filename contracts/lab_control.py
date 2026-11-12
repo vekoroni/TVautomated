@@ -840,6 +840,8 @@ FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_
 
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
+from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+FINAL_BOOK_FIELDS += [f for f in MONETISATION_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in (*RELIABILITY_FIELDS, 'scenario_exit_date', 'valuation_time_basis',
     'anticipated_reach_state', 'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis',
     'usmi_routing_source', 'usmi_routing_source_sha256') if f not in FINAL_BOOK_FIELDS]
@@ -4234,6 +4236,7 @@ def opportunity_book_row(
         })
     row.update(evening_projection)
     row.update(reliability_fields({**sig, **row}))
+    row.update({f:sig.get(f) for f in MONETISATION_FIELDS} if sig.get('monetisation_clock_state') else clock_fields())
     for field in ('scenario_exit_date', 'valuation_time_basis', 'anticipated_reach_state',
                   'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis'):
         row[field] = first(sig, field)
