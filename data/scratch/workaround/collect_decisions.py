@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Collect the day's card decisions into one list and one order-ticket sheet (v2, 16 Oct 2026; 18 Oct: carries strategy_tags / strategy_primary). Read-only on every input.
+"""Collect the day's card decisions into one list and one order-ticket sheet (v4, 12 Nov 2026; v2 16 Oct; 18 Oct: carries strategy_tags / strategy_primary).
+
+v4 (12 Nov, Lane B Fix B10): a decision record for every card. The hand-off folder is scanned for *_deep_dive_*.html; a card
+with no decisions\\<TICKER>.json gets one with state CARD_BUILT_DECISION_MISSING, the card path and any artifact link found in
+the HTML (an existing decision file is never touched). "Decided, not placed" names (a TRADE / ENTER decision with no recorded
+order) are reported. Works on a folder with no triage CSV. The spread rule on the ticket sheet is the 11 Nov liquidity tiers.
+--dry-run lists what would be created and writes nothing. Read-only on every input except the decision stubs it creates.
 
 v2 (16 Oct, approved by ACK): every ticket sheet opens with the execution rules from the week review (mid first, one lift
-to the card line at 15:55 ET, spread <= 25% of mid, no orders 09:30-09:45 ET, resting exit within 5 minutes of a fill,
+to the card line at 15:55 ET, the 11 Nov liquidity tiers (which replaced the 16 Oct spread gate), no orders 09:30-09:45 ET, resting exit within 5 minutes of a fill,
 no trade without a card, take the believed card when its criteria are met); each ticket shows the card's limit, max pay,
 close zone and one-contract exit when the decisions file has them; decisions files missing standard fields are listed
 (warn only, never rejected).
@@ -21,6 +27,7 @@ boxes for "order placed / filled at / reason if not", to be filled before 21:00 
 Run from the repo root (PowerShell), or let avs_day.ps1 preclose run it:
     venv\\Scripts\\python.exe data\\scratch\\workaround\\collect_decisions.py
     venv\\Scripts\\python.exe data\\scratch\\workaround\\collect_decisions.py --folder data\\scratch\\workaround\\handoff\\split_2026-10-14_cap5
+    venv\\Scripts\\python.exe data\\scratch\\workaround\\collect_decisions.py --folder data\\scratch\\workaround\\handoff\\split_2026-11-12_cap5 --dry-run
 Writes into the hand-off folder: cards_<session>.csv and order_tickets_<session>.md
 """
 from __future__ import annotations
@@ -28,12 +35,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
-VERSION = "collect_decisions_v3"
+VERSION = "collect_decisions_v4"
 WORK = Path("data") / "scratch" / "workaround"
 CONTRACT_KEYS = ("contract_taken", "contract", "planned_contract", "contract_planned")
 STANDARD_FIELDS = ("ledger_id", "ticker", "handoff_side", "card_side", "decision", "decision_reason", "contract", "contract_alternative",
@@ -46,7 +53,8 @@ EXECUTION_RULES = [
     "",
     "1. **Mid first, then the line.** Buy and sell with a limit at the mid. One lift to the card's line / max pay at 15:55 ET, never above it. "
     "Not filled at the line = NOT_FILLED (price), recorded as such. Sell at the mid too, unless a stop has fired.",
-    "2. **Spread gate.** No order when the spread is over 25% of the mid: use the next strike or expiry that passes, or no trade.",
+    "2. **Liquidity tiers (11 Nov).** A: spread within 10% of the mid, OI 100 or more, and under a 1.50 premium no more than 0.10 wide. "
+    "B: 10-20% of the mid, with care. C: over 20%, no bid, or OI under 100: no order; a Lab alternative that passes, or no trade.",
     "3. **No option orders 09:30-09:45 ET** unless a stop fired at the previous close.",
     "4. **Resting exit within 5 minutes of a fill:** the card's one-contract target as a good-till sell; re-set it each Monday.",
     "5. **No trade without a card.** Anything else gets a one-line tactical card first (contract, max pay, target, stop, time stop).",
@@ -71,6 +79,59 @@ def first(j: dict, keys) -> str:
     return ""
 
 
+CARD_NAME = re.compile(r"^(?P<ticker>[A-Za-z][A-Za-z0-9.\-]*)_deep_dive_(?P<rest>.+)\.html$")
+ARTIFACT_URL = re.compile(r"https://claude\.(?:ai|site)/(?:public/)?artifacts?/[A-Za-z0-9_\-]+")
+SESSION_IN_NAME = re.compile(r"(\d{4}-\d{2}-\d{2})")
+DECIDED = ("TRADE", "ENTER")   # a decision to take the trade: TRADE, TRADE_NOW, TRADE_AT_CLOSE, ENTER ...
+
+
+def find_cards(folder: Path) -> dict:
+    """{TICKER: [card html paths, newest last]} for every *_deep_dive_*.html in the folder (Office lock files ~$ skipped)."""
+    out: dict[str, list[Path]] = {}
+    def card_date(p: Path):   # the date in the file name decides which card is the newest; the file time only breaks a tie
+        d = SESSION_IN_NAME.search(p.name)
+        return (d.group(1) if d else "", p.stat().st_mtime, p.name)
+    for f in sorted(folder.glob("*_deep_dive_*.html"), key=card_date):
+        m = CARD_NAME.match(f.name)
+        if not m or f.name.startswith("~$"):
+            continue
+        out.setdefault(m.group("ticker").upper(), []).append(f)
+    return out
+
+
+def ensure_decision_records(folder: Path, cards: dict, session: str, ledger_ids: dict, dry_run: bool) -> list[dict]:
+    """A decisions\\<TICKER>.json for every card. An existing file is never touched. Returns one line per card."""
+    out = []
+    for t, files in sorted(cards.items()):
+        target = folder / "decisions" / f"{t}.json"
+        newest = files[-1]
+        if target.exists():
+            out.append({"ticker": t, "card": newest.name, "record": "decision record present", "created": False})
+            continue
+        html = newest.read_text(encoding="utf-8", errors="ignore")
+        url = ARTIFACT_URL.search(html)
+        stub = {"ticker": t, "ledger_id": ledger_ids.get(t, ""), "state": "CARD_BUILT_DECISION_MISSING", "decision": "",
+                "decision_reason": "", "card_path": str(newest), "card_files": [f.name for f in files],
+                "artifact_url": url.group(0) if url else "", "artifact_file": str(newest), "session": session,
+                "order_placed": "", "fill": None, "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "created_by": f"{VERSION}: a card was found with no decision record. Write the decision (TRADE / WATCH / PASS) and the reason here."}
+        if not dry_run:
+            target.parent.mkdir(exist_ok=True)
+            target.write_text(json.dumps(stub, indent=1), encoding="utf-8")
+        out.append({"ticker": t, "card": newest.name, "created": not dry_run,
+                    "record": ("would create" if dry_run else "created") + " decisions\\" + target.name + " with state CARD_BUILT_DECISION_MISSING"
+                              + (f", artifact {stub['artifact_url']}" if stub["artifact_url"] else ", no artifact link in the HTML")})
+    return out
+
+
+def decided(c: dict) -> bool:
+    return any(str(c.get(k) or "").upper().startswith(DECIDED) for k in ("decision", "final_action"))
+
+
+def placed(c: dict) -> bool:
+    return str(c.get("order_placed") or "").strip().lower() not in ("", "no", "false", "none", "null", "n")
+
+
 def load_cards(folder: Path) -> dict:
     out = {}
     for f in sorted((folder / "decisions").glob("*.json")) if (folder / "decisions").exists() else []:
@@ -81,6 +142,8 @@ def load_cards(folder: Path) -> dict:
             continue
         out[str(j.get("ticker", f.stem)).upper()] = {
             "decision": str(j.get("decision") or "").upper(),
+            "final_action": str(j.get("final_action") or "").upper(),
+            "state": str(j.get("state") or ""),
             "card_side": j.get("card_side") or "",
             "contract": first(j, CONTRACT_KEYS),
             "contract_alternative": j.get("contract_alternative") or "",
@@ -122,37 +185,60 @@ def macro_line() -> str:
             f"Kill switches fired at the triage: {', '.join(map(str, fired)) or 'none'}. The monitors re-check them live.")
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--folder", help="split hand-off folder (default: split_handoff in today_context.json)")
-    a = ap.parse_args()
+    ap.add_argument("--folder", help="hand-off folder (default: handoff, else split_handoff, in today_context.json)")
+    ap.add_argument("--dry-run", action="store_true", help="list the cards and the decision records that would be created; write nothing")
+    a = ap.parse_args(argv)
     if a.folder:
         folder = Path(a.folder)
     else:
         ctx = json.loads((WORK / "today_context.json").read_text(encoding="utf-8-sig"))
-        folder = Path(ctx["split_handoff"])
+        folder = Path(ctx.get("handoff") or ctx["split_handoff"])
     triage_files = sorted(folder.glob("batch*_triage_*.csv"))
-    if not triage_files:
-        raise SystemExit(f"No batch triage CSV in {folder}: run the triage (B3) first")
-    T = pd.concat([pd.read_csv(f, low_memory=False).assign(triage_file=f.name) for f in triage_files], ignore_index=True)
-    session = str(T["ledger_id"].dropna().iloc[0])[:10] if "ledger_id" in T else datetime.now().strftime("%Y-%m-%d")
+    # keep_default_na=False: the ticker NAN is a real ticker; blank stays blank
+    T = (pd.concat([pd.read_csv(f, dtype=str, keep_default_na=False).assign(triage_file=f.name) for f in triage_files], ignore_index=True)
+         if triage_files else pd.DataFrame(columns=["ticker", "ledger_id", "side", "deep_mine_rank", "triage_file"]))
+    in_name = SESSION_IN_NAME.search(folder.name)
+    session = (str(T["ledger_id"].iloc[0])[:10] if len(T) and "ledger_id" in T and str(T["ledger_id"].iloc[0])[:10].count("-") == 2
+               else (in_name.group(1) if in_name else datetime.now().strftime("%Y-%m-%d")))
+    T["ticker"] = T["ticker"].astype(str).str.upper().str.strip()
+
+    # B10: a decision record for every card (before the decisions are read, so a new record is counted)
+    html_cards = find_cards(folder)
+    ledger_ids = dict(zip(T["ticker"], T["ledger_id"])) if "ledger_id" in T else {}
+    card_lines = ensure_decision_records(folder, html_cards, session, ledger_ids, a.dry_run)
+    print(f"{VERSION}: {len(html_cards)} card(s) in {folder}" + (" (dry run: nothing written)" if a.dry_run else ""))
+    for c in card_lines:
+        print(f"  {c['ticker']}: card {c['card']} -> {c['record']}")
     cards = load_cards(folder)
+    not_placed = sorted(t for t, c in cards.items() if decided(c) and not placed(c))
+    print("Decided, not placed (a TRADE / ENTER decision with no recorded order): " + (", ".join(not_placed) or "none"))
+    if a.dry_run:
+        return
     prompts = folder / f"deep_dive_prompts_{session}.md"
 
     rows = []
     for _, r in T.iterrows():
         t = str(r["ticker"]).upper()
-        html = folder / f"{t}_deep_dive_{session}.html"
+        has_card = t in html_cards
         c = dict(cards.get(t, {}))
-        if not c.get("decision") and pd.notna(r.get("decision")) and str(r.get("decision")).strip():
+        if not c.get("decision") and str(r.get("decision") or "").strip():
             c.update({"decision": str(r["decision"]).upper(), "contract": first({"c": s(r.get("contract_taken"))}, ["c"]) or s(r.get("contract_taken")),
                       "entry_type": s(r.get("entry_type")), "decision_source": f"triage {r['triage_file']}",
                       "decision_reason": s(r.get("decision_reason"))})
-        status = "CARDED" if c.get("decision") else ("CARD_NO_DECISION" if html.exists() else "NOT_MINED")
+        status = "CARDED" if c.get("decision") else ("CARD_NO_DECISION" if has_card else "NOT_MINED")
         rows.append({"deep_mine_rank": r.get("deep_mine_rank"), "ticker": t, "ledger_id": r.get("ledger_id"),
-                     "handoff_side": r.get("side"), "status": status, "has_card_html": html.exists(), **c})
+                     "handoff_side": r.get("side"), "status": status, "has_card_html": has_card, **c})
+    for t in sorted((set(html_cards) | set(cards)) - set(T["ticker"])):   # carded or decided, but not on a triage file in this folder
+        c = dict(cards.get(t, {}))
+        status = "CARDED" if c.get("decision") else ("CARD_NO_DECISION" if t in html_cards else "NOT_MINED")
+        rows.append({"deep_mine_rank": "", "ticker": t, "ledger_id": "", "handoff_side": "", "status": status,
+                     "has_card_html": t in html_cards, **c})
     D = pd.DataFrame(rows)
-    for col in ["card_side", "decision", "contract", "entry_type", "size", "stop", "time_stop", "artifact_url", "order_placed",
+    if "ticker" not in D:
+        D = pd.DataFrame(columns=["deep_mine_rank", "ticker", "ledger_id", "handoff_side", "status", "has_card_html"])
+    for col in ["final_action", "state", "card_side", "decision", "contract", "entry_type", "size", "stop", "time_stop", "artifact_url", "order_placed",
                 "decision_source", "decision_reason", "contract_alternative", "limit", "max_pay", "close_zone", "window_end", "macro_dependency",
                 "one_contract_exit", "schema_missing"]:
         if col not in D:
@@ -164,7 +250,7 @@ def main():
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     n = D["status"].value_counts().to_dict()
     md = [f"# Cards and order tickets, session {session}", "",
-          f"{VERSION}, written {now} local. {len(D)} triaged names: CARDED {n.get('CARDED', 0)}, CARD_NO_DECISION {n.get('CARD_NO_DECISION', 0)}, "
+          f"{VERSION}, written {now} local. {len(D)} names (triaged or carded): CARDED {n.get('CARDED', 0)}, CARD_NO_DECISION {n.get('CARD_NO_DECISION', 0)}, "
           f"NOT_MINED {n.get('NOT_MINED', 0)}. Deep-dive prompts file: {'present' if prompts.exists() else 'MISSING (B3 did not save it)'}.", "",
           "Fill the boxes before 21:00 UK and copy the result into the decision ledger (E1). A decision without a recorded order "
           "outcome is scored as MISSED, never as TRADE.", "", macro_line(), ""] + EXECUTION_RULES
@@ -187,6 +273,15 @@ def main():
         g = D[D["status"] == st]
         if len(g):
             md += [f"## {title} ({len(g)})", "", ", ".join(f"{a} (rank {b})" for a, b in zip(g["ticker"], g["deep_mine_rank"])), ""]
+    md += [f"## Decided, not placed ({len(not_placed)})", "",
+           "A TRADE / ENTER decision with no recorded order. Record order_placed and the fill (or the reason it was not placed) in "
+           "decisions\\<TICKER>.json.", ""]
+    md += [f"- {t}: decision {cards[t].get('decision') or '-'}" + (f", final action {cards[t]['final_action']}" if cards[t].get("final_action") else "")
+           + f", contract `{cards[t].get('contract') or 'not stated'}`" + (f", [card]({cards[t]['artifact_url']})" if cards[t].get("artifact_url") else "")
+           for t in not_placed] + ([""] if not_placed else ["none", ""])
+    made = [c for c in card_lines if c["created"]]
+    if made:
+        md += [f"## Decision records created for cards that had none ({len(made)})", ""] + [f"- {c['ticker']}: {c['card']}" for c in made] + [""]
     warn = D[(D["decision"] != "") & (D["schema_missing"] != "")]
     if len(warn):
         md += [f"## Decisions files missing standard fields ({len(warn)}; warning only)", ""]

@@ -1,0 +1,4 @@
+collect_decisions_v4: 2 card(s) in data\scratch\workaround\handoff\split_2026-11-12_cap5 (dry run: nothing written)
+  CPNG: card CPNG_deep_dive_2026-11-12.html -> decision record present
+  HSBC: card HSBC_deep_dive_2026-11-12_clean.html -> would create decisions\HSBC.json with state CARD_BUILT_DECISION_MISSING, no artifact link in the HTML
+Decided, not placed (a TRADE / ENTER decision with no recorded order): CPNG
