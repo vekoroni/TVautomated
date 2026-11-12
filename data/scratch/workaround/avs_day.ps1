@@ -1,17 +1,20 @@
 ﻿<#
-AVSHUNTER daily mini-automation (v3.4, 20 Oct 2026: no step is a gate, FAIL and readiness lines are advisory (ACK); trade-guard store replay of every open ticker forecast after the evening and eod steps, mining\race_replay_store.py --batch; v3.3, 18 Oct 2026: strategy layer S1-S6 after the hand-off, S6 replay at eod; v3.2 17 Oct: option closes left to the post-close monitor, one writer; history in git). Nothing to edit: every date, run id and folder is read from the files.
+AVSHUNTER daily mini-automation (v4.0, 12 Nov 2026: Lab-first hand-off, Lane B Fix B2/B6/B7: the evening step builds the hand-off from the Intelligence Lab's publication (build_lab_handoff.py), packs go to one folder per session, today_context points at the Lab review projection; -LegacyHandoff falls back to the old ledger -> options -> hand-off chain; v3.4, 20 Oct 2026: no step is a gate, FAIL and readiness lines are advisory (ACK); trade-guard store replay of every open ticker forecast after the evening and eod steps, mining\race_replay_store.py --batch; v3.3, 18 Oct 2026: strategy layer S1-S6 after the hand-off, S6 replay at eod; v3.2 17 Oct: option closes left to the post-close monitor, one writer; history in git). Nothing to edit: every date, run id and folder is read from the files.
 Run from any PowerShell window:
     & C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\data\scratch\workaround\avs_day.ps1 <step>
 
 Steps
     status    (default) work out today's context and write data\scratch\workaround\today_context.json + .md
-    evening   split chain for the newest pipeline run: ledger -> options -> hand-off -> comparison with the previous hand-off
-              (finished run: builds now and reuses the run's chains from Phantom; running run: waits for Vanguard and the options stage)
+    evening   hand-off for the newest pipeline run, built from the Lab's publication: handoff\lab_<session>\ (every Lab field as it is,
+              plus lb_ flags, order and batches). Also builds the decision ledger as the outcome record (no credits). Needs a COMPLETE
+              Lab review projection. After the Lab republishes (the Morning run): avs_day.ps1 evening -Refresh
+              With -LegacyHandoff: the old split chain (ledger -> options -> hand-off -> comparison with the previous hand-off)
     preopen   check yesterday's pre-close and ledger decisions, score yesterday, rebuild the macro board, measure Phantom coverage,
               re-apply the premium cap if it changed, refresh the comparison
     strategy  score every hand-off thesis on S1-S6 (strategy_layer.py): strategy_layer_<session>.csv/.md in the hand-off folder
               (the evening step runs it automatically; run it again after a cap change or a re-pick)
-    packs     build ticker packs: batch 1 of today's hand-off (-Batch 2 for batch 2, or -Tickers IGV NAT ...)
+    packs     build ticker packs: batch 1 of today's hand-off (-Batch 2 for batch 2, or -Tickers IGV NAT ...). One folder per session
+              (data\scratch\ticker_packs\<session>); each pack opens with the Lab card; refused if the Lab publication is not COMPLETE
     board     rebuild the macro board (e.g. after CPI) and refresh today_context: re-tag money before more deep dives
     checktriage  check the scheduled triage's output (no credits): PASS / WARN / FAIL. Start the deep dives only on PASS or WARN
     preclose  collect the day's card decisions into order tickets, then run the pre-close trigger scan (about 20:10 UK)
@@ -21,13 +24,18 @@ Steps
               (option closes are written by the post-close monitor to monitor\option_closes.csv)
 Options
     -Cap 3    change the premium cap (saved in day_settings.json and used from then on; default 5)
+    -LegacyHandoff   use the old hand-off chain from now on (saved in day_settings.json); -LabHandoff switches back (the default)
+    -Refresh         with evening: rebuild the Lab hand-off after the Lab republished (the previous set is kept in _rev_<revision>)
 Every step ends by rewriting today_context.json, which the chat prompts read instead of placeholders.
 #>
 param(
     [Parameter(Position = 0)][ValidateSet('status', 'evening', 'preopen', 'strategy', 'packs', 'board', 'checktriage', 'preclose', 'eod', 'guard')][string]$Step = 'status',
     [double]$Cap = 0,
     [int]$Batch = 1,
-    [string[]]$Tickers
+    [string[]]$Tickers,
+    [switch]$LegacyHandoff,
+    [switch]$LabHandoff,
+    [switch]$Refresh
 )
 $ErrorActionPreference = 'Continue'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path   # the repo root (this script lives in data\scratch\workaround)
@@ -37,9 +45,16 @@ $Py = Join-Path $Root 'venv\Scripts\python.exe'
 $Settings = Join-Path $W 'day_settings.json'
 
 # ---------------------------------------------------------------- settings (premium cap)
-$S = @{ cap = 5 }
-if (Test-Path $Settings) { $j = Get-Content $Settings -Raw | ConvertFrom-Json; if ($j.cap) { $S.cap = [double]$j.cap } }
+$S = @{ cap = 5; handoff_source = 'LAB' }   # handoff_source: LAB (the Lab's publication, default since 12 Nov 2026) or LEGACY
+if (Test-Path $Settings) {
+    $j = Get-Content $Settings -Raw | ConvertFrom-Json
+    if ($j.cap) { $S.cap = [double]$j.cap }
+    if ($j.handoff_source -in 'LAB', 'LEGACY') { $S.handoff_source = [string]$j.handoff_source }
+}
 if ($Cap -gt 0) { $S.cap = $Cap; ($S | ConvertTo-Json) | Set-Content $Settings -Encoding UTF8; "Premium cap set to $Cap (saved)" }
+if ($LegacyHandoff) { $S.handoff_source = 'LEGACY'; ($S | ConvertTo-Json) | Set-Content $Settings -Encoding UTF8; 'Hand-off source set to LEGACY (saved): ledger -> options -> hand-off. Switch back with -LabHandoff' }
+elseif ($LabHandoff) { $S.handoff_source = 'LAB'; ($S | ConvertTo-Json) | Set-Content $Settings -Encoding UTF8; 'Hand-off source set to LAB (saved): the Intelligence Lab publication' }
+$UseLab = $S.handoff_source -eq 'LAB'
 $CapLabel = ([double]$S.cap).ToString('0.##', [Globalization.CultureInfo]::InvariantCulture)
 
 function Get-LedgerDates {
@@ -53,15 +68,37 @@ function Get-Context {
     $mode = if (Get-ChildItem (Join-Path $run.FullName 'morning_validation') -Filter 'morning_validated_trades_*.csv' -ErrorAction SilentlyContinue) { 'Morning' } else { 'Evening' }
     $receipt = Join-Path $W "thesis_handover_$($run.Name).json"
     $dates = @(Get-LedgerDates)
-    $session = if (Test-Path $receipt) { (Get-Content $receipt -Raw | ConvertFrom-Json).decision_session } else { $dates | Select-Object -Last 1 }
+    # The Lab publication for the run (B7): the review projection manifest, its revision and state
+    $labManifest = "data\output\runs\$($run.Name)\intelligence_lab\review_projection\manifest.json"
+    $labRev = $null; $labState = 'MISSING'
+    if (Test-Path $labManifest) {
+        $lm = Get-Content $labManifest -Raw
+        if ($lm -match '"revision"\s*:\s*"([0-9a-f]+)"') { $labRev = $Matches[1] }
+        $labState = if ($lm -match '"publication_state"\s*:\s*"([A-Z_]+)"') { $Matches[1] } else { 'NO_STATE' }
+    }
+    # The Lab hand-off built for this run, if any (its receipt names the session and the revision it was built from)
+    $labReceipt = $null
+    foreach ($f in @(Get-ChildItem (Join-Path $W 'handoff') -Directory -Filter 'lab_*' -ErrorAction SilentlyContinue | Sort-Object Name -Descending)) {
+        $rf = Join-Path $f.FullName 'receipt.json'
+        if (Test-Path $rf) { try { $r = Get-Content $rf -Raw | ConvertFrom-Json } catch { $r = $null }; if ($r -and $r.run_id -eq $run.Name) { $labReceipt = $r; break } }
+    }
+    $session = if ($UseLab -and $labReceipt) { $labReceipt.session }
+               elseif (Test-Path $receipt) { (Get-Content $receipt -Raw | ConvertFrom-Json).decision_session }
+               else { $dates | Select-Object -Last 1 }
     $prev = $dates | Where-Object { $_ -lt $session } | Select-Object -Last 1
-    $split = Join-Path $W "handoff\split_${session}_cap$CapLabel"
-    if (-not (Test-Path $split)) {   # the cap changed after the hand-off was built: point at the newest hand-off for the session
-        $any = Get-ChildItem (Join-Path $W 'handoff') -Directory -Filter "split_${session}*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
-        if ($any) { $split = $any.FullName.Substring($Root.Length + 1) }
+    if ($UseLab) { $split = Join-Path $W "handoff\lab_$session" }
+    else {
+        $split = Join-Path $W "handoff\split_${session}_cap$CapLabel"
+        if (-not (Test-Path $split)) {   # the cap changed after the hand-off was built: point at the newest hand-off for the session
+            $any = Get-ChildItem (Join-Path $W 'handoff') -Directory -Filter "split_${session}*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+            if ($any) { $split = $any.FullName.Substring($Root.Length + 1) }
+        }
     }
     $morning = Join-Path $W "handoff\morning_$session"
-    $packs = Get-ChildItem 'data\scratch\ticker_packs' -Directory -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
+    # Packs (B6/B7): one folder per session, never replaced by a later batch. Before 12 Nov the folders were time stamps.
+    $packs = Get-Item "data\scratch\ticker_packs\$session" -ErrorAction SilentlyContinue
+    $sessionPacks = [bool]$packs
+    if (-not $packs) { $packs = Get-ChildItem 'data\scratch\ticker_packs' -Directory -ErrorAction SilentlyContinue | Where-Object Name -match '^\d{8}_\d{6}$' | Sort-Object Name | Select-Object -Last 1 }
     $board = Get-Item 'macro_board\output\etf_macro_board.html' -ErrorAction SilentlyContinue
     $boardBuilt = $null   # the board's own build time (BOARD.built_at_utc), not the file time (14 Oct: context said 10:22 after a 13:43 rebuild)
     if ($board) {
@@ -76,13 +113,28 @@ function Get-Context {
     $preprev = Get-ChildItem (Join-Path $W 'preclose') -Filter "preclose_${prev}_*.md" -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
     $cmp = Get-ChildItem $split -Filter 'compare_vs_*.md' -ErrorAction SilentlyContinue | Select-Object -Last 1
     $triage = Get-ChildItem $split -Filter 'batch*_triage_*.csv' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
-    # packs_ready: the newest pack folder is newer than the run and holds a pack for every hand-off batch-1 name (the scheduled triage's gate)
-    $packsReady = $false; $packsMissing = @()
-    if ($packs -and (Test-Path (Join-Path $split 'handoff.csv')) -and ($packs.Name -gt $run.Name)) {
-        $b1 = @(Import-Csv (Join-Path $split 'handoff.csv') | Where-Object { $_.batch -eq '1' } | ForEach-Object { $_.ticker.ToUpper() })
-        $packsMissing = @($b1 | Where-Object { -not (Test-Path (Join-Path $packs.FullName "$($_)_pack.zip")) })
-        $packsReady = ($b1.Count -gt 0) -and ($packsMissing.Count -eq 0)
+    # packs_ready: computed per batch (B7). A batch is ready when the pack folder holds a pack for every name of the batch.
+    # packs_ready (the scheduled triage's gate) stays the batch-1 answer; packs_ready_batches lists every ready batch.
+    $packsReady = $false; $packsMissing = @(); $readyBatches = @(); $batchNames = @{}   # batch number -> tickers
+    if (Test-Path (Join-Path $split 'handoff.csv')) {
+        if ($UseLab) {   # the batch lists are the hand-off's pack command files (cheaper than reading 2,000 rows)
+            foreach ($f in @(Get-ChildItem (Join-Path $split 'pack_commands') -Filter 'ticker_pack_command_*.txt' -ErrorAction SilentlyContinue)) {
+                $n = [int]($f.BaseName -split '_')[-1]
+                $line = Get-Content $f.FullName | Where-Object { $_ -match 'ticker_pack\.py' } | Select-Object -First 1
+                if ($line) { $batchNames[$n] = @((($line -split 'ticker_pack\.py')[1] -split '--')[0].Trim() -split '\s+' | ForEach-Object { $_.ToUpper() }) }
+            }
+        } else {
+            Import-Csv (Join-Path $split 'handoff.csv') | Group-Object batch | ForEach-Object { $batchNames[[int]$_.Name] = @($_.Group | ForEach-Object { $_.ticker.ToUpper() }) }
+        }
     }
+    if ($packs -and $batchNames.Count -and ($sessionPacks -or $packs.Name -gt $run.Name)) {
+        foreach ($n in ($batchNames.Keys | Sort-Object)) {
+            $miss = @($batchNames[$n] | Where-Object { -not (Test-Path (Join-Path $packs.FullName "$($_)_pack.zip")) })
+            if ($miss.Count -eq 0) { $readyBatches += $n }
+            if ($n -eq 1) { $packsMissing = $miss }
+        }
+        $packsReady = $readyBatches -contains 1
+    } elseif ($batchNames.ContainsKey(1)) { $packsMissing = @($batchNames[1]) }
     $guard = Get-ChildItem (Join-Path $W 'mining') -Filter 'guard_rerun_*.csv' -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
     $chk = Join-Path $split "check_triage_$session.md"
     $chkVerdict = if (Test-Path $chk) { ((Get-Content $chk -TotalCount 1) -split ': ')[-1] } else { $null }
@@ -96,14 +148,19 @@ function Get-Context {
         run_mode            = $mode
         ledger              = "$W\decision_ledger_$session.csv"
         previous_ledger     = "$W\decision_ledger_$prev.csv"
-        split_handoff       = $split
+        handoff_source      = $S.handoff_source                                   # LAB = built from the Lab's publication; LEGACY = the old split chain
+        handoff             = $split                                              # the hand-off folder (lab_<session> in LAB mode)
+        split_handoff       = $split                                              # same folder: kept so existing prompts and scripts keep working
         split_handoff_built = (Test-Path (Join-Path $split 'handoff.csv'))
+        handoff_lab_revision = $(if ($UseLab -and $labReceipt) { $labReceipt.lab_revision } else { $null })   # the Lab revision the hand-off was built from
+        handoff_matches_lab = $(if ($UseLab -and $labReceipt) { $labReceipt.lab_revision -eq $labRev } else { $null })   # False = the Lab republished: evening -Refresh
         split_triage_files  = @($triage)
         comparison          = $(if ($cmp) { Join-Path $split $cmp.Name } else { $null })
         morning_folder      = $(if (Test-Path $morning) { $morning } else { $null })
         packs_folder        = $(if ($packs) { "data\scratch\ticker_packs\$($packs.Name)" } else { $null })
-        packs_ready         = $packsReady
-        packs_missing       = @($packsMissing)
+        packs_ready         = $packsReady                                         # batch 1 (the scheduled triage's gate)
+        packs_ready_batches = @($readyBatches)                                    # every batch whose names all have a pack
+        packs_missing       = @($packsMissing)                                    # batch 1 names without a pack
         triage_check        = $chkVerdict
         macro_board_built   = $boardBuilt
         deep_dive_prompts   = $(if (Test-Path $prompts) { $prompts } else { $null })   # null = B3 has not saved it yet
@@ -112,7 +169,9 @@ function Get-Context {
         order_tickets       = $(if (Test-Path $tickets) { $tickets } else { $null })
         preclose_today      = $(if ($pre) { "$W\preclose\$($pre.Name)" } else { $null })
         preclose_previous   = $(if ($preprev) { "$W\preclose\$($preprev.Name)" } else { $null })
-        lab_book            = "data\output\runs\$($run.Name)\intelligence_lab"
+        lab_book            = $labManifest                                        # the Lab review projection manifest (names the database and the card fields)
+        lab_revision        = $labRev
+        lab_publication_state = $labState
         guard_rerun         = $(if ($guard) { "$W\mining\$($guard.Name)" } else { $null })   # newest trade-guard store replay
     }
 }
@@ -160,9 +219,28 @@ switch ($Step) {
 
     'evening' {
         $c = Get-Context
-        "Run $($c.run_id) | $($c.run_mode) | $($c.run_state)"
-        if (-not $env:MARKETDATA_API_KEY) { 'MarketData key not visible in this window: open a fresh PowerShell window and run again.'; break }
+        "Run $($c.run_id) | $($c.run_mode) | $($c.run_state) | hand-off source $($c.handoff_source)"
         $done = $c.run_state -eq 'finished'
+        if ($UseLab) {
+            # Lab-first (12 Nov 2026, Fix B1/B2): the hand-off is the Lab's publication. No options tool, no credits.
+            # The decision ledger is still built: it is the outcome record (track_outcomes, pre-close scan), no longer a hand-off source.
+            $receipt = "$W\thesis_handover_$($c.run_id).json"
+            if (Test-Path $receipt) { "Ledger for run $($c.run_id) already built (outcome record)" }
+            elseif ($done) {
+                & $Py "$W\build_thesis_ledger.py" --run $c.run_id
+                if ($LASTEXITCODE -ne 0) { "Ledger build failed (exit $LASTEXITCODE): the hand-off is still built; outcome tracking for this session needs the ledger" }
+            } else { 'Run still in progress: the ledger (outcome record) is built on the next evening step after it finishes' }
+            $labArgs = @("$W\build_lab_handoff.py", '--run', $c.run_id)
+            if ($Refresh) { $labArgs += '--refresh' }
+            & $Py @labArgs
+            if ($LASTEXITCODE -ne 0) { "Lab hand-off not built (exit $LASTEXITCODE): read the REFUSED line above. Fallback: avs_day.ps1 evening -LegacyHandoff"; $null = Write-Context; break }
+            'Strategy layer and hand-off comparison read the old hand-off layout: not run on the Lab hand-off (see audit\laneb_fixB\99_report.md)'
+            "== Trade guard: open forecasts on tonight's price store"
+            Invoke-Guard
+            $null = Write-Context
+            break
+        }
+        if (-not $env:MARKETDATA_API_KEY) { 'MarketData key not visible in this window: open a fresh PowerShell window and run again.'; break }
         $receipt = "$W\thesis_handover_$($c.run_id).json"
         if (Test-Path $receipt) { "Ledger for run $($c.run_id) already built: reusing it" }
         else {
@@ -215,7 +293,8 @@ switch ($Step) {
         & $Py "$W\probe_chain_reuse.py"
         "== 5. Premium cap `$$CapLabel"
         $want = "$W\handoff\split_$($c.session)_cap$CapLabel"
-        if (-not (Test-Path "$want\handoff.csv")) {
+        if ($UseLab) { "  Lab hand-off: the cap is a flag (lb_over_cap), no contract is re-picked. After a cap change: avs_day.ps1 evening -Refresh" }
+        elseif (-not (Test-Path "$want\handoff.csv")) {
             $opt = Get-ChildItem 'data\scratch\options_intel' -Directory | Sort-Object Name | Select-Object -Last 1
             "  Cap changed: re-picking contracts from $($opt.Name) (saved chains, no credits)"
             & $Py "$W\avshunter_options_standalone.py" --ledger $c.ledger --offline-chain "$($opt.FullName)\chain_raw.csv.gz" --max-premium $S.cap
@@ -224,12 +303,13 @@ switch ($Step) {
         } else { "  Hand-off already at this cap: $want" }
         "== 6. Comparison with the previous hand-off (now with outcomes)"
         $c = Write-Context
-        Invoke-Compare $c
+        if (-not $UseLab) { Invoke-Compare $c } else { '  Comparison reads the old hand-off layout: not run on the Lab hand-off' }
         $null = Write-Context
     }
 
     'strategy' {
         $c = Get-Context
+        if ($UseLab) { 'The strategy layer reads the old hand-off layout (<TICKER>_<SIDE>.json): not run on the Lab hand-off'; break }
         if (-not $c.split_handoff_built) { "No hand-off for $($c.session) yet: run avs_day.ps1 evening first"; break }
         Invoke-Strategy $c.split_handoff
         $c = Write-Context
@@ -240,16 +320,25 @@ switch ($Step) {
         $c = Get-Context
         $list = $Tickers
         if (-not $list) {
-            $cmdFile = Join-Path $c.split_handoff 'ticker_pack_command.txt'
-            if (-not (Test-Path $cmdFile)) { "No ticker_pack_command.txt in $($c.split_handoff): run the evening step first"; break }
-            $lines = Get-Content $cmdFile
-            $i = [array]::IndexOf($lines, "# batch $Batch")
-            if ($i -lt 0) { "No batch $Batch in $cmdFile"; break }
-            $list = ($lines[$i + 1] -split 'ticker_pack.py')[1].Trim() -split '\s+'
+            if ($UseLab) {
+                $cmdFile = Join-Path $c.handoff "pack_commands\ticker_pack_command_$Batch.txt"
+                if (-not (Test-Path $cmdFile)) { "No batch $Batch in $($c.handoff)\pack_commands: run the evening step first"; break }
+                $line = Get-Content $cmdFile | Where-Object { $_ -match 'ticker_pack\.py' } | Select-Object -First 1
+                $list = (($line -split 'ticker_pack\.py')[1] -split '--')[0].Trim() -split '\s+'
+            } else {
+                $cmdFile = Join-Path $c.split_handoff 'ticker_pack_command.txt'
+                if (-not (Test-Path $cmdFile)) { "No ticker_pack_command.txt in $($c.split_handoff): run the evening step first"; break }
+                $lines = Get-Content $cmdFile
+                $i = [array]::IndexOf($lines, "# batch $Batch")
+                if ($i -lt 0) { "No batch $Batch in $cmdFile"; break }
+                $list = ($lines[$i + 1] -split 'ticker_pack.py')[1].Trim() -split '\s+'
+            }
         }
-        "Building packs for $($list.Count) names: $($list -join ' ')"
-        & $Py 'tools\ticker_pack.py' @list
-        $null = Write-Context
+        "Building packs for $($list.Count) names into data\scratch\ticker_packs\$($c.session): $($list -join ' ')"
+        & $Py 'tools\ticker_pack.py' @list --run $c.run_id --session $c.session
+        if ($LASTEXITCODE -ne 0) { "Packs not built (exit $LASTEXITCODE): read the REFUSED line above" }
+        $c = Write-Context
+        "Packs ready for batches: $(if ($c.packs_ready_batches.Count) { $c.packs_ready_batches -join ', ' } else { 'none' })"
     }
 
     'guard' {
@@ -266,7 +355,8 @@ switch ($Step) {
 
     'checktriage' {
         $c = Get-Context
-        & $Py "$W\check_triage.py" --folder $c.split_handoff --session $c.session
+        if ($UseLab) { & $Py "$W\check_triage.py" --folder $c.handoff --session $c.session --all }
+        else { & $Py "$W\check_triage.py" --folder $c.split_handoff --session $c.session }
         $ok = $LASTEXITCODE -eq 0
         $c = Write-Context
         if ($ok) { "Triage check $($c.triage_check). Deep dives: open a new chat linked to this computer and type:  Run deep dive rank 1 from $($c.deep_dive_prompts)" }

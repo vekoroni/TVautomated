@@ -362,13 +362,15 @@ def spotcheck(folder: Path, lab_fields: list[str], run_id: str, revision: str, a
 
 # ---------------------------------------------------------------- build
 
-def archive_previous(folder: Path, old_revision: str) -> Path:
+def archive_previous(folder: Path, old_revision: str, same_revision: bool = False) -> Path:
     target = folder / f"_rev_{old_revision[:8]}"
     if target.exists():
         target = folder / f"_rev_{old_revision[:8]}_{datetime.now():%H%M%S}"
     target.mkdir(parents=True)
     for name in GENERATED:
         src = folder / name
+        if same_revision and name == "handoff_evidence.jsonl":
+            continue   # same Lab revision = same evidence: the large file is not copied twice
         if src.is_dir():
             shutil.copytree(src, target / name)
         elif src.exists():
@@ -392,7 +394,7 @@ def write_markdown(folder: Path, receipt: dict, rows: list[dict], settings: dict
           f"{settings['batch_size']} in that order ({c['batches']} batches).", "",
           "## Flags (counts on the hand-off rows)", ""]
     for name, counts in receipt["flags"].items():
-        md.append(f"- **{name}**: " + ", ".join(f"{k or '(blank)'} {v}" for k, v in counts.items()))
+        md.append(f"- **{name}**: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
     md += ["", f"Monetisation clock n: {receipt['monetisation_state']}. Window basis: "
            + ", ".join(f"{k} {v}" for k, v in receipt["flags"]["lb_window_basis"].items()) + ".", "",
            "## Batch 1", "", "| # | Ticker | Dir | Verdict | Lab rank | Setup | Target | First profit | Contract | Ask | Window | Gate | Stock | Group |",
@@ -496,7 +498,7 @@ def main(argv=None) -> int:
         # write (a refresh first keeps the previous set)
         archived = None
         if old_receipt:
-            archived = archive_previous(folder, str(old_receipt.get("lab_revision") or "unknown"))
+            archived = archive_previous(folder, str(old_receipt.get("lab_revision") or "unknown"), old_receipt.get("lab_revision") == lab.revision)
         folder.mkdir(parents=True, exist_ok=True)
         columns = list(out_rows[0])
         with (folder / "handoff.csv").open("w", encoding="utf-8", newline="") as handle:
@@ -529,7 +531,8 @@ def main(argv=None) -> int:
 
         flag_names = ["lab_verdict", "lb_window_flag", "lb_window_basis", "lb_time_fit", "lb_over_cap", "lb_saved_gate", "lb_stock_tier",
                       "lb_repair_conflict", "lb_group_role", "monetisation_state"]
-        flags = {n: dict(Counter(o.get(n, "") for o in out_rows).most_common()) for n in flag_names}
+        # "(blank)" not "": a JSON object with an empty key cannot be read by PowerShell 5.1 (avs_day.ps1 reads this receipt)
+        flags = {n: dict(Counter(o.get(n, "") or "(blank)" for o in out_rows).most_common()) for n in flag_names}
         flags["lb_runway_note"] = {"TRIGGER_AGE_EXCEEDS_Q50": sum(1 for o in out_rows if o["lb_runway_note"]),
                                    "none": sum(1 for o in out_rows if not o["lb_runway_note"])}
         history = (old_receipt or {}).get("revision_history", [])
