@@ -178,6 +178,13 @@ def resolve_dividend(dividend_yield: Any, basis: Any) -> tuple[float, str]:
 def return_on_premium(model_value: Optional[float], *, bid: Optional[float], ask: float) -> Optional[float]:
     if model_value is None:
         return None
+    try:
+        if not math.isfinite(float(model_value)) or model_value < 0 or not math.isfinite(float(ask)) or ask <= 0:
+            return None
+        if bid is not None and (not math.isfinite(float(bid)) or bid < 0 or bid > ask):
+            return None
+    except (TypeError, ValueError):
+        return None
     return round(exit_proceeds_usd_per_share(model_value, bid=bid, ask=ask) / entry_cost_usd_per_share(ask) - 1.0, 4)
 
 

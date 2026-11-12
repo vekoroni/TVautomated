@@ -135,7 +135,9 @@ def _context(root, run_id, issues, watches):
             "bias_as_of_utc": stamp, "breadth_generated_at_utc": diagnostic.get("generated_at_utc"),
             "breadth_source": diagnostic.get("source_files", {}).get("sectors"),
             "breadth_state": "PUBLISHED_OBSERVATION" if observed else "NOT_PUBLISHED_FOR_SECTOR",
-            "money_flow": None, "money_flow_state": "NOT_PUBLISHED"})
+            "money_flow": None, "money_flow_state": "NOT_PUBLISHED",
+            "observation_origin": "RUN_FROZEN_DIAGNOSTIC_SLICE",
+            "source_limitation": "Original CSV path is provenance only; absent sectors and flows are not inferred."})
     sector = {"state": "AVAILABLE_PARTIAL" if rows else "NOT_PUBLISHED", "authority": "ADVISORY_ONLY",
               "rotation_signal": rotation.get("rotation_signal"), "as_of_utc": stamp,
               "source": macro["source"], "rows": rows, "breadth_status": breadth.get("status"),

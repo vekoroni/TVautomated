@@ -23,6 +23,7 @@ import json
 import math
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
+from domain.trade_timing import after_sessions, sessions_between
 
 from domain.option_valuation import (VALUATION_FIELDS, cost_basis, entry_cost_usd_per_share, resolve_dividend,
                                      resolve_rate, return_on_premium, scenario_value, valuation_policy)
@@ -38,6 +39,7 @@ ANTICIPATED_MOVE_FIELDS = (
     "anticipated_value_multiple_q50", "anticipated_value_multiple_q80", "anticipated_value_multiple_earnings_stress",
     "anticipated_stress_basis", "anticipated_time_fit", "anticipated_pays_state", "anticipated_authority",
     "anticipated_version",
+    "anticipated_reach_state", "scenario_exit_date", "valuation_time_basis", "valuation_calculation_state",
     # L5 (ACK 7 Oct 2026): the contract the value was computed for (set by the EOD engine and the Morning swap
     # recompute; the Lab's economics identity). It travels with the other anticipated fields into the book.
     "anticipated_contract_symbol",
@@ -52,6 +54,8 @@ _ESTIMATED = {"IN_SAMPLE_REPLAY_NOT_VALIDATED", "VALIDATED"}
 
 
 def _num(value: Any) -> Optional[float]:
+    if isinstance(value, bool):
+        return None
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -142,7 +146,11 @@ def anticipated_move_fields(
     def reach_by(sessions: Any) -> Optional[float]:
         if vol is None or vol <= 0 or not sessions:
             return None
-        return round(s0 * (1.0 + sign * k * vol * math.sqrt(float(sessions) / 252.0)), 4)
+        result = round(s0 * (1.0 + sign * k * vol * math.sqrt(float(sessions) / 252.0)), 4)
+        if not math.isfinite(result) or result <= 0:
+            out['anticipated_reach_state'] = 'UNASSESSED_NONPHYSICAL_REACH'
+            return None
+        return result
 
     def level_by(sessions: Any) -> Optional[float]:
         """Fix B (ACK 5 Oct 2026): the level reachable by that time - structural, capped at that time's reach."""
@@ -152,6 +160,7 @@ def anticipated_move_fields(
         return cap if cap is not None else (round(structural, 4) if structural is not None else None)
 
     out["anticipated_reachable_level"] = reach_by(reach_sessions)
+    out['anticipated_reach_state'] = out.get('anticipated_reach_state') or ('AVAILABLE' if out['anticipated_reachable_level'] is not None else 'UNASSESSED')
     reach = out["anticipated_reachable_level"]
     if structural is not None and reach is not None:
         nearer = structural if abs(structural - s0) <= abs(reach - s0) else reach
@@ -185,9 +194,8 @@ def anticipated_move_fields(
     if iv is None or iv <= 0 or expiry is None or as_of is None:
         return out
     days_to_expiry = (expiry - as_of).days
-    per_session = float(cfg["calendar_days_per_session"])
-
-    contract_sessions = days_to_expiry / per_session
+    contract_sessions = sessions_between(as_of, expiry)
+    out['valuation_time_basis'] = 'EXACT_XNYS_EXIT_TO_CALENDAR_EXPIRY'
     rate_used, rate_label = resolve_rate(rate, rate_basis)
     q_used, q_label = resolve_dividend(dividend_yield, dividend_basis)
     out.update(valuation_rate_annual=rate_used, valuation_rate_basis=rate_label,
@@ -199,9 +207,20 @@ def anticipated_move_fields(
         # Real-data finding (3 Oct 2026): never value the move at a time the contract does not live to.
         if not sessions or sessions > contract_sessions or at is None:
             return None
-        years = max(days_to_expiry - sessions * per_session, 0.0) / 365.0
-        priced = scenario_value({**c, "strike": strike}, side, at, years, vol_used, rate=rate_used,
-                                dividend_yield=q_used)
+        exit_date = after_sessions(as_of, math.ceil(sessions))
+        if exit_date > expiry:
+            return None
+        years = max((expiry - exit_date).days, 0) / 365.0
+        try:
+            priced = scenario_value({**c, "strike": strike}, side, at, years, vol_used, rate=rate_used,
+                                    dividend_yield=q_used)
+        except (OverflowError, FloatingPointError, ValueError):
+            out['valuation_calculation_state'] = 'UNASSESSED_PRICING_NUMERIC_FAILURE'
+            return None
+        if _num(priced.get('value')) is None:
+            out['valuation_calculation_state'] = 'UNASSESSED_NONFINITE_MODEL_VALUE'
+            return None
+        out['valuation_calculation_state'] = out.get('valuation_calculation_state') or 'CONDITIONAL_SCENARIO_COMPUTED'
         out["valuation_model"] = priced["model"]
         return return_on_premium(priced["value"], bid=bid, ask=ask)
 
@@ -235,6 +254,7 @@ def anticipated_move_fields(
                scenario_target_return_on_premium=net_return(t50, target_at, iv),
                scenario_invalidation_return_on_premium=net_return(t50, inval, iv),
                scenario_stall_return_on_premium=net_return(t50, s0, iv))
+    out['scenario_exit_date'] = after_sessions(as_of, math.ceil(t50)).isoformat() if t50 else None
     if str(e.get("earnings_state") or "").upper() == "SCHEDULED" and to_event is not None and t50 and to_event <= t50:
         out["scenario_target_earnings_iv_return_on_premium"] = net_return(t50, target_at, iv * low)
         out["scenario_iv_basis"] += f"; earnings case IV x {low:g} (governed iv_stress)"

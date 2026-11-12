@@ -10,6 +10,7 @@ import math
 from typing import Any
 
 from contracts.governed_states import LifecycleEvaluationState
+from domain.trade_timing import day
 
 
 _MAX_THETA_DAYS = 365
@@ -39,7 +40,7 @@ def _expiry(row: dict):
     return None
 
 
-def compute_exit_rules(row: dict) -> dict:
+def compute_exit_rules(row: dict, *, as_of=None) -> dict:
     try:
         live_price   = _f(row, "live_price", "signal_price")
         # Step 4d (ACK 3 Oct 2026): the exit target is the anticipated level; the retired 3R / structural
@@ -49,7 +50,10 @@ def compute_exit_rules(row: dict) -> dict:
         theta        = abs(_f(row, "contract_theta"))
         # Step 4d: DTE from the selected contract's own expiry (calendar days), never a row default.
         expiry       = _expiry(row)
-        dte          = float((expiry - date.today()).days) if expiry is not None else 0.0
+        reference = day(as_of or row.get('validation_evidence_cutoff_utc') or
+                        row.get('anticipated_valued_at_utc') or row.get('quote_provider_timestamp_utc') or
+                        row.get('evidence_session_date') or row.get('bar_data_asof') or row.get('data_as_of'))
+        dte          = float((expiry - reference).days) if expiry is not None and reference else 0.0
         contract_mid = _f(row, "contract_mid")
         direction    = str(
             row.get("canonical_direction") or row.get("primary_direction") or ""
@@ -60,10 +64,10 @@ def compute_exit_rules(row: dict) -> dict:
 
         theta_days = None
         exit_theta_date = None
-        if theta > 0 and contract_mid > 0:
+        if theta > 0 and contract_mid > 0 and reference is not None:
             theta_days = int(contract_mid * 0.5 / theta)
             theta_days = max(1, min(theta_days, int(dte) if dte > 0 else _MAX_THETA_DAYS))
-            theta_exit = date.today() + timedelta(days=theta_days)
+            theta_exit = reference + timedelta(days=theta_days)
             exit_theta_date = (min(theta_exit, expiry) if expiry is not None else theta_exit).isoformat()
 
         exit_max_dte = int(dte * 0.5) if dte > 0 else None
@@ -84,6 +88,9 @@ def compute_exit_rules(row: dict) -> dict:
             parts.append("MOVE_DOES_NOT_PAY_REVIEW")
 
         return {
+            'exit_clock_as_of': reference.isoformat() if reference else None,
+            'exit_clock_state': 'SAVED_REFERENCE' if reference else 'REFERENCE_NOT_RECORDED',
+            'exit_target_basis': 'ANTICIPATED_LEVEL_REFERENCE_NOT_Q50_SCENARIO',
             "exit_target_price": exit_target,
             "exit_stop_price":   exit_stop,
             "exit_theta_date":   exit_theta_date,

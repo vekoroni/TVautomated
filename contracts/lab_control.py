@@ -839,6 +839,10 @@ from domain.option_walls import GOVERNED_WALL_FIELDS as _GOVERNED_WALL_FIELDS
 FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_flip_conf") if f not in FINAL_BOOK_FIELDS]
 
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
+from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
+FINAL_BOOK_FIELDS += [f for f in (*RELIABILITY_FIELDS, 'scenario_exit_date', 'valuation_time_basis',
+    'anticipated_reach_state', 'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis',
+    'usmi_routing_source', 'usmi_routing_source_sha256') if f not in FINAL_BOOK_FIELDS]
 # It intentionally excludes source_payload_json, which makes final_opportunity_book
 # large and unsuitable as an interactive triage source.
 LAB_TRIAGE_VIEW_FIELDS = [field for field in FINAL_BOOK_FIELDS if field != "source_payload_json"]
@@ -4229,6 +4233,10 @@ def opportunity_book_row(
             "evening_next_condition": "Reconcile source field lineage before selecting the trade",
         })
     row.update(evening_projection)
+    row.update(reliability_fields({**sig, **row}))
+    for field in ('scenario_exit_date', 'valuation_time_basis', 'anticipated_reach_state',
+                  'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis'):
+        row[field] = first(sig, field)
     for field in evening_projection:
         provenance[field] = "governed_materializer:evening_thesis_decision"
     row["field_provenance_json"] = _json_safe(provenance)
@@ -5000,9 +5008,17 @@ def write_final_opportunity_book(
     rows[:] = DynamicOptionsProjectionResolver(doi_database).project_rows(rows)
     from domain.structure_evidence import derive_structure_evidence
     from domain.macro_advisory_context import project_usmi_context
-    macro_path = Path(runs_dir) / run_id / "macro_snapshot.json"
+    macro_root = Path(runs_dir) / run_id
+    macro_path = macro_root / "interpreter" / "interpreter_macro_context.json"
+    if not macro_path.is_file():
+        macro_path = macro_root / "macro_snapshot.json"
+    macro_source_sha256 = ''
     try:
-        macro_packet_for_v4 = json.loads(macro_path.read_text(encoding="utf-8-sig"))
+        macro_bytes = macro_path.read_bytes()
+        macro_packet_for_v4 = json.loads(macro_bytes.decode('utf-8-sig'))
+        macro_source_sha256 = hashlib.sha256(macro_bytes).hexdigest()
+        if not isinstance(macro_packet_for_v4, dict):
+            macro_packet_for_v4 = {}
     except (OSError, json.JSONDecodeError):
         macro_packet_for_v4 = {}
     for row in rows:
@@ -5018,6 +5034,8 @@ def write_final_opportunity_book(
                 industry=str(first(row, "industry", "industry_group", default="")),
                 direction=str(first(row, "governed_direction", "direction", default="")),
             ))
+            row['usmi_routing_source'] = macro_path.relative_to(macro_root).as_posix()
+            row['usmi_routing_source_sha256'] = macro_source_sha256
     from domain.lab_signal_book_v4 import project_lab_signal_v4
     rows[:] = [{**row, **project_lab_signal_v4(row)} for row in rows]
     # C5 is frozen from the pre-option Discovery packet. Morning reads the
