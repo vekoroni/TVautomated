@@ -8,11 +8,18 @@ data/scratch/ticker_packs/, which no pipeline module reads.
 Usage (from the repo root, PowerShell):
     venv\\Scripts\\python.exe tools\\ticker_pack.py MU
     venv\\Scripts\\python.exe tools\\ticker_pack.py MU NVDA --run 20261008_220129 --since 2023-01-01
+    venv\\Scripts\\python.exe tools\\ticker_pack.py HSBC CPNG --run 20261111_231951 --session 2026-11-12
 
-Output: data/scratch/ticker_packs/<stamp>/<TICKER>_pack.zip (one file per ticker, small enough
-to hand to Claude), plus the unzipped folder beside it. Every pack carries manifest.json:
+Output: data/scratch/ticker_packs/<session>/<TICKER>_pack.zip (one file per ticker, small enough
+to hand to Claude), plus the unzipped folder beside it. One folder per session: a later batch adds
+or replaces tickers in the same folder (Lane B Fix B6, 12 Nov 2026). Every pack carries manifest.json:
 source path, modification time, age in hours and row count for each file, so stale or
 missing inputs are visible rather than silently absent (R1: missing is never neutral).
+
+The first file of every pack is lab_card.json: the ticker's row in the Intelligence Lab review
+projection (card values by name, the structure / option_risk / context / morning evidence families),
+with the Lab revision and database sha256. The pack is refused when the Lab publication is not
+COMPLETE or is older than the run's Morning completion: packs are built after the Lab publishes.
 """
 
 from __future__ import annotations
@@ -20,6 +27,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import hashlib
+import shutil
 import sqlite3
 import sys
 import zipfile
@@ -33,6 +42,9 @@ PRICE_DB = ROOT / "data" / "canonical" / "historical_prices.sqlite"
 RUNS_DIR = ROOT / "data" / "output" / "runs"
 BOARD_SNAPSHOTS = ROOT / "macro_board" / "output" / "snapshots"
 OUT_ROOT = ROOT / "data" / "scratch" / "ticker_packs"
+
+sys.path.insert(0, str(ROOT / "data" / "scratch" / "workaround"))
+import lab_reader  # noqa: E402  (the one read-only reader of the Lab review projection)
 
 BENCHMARKS = ["SPY", "QQQ", "IWM", "SMH", "XLK"]
 TICKER_COLUMNS = ("ticker", "symbol", "underlying", "underlying_symbol", "root", "underlying_ticker")
@@ -157,7 +169,8 @@ def export_prices(tickers: list[str], since: str, out: dict[str, Path], manifest
 def filter_csv(src: Path, tickers: set[str]) -> tuple[dict[str, pd.DataFrame], str | None]:
     found: dict[str, list[pd.DataFrame]] = {t: [] for t in tickers}
     col = None
-    for chunk in pd.read_csv(src, dtype=str, chunksize=200_000, low_memory=False):
+    # keep_default_na=False: the tickers NAN and NA are real tickers, not missing values
+    for chunk in pd.read_csv(src, dtype=str, chunksize=200_000, low_memory=False, keep_default_na=False):
         col = col or ticker_column(chunk.columns)
         if col is None:
             return {}, "NO_TICKER_COLUMN"
@@ -269,26 +282,92 @@ def export_board(tickers: list[str], out: dict[str, Path], manifest: dict) -> No
             manifest[t]["files"][label] = info
 
 
+# --- Intelligence Lab card (B6) -----------------------------------------------------------
+
+def open_lab_for_packs(run: Path):
+    """The run's Lab publication, verified. Exits with the reason when packs must not be built from it."""
+    try:
+        lab = lab_reader.open_lab(run.name, RUNS_DIR)
+    except lab_reader.LabUnavailable as error:
+        sys.exit(f"REFUSED: {error}. Packs are built after the Lab publishes a COMPLETE review projection.")
+    morning = sorted((run / "morning_validation").glob("morning_validated_trades_*.csv")) if (run / "morning_validation").exists() else []
+    stage = "EVENING_PUBLICATION"
+    if morning:
+        stage = "MORNING_PUBLICATION"
+        finished = datetime.fromtimestamp(max(p.stat().st_mtime for p in morning), timezone.utc)
+        try:
+            published = datetime.fromisoformat(str(lab.manifest.get("created_at_utc")).replace("Z", "+00:00"))
+        except ValueError:
+            lab.close()
+            sys.exit(f"REFUSED: the Lab manifest for run {run.name} has no readable created_at_utc, so it cannot be shown to be newer than the Morning run.")
+        if published < finished:
+            lab.close()
+            sys.exit(f"REFUSED: the Lab publication for run {run.name} (revision {lab.revision}, published {published.isoformat(timespec='seconds')}) "
+                     f"is older than the run's Morning completion ({finished.isoformat(timespec='seconds')}). Republish the Lab, then build the packs.")
+    return lab, stage
+
+
+def session_for(run_id: str, lab) -> str:
+    """The decision session: the Lab hand-off receipt for this run when one exists, else the first XNYS session after the Lab's bar date."""
+    for receipt in sorted((ROOT / "data" / "scratch" / "workaround" / "handoff").glob("lab_*/receipt.json"), reverse=True):
+        try:
+            j = json.loads(receipt.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if j.get("run_id") == run_id and j.get("session"):
+            return str(j["session"])
+    import build_lab_handoff
+    return build_lab_handoff.decision_session(list(lab.rows()))[0]
+
+
+def export_lab(lab, stage: str, tickers: list[str], out: dict[str, Path], manifest: dict) -> None:
+    info = describe(lab.manifest_file)
+    for t in tickers:
+        manifest[t].update({"lab_revision": lab.revision, "lab_database_sha256": lab.sha256,
+                            "lab_publication_created_at_utc": lab.manifest.get("created_at_utc"), "lab_publication_stage": stage})
+        row = lab.row_for_ticker(t)
+        if row is None:
+            manifest[t]["files"]["lab_card.json"] = {**info, "status": "TICKER_ABSENT_FROM_LAB"}
+            continue
+        card = {"ticker": t, "run_id": lab.run_id, "lab_revision": lab.revision, "lab_database_sha256": lab.sha256,
+                "lab_publication_created_at_utc": lab.manifest.get("created_at_utc"), "lab_publication_stage": stage,
+                "row_key": row["row_key"], "card": row["values"], "card_missing_fields": row["missing"],
+                "card_extra": row["extra"], "evidence": lab.evidence(row["row_key"]),
+                "evidence_families_not_included": ["audit"]}
+        text = json.dumps(card, indent=1, ensure_ascii=False)
+        (out[t] / "lab_card.json").write_text(text, encoding="utf-8")
+        manifest[t]["files"]["lab_card.json"] = {**info, "status": "PRESENT", "row_key": row["row_key"],
+                                                 "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                                                 "lab_verdict": row["values"].get("lab_verdict"), "lab_rank": row["values"].get("lab_rank")}
+
+
 # --- main ---------------------------------------------------------------------------------
 
-def main() -> None:
+def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("tickers", nargs="+", help="tickers in scope, e.g. MU NVDA")
     parser.add_argument("--run", help="run id under data/output/runs (default: newest completed run)")
     parser.add_argument("--since", default="2021-01-01", help="first trading date for price history")
-    args = parser.parse_args()
+    parser.add_argument("--session", help="decision session YYYY-MM-DD = the pack folder (default: the run's Lab hand-off session)")
+    args = parser.parse_args(argv)
 
     tickers = sorted({t.upper().strip() for t in args.tickers})
     run = newest_run(args.run)
-    stamp = now_utc().strftime("%Y%m%d_%H%M%S")
-    base = OUT_ROOT / stamp
+    lab, stage = open_lab_for_packs(run)
+    session = args.session or session_for(run.name, lab)
+    base = OUT_ROOT / session   # one folder per session: a later batch adds or replaces tickers here
     out = {t: base / t for t in tickers}
-    for folder in out.values():
+    for t, folder in out.items():
+        if folder.exists():
+            shutil.rmtree(folder)   # replace this ticker's pack; other tickers in the session folder are not touched
         folder.mkdir(parents=True, exist_ok=True)
-    manifest = {t: {"ticker": t, "pack_built_utc": now_utc().isoformat(timespec="seconds"),
+    manifest = {t: {"ticker": t, "pack_built_utc": now_utc().isoformat(timespec="seconds"), "session": session,
                     "run_id": run.name, "price_since": args.since, "files": {}} for t in tickers}
 
-    print(f"Run {run.name} | tickers {' '.join(tickers)}")
+    print(f"Run {run.name} | session {session} | Lab revision {lab.revision} ({stage}) | tickers {' '.join(tickers)}")
+    print("  lab card ..."); export_lab(lab, stage, tickers, out, manifest)
+    lab_revision, lab_created = lab.revision, lab.manifest.get("created_at_utc")
+    lab.close()
     print("  prices ..."); export_prices(tickers, args.since, out, manifest)
     print("  run files ..."); export_run(run, tickers, out, manifest)
     print("  macro board ..."); export_board(tickers, out, manifest)
@@ -297,12 +376,20 @@ def main() -> None:
         (out[t] / "manifest.json").write_text(json.dumps(manifest[t], indent=1, default=str), encoding="utf-8")
         archive = base / f"{t}_pack.zip"
         with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
-            for f in sorted(out[t].iterdir()):
+            for f in sorted(out[t].iterdir(), key=lambda p: (p.name != "lab_card.json", p.name)):   # the Lab card first
                 zf.write(f, f"{t}/{f.name}")
         files = manifest[t]["files"]
         missing = [k for k, v in files.items() if v.get("status") not in ("PRESENT",)]
         print(f"{t}: {archive} ({archive.stat().st_size / 1e6:.1f} MB); "
               f"{len(files) - len(missing)} sources present, {len(missing)} missing/absent")
+    index_file = base / "packs_index.json"   # which tickers this session folder holds, and from which Lab revision
+    index = json.loads(index_file.read_text(encoding="utf-8")) if index_file.exists() else {"session": session, "tickers": {}}
+    index.update({"session": session, "run_id": run.name, "lab_revision": lab_revision, "lab_publication_created_at_utc": lab_created,
+                  "updated_utc": now_utc().isoformat(timespec="seconds")})
+    for t in tickers:
+        index["tickers"][t] = {"built_utc": manifest[t]["pack_built_utc"], "lab_revision": lab_revision,
+                               "lab_card": manifest[t]["files"]["lab_card.json"]["status"]}
+    index_file.write_text(json.dumps(index, indent=1), encoding="utf-8")
     print(f"Pack folder: {base}")
 
 
