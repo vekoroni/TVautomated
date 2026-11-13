@@ -71,6 +71,24 @@ def first(j: dict, keys) -> str:
     return ""
 
 
+CARD_NAME = re.compile(r"^(?P<ticker>[A-Za-z][A-Za-z0-9.\-]*)_deep_dive_(?P<rest>.+)\.html$")
+SESSION_IN_NAME = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def find_cards(folder: Path) -> dict:
+    """Read-only card discovery required by the research collector."""
+    out: dict[str, list[Path]] = {}
+    def card_date(p: Path):
+        d = SESSION_IN_NAME.search(p.name)
+        return (d.group(1) if d else "", p.stat().st_mtime, p.name)
+    for f in sorted(folder.glob("*_deep_dive_*.html"), key=card_date):
+        m = CARD_NAME.match(f.name)
+        if not m or f.name.startswith("~$"):
+            continue
+        out.setdefault(m.group("ticker").upper(), []).append(f)
+    return out
+
+
 def load_cards(folder: Path) -> dict:
     out = {}
     for f in sorted((folder / "decisions").glob("*.json")) if (folder / "decisions").exists() else []:

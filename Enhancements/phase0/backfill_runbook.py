@@ -84,6 +84,14 @@ def run_tool(item: dict, credit_cap: int, workers: int, execute: bool) -> int:
 
 
 def main() -> int:
+    # ACK 13 Nov: cumulative pre-dispatch reservations, literal identities,
+    # exact saved receipts, insert-only captures and batch-scoped maintenance.
+    # The legacy implementation below is retained for historical reference,
+    # but cannot execute through this entry point.
+    from guarded_phantom_backfill import main as guarded_main
+    return guarded_main()
+
+def legacy_main_not_an_execution_entrypoint() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("mode", choices=["plan", "execute"])
     p.add_argument("--sessions", required=True)
