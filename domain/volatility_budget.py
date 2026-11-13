@@ -22,8 +22,9 @@ CANONICAL_VOL_BUDGET_FIELDS = (
 def cumulative_expected_move_pct(row: Mapping[str, Any], horizon: str) -> float | None:
     """Hold-window one-sigma stock move in percent, never a band increment.
 
-    Canonical budgets are fractions; legacy Layer 3 fields are incremental
-    display percentages for 1-5, 6-10, and 11-20 sessions respectively.
+    Canonical budgets are fractions. Unmarked historical Layer 3 fields are
+    incremental display percentages; D1-corrected aliases explicitly declare
+    CUMULATIVE_1SIGMA and must not be summed again.
     Missing or invalid components cannot be replaced by a shorter horizon.
     """
     selected = {
@@ -49,11 +50,16 @@ def cumulative_expected_move_pct(row: Mapping[str, Any], horizon: str) -> float 
     if raw is not None and str(raw).strip() != "":
         fraction = positive(raw)
         return fraction * 100.0 if fraction is not None and fraction <= 3.0 else None
+    alias_convention = str(row.get("l3_expected_move_legacy_convention") or "").strip().upper()
+    if alias_convention not in ("", "CUMULATIVE_1SIGMA"):
+        return None
     fields = (
         "l3_expected_move_1_5d",
         "l3_expected_move_6_10d",
         "l3_expected_move_11_20d",
     )[:count]
+    if alias_convention == "CUMULATIVE_1SIGMA":
+        fields = fields[-1:]
     increments = []
     for name in fields:
         raw = row.get("garch_expected_move_" + name.removeprefix("l3_expected_move_"))
