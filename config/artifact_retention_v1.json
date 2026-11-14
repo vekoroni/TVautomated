@@ -1,0 +1,15 @@
+{
+  "version": "artifact_retention_v1",
+  "business_owner": "ACK",
+  "effective_from": "2026-11-14",
+  "whole_run_age_deletion": false,
+  "historical_evidence": "PRESERVE_LOSSLESS",
+  "archive_diagnostic_template": "diagnostics/outcome_learning_{run_id}.json",
+  "gzip_compression_level": 6,
+  "source_run_artifacts": "KEEP_UNTIL_INDIVIDUAL_DEPENDENCY_PROOF",
+  "live_databases": "NEVER_DELETE",
+  "paid_responses": "NEVER_DELETE_BY_AGE",
+  "unique_backups": "KEEP_UNLESS_INDEPENDENTLY_PROVEN_REDUNDANT",
+  "unknown_artifacts": "KEEP",
+  "rationale": "Replace whole-folder age pruning with verified file-level retention; archived diagnostics retain identical decompressed bytes and hash receipts."
+}

@@ -630,11 +630,12 @@ class OrchestratorConfig:
     MAX_POSITIONS  = 5        # Maximum trades selected per cycle
     MAX_PROBE_POS  = 3        # Maximum PROBE / pse_miss_flag trades within MAX_POSITIONS
 
-    # Retention: number of evening runs to keep in data/output/runs/
+    # Legacy compatibility settings only. Artifact-level retention below now
+    # preserves evidence; neither value authorises deleting whole run folders.
     RUNS_RETENTION_DAYS = 90
 
-    # Retention: calendar days of run copies kept in data/archive/, counted back from the current
-    # run's date (ACK, 4 Oct 2026).
+    # Former archive-day window (ACK 4 Oct); superseded by artifact-level
+    # preservation on 14 Nov. Kept only for callers reading legacy metadata.
     ARCHIVE_RETENTION_DAYS = 14
 
 
@@ -5094,7 +5095,8 @@ ARCHIVE_HEADROOM_MARGIN = 1.2
 
 # ACK, 27 Sep 2026: the archive is a retention record of a run's decisions and evidence. The
 # per-ticker package files (~85% of a run's bytes) are reproducible from the canonical stores and
-# remain in the original run for its retention window, so they are neither measured nor copied.
+# remain in the source run until individually proven dispensable, so they are
+# neither measured nor copied. Known bulky diagnostics are archived losslessly.
 ARCHIVE_EXCLUDED_DIRS = ("packages",)
 
 
@@ -5134,6 +5136,10 @@ def archive_outputs(run_id: str) -> bool:
         return False
 
     archive_session = cfg.ARCHIVE_DIR / run_id
+    if archive_session.exists():
+        # A rerun must not overwrite historical evidence already archived.
+        import uuid as _archive_uuid
+        archive_session = archive_session / "revisions" / ("snapshot_" + _archive_uuid.uuid4().hex)
     archive_session.mkdir(parents=True, exist_ok=True)
 
     copied = 0
@@ -5143,9 +5149,21 @@ def archive_outputs(run_id: str) -> bool:
             copied += 1
 
     dest_run = archive_session / "runs" / run_id
-    if dest_run.exists():
-        shutil.rmtree(dest_run)
-    shutil.copytree(current_run_dir, dest_run, ignore=shutil.ignore_patterns(*ARCHIVE_EXCLUDED_DIRS))
+    def _archive_ignore(directory, names):
+        ignored = set(shutil.ignore_patterns(*ARCHIVE_EXCLUDED_DIRS)(directory, names))
+        if Path(directory) == current_run_dir / "diagnostics":
+            ignored.add(f"outcome_learning_{run_id}.json")
+        return ignored
+    shutil.copytree(current_run_dir, dest_run, ignore=_archive_ignore)
+    from scripts.artifact_retention import archive_diagnostic
+    _diagnostic_relative = Path("diagnostics") / f"outcome_learning_{run_id}.json"
+    _diagnostic_source = current_run_dir / _diagnostic_relative
+    if _diagnostic_source.exists():
+        try:
+            archive_diagnostic(_diagnostic_source, dest_run / _diagnostic_relative, archive_session)
+        except Exception as retention_error:
+            logger.error("Archive diagnostic preservation failed; source retained: %s", retention_error)
+            return False
     copied += sum(1 for _ in dest_run.rglob("*") if _.is_file())
 
     logger.info(f"✅ Archived {copied} files → {archive_session}\n")
@@ -5153,39 +5171,18 @@ def archive_outputs(run_id: str) -> bool:
 
 
 def prune_old_runs() -> None:
-    """Prune old run directories from data/output/runs/ (after archive)."""
-    logger.info("=" * 80)
-    logger.info("PHASE 10c: PRUNE OLD RUNS")
-    logger.info("=" * 80)
+    """Preserve source runs until individual artifact dependencies are proven.
 
-    if not cfg.RUNS_DIR.exists():
-        logger.info("⏭️  Runs directory does not exist — nothing to prune\n")
-        return
-
-    all_runs = sorted([d for d in cfg.RUNS_DIR.iterdir() if d.is_dir()], key=lambda d: d.name)
-    keep = cfg.RUNS_RETENTION_DAYS
-    to_prune = all_runs[:-keep] if len(all_runs) > keep else []
-
-    if not to_prune:
-        logger.info(f"✅ No pruning needed — {len(all_runs)} runs present ({keep} retention limit)\n")
-        return
-
-    logger.info(f"   Total runs    : {len(all_runs)}")
-    logger.info(f"   Keeping       : {keep} most recent")
-    logger.info(f"   Pruning       : {len(to_prune)} old runs")
-
-    pruned = 0
-    errors = 0
-    for old_run in to_prune:
-        try:
-            shutil.rmtree(old_run)
-            logger.info(f"   🗑️  Pruned: {old_run.name}")
-            pruned += 1
-        except Exception as e:
-            logger.warning(f"   ⚠️  Could not prune {old_run.name}: {e}")
-            errors += 1
-
-    logger.info(f"✅ Pruned {pruned} old runs" + (f" ({errors} errors)" if errors else "") + "\n")
+    Age or a newer database is never proof that old decisions/evidence are
+    dispensable. Archived bulk diagnostics are compacted by the shared policy.
+    """
+    from scripts.artifact_retention import compact_archives
+    try:
+        report = compact_archives(cfg.ARCHIVE_DIR)
+        logger.info("Artifact retention: %d diagnostics compacted; source runs/evidence retained",
+                    len(report["records"]))
+    except Exception as retention_error:
+        logger.error("Artifact retention stopped; uncertain files preserved: %s", retention_error)
 
 
 def _run_id_date(name: str) -> Optional[date]:
@@ -5196,29 +5193,17 @@ def _run_id_date(name: str) -> Optional[date]:
 
 
 def prune_old_archives(run_id: str) -> None:
-    """Delete archive copies of runs older than ARCHIVE_RETENTION_DAYS before the current run (ACK, 4 Oct 2026).
-
-    The window is counted from the current run's date, not the wall clock, so a re-run prunes the same set.
-    Folders not named as a run are never touched.
-    """
+    """Compact recognised artifacts; never age-delete historical evidence."""
     current = _run_id_date(run_id)
     if current is None or not cfg.ARCHIVE_DIR.exists():
         logger.info(f"⏭️  Archive retention skipped (run date unreadable or no archive): {run_id}\n")
         return
-    cutoff = current - timedelta(days=cfg.ARCHIVE_RETENTION_DAYS)
-    pruned = errors = 0
-    for folder in sorted(cfg.ARCHIVE_DIR.iterdir()):
-        folder_date = _run_id_date(folder.name)
-        if not folder.is_dir() or folder_date is None or folder_date >= cutoff:
-            continue
-        try:
-            shutil.rmtree(folder)
-            pruned += 1
-        except Exception as e:
-            logger.warning(f"   ⚠️  Could not prune archive {folder.name}: {e}")
-            errors += 1
-    logger.info(f"✅ Archive retention ({cfg.ARCHIVE_RETENTION_DAYS} days, before {cutoff}): pruned {pruned}"
-                + (f" ({errors} errors)" if errors else "") + "\n")
+    from scripts.artifact_retention import compact_archives
+    try:
+        report = compact_archives(cfg.ARCHIVE_DIR)
+        logger.info("Artifact archive retention: %d compacted, no whole folders deleted", len(report["records"]))
+    except Exception as retention_error:
+        logger.error("Archive retention stopped; evidence retained: %s", retention_error)
 
 
 def write_latest_json(discovery_run_id: str, workflow_run_id: str) -> None:

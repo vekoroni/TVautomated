@@ -100,3 +100,49 @@ def test_headroom_check_measures_only_what_will_be_copied(run_tree_with_packages
     free = int((2048 + 1024) * orch.ARCHIVE_HEADROOM_MARGIN) + 100
     with patch.object(shutil, "disk_usage", return_value=(10**12, 10**12 - free, free)):
         assert orch.archive_outputs(tree.run_id) is True
+
+
+def test_bulk_diagnostic_is_lossless_compressed_but_source_and_decisions_stay(run_tree):
+    from scripts.artifact_retention import read_retained_artifact
+    tree = run_tree
+    relative = Path("diagnostics") / f"outcome_learning_{tree.run_id}.json"
+    source = tree.run_dir / relative
+    source.parent.mkdir()
+    source.write_bytes(b"saved historical diagnostic " * 10000)
+    with patch.object(shutil, "disk_usage", return_value=(10**12, 0, 10**12)):
+        assert orch.archive_outputs(tree.run_id)
+    dest = tree.archive_dir / tree.run_id / "runs" / tree.run_id / relative
+    assert not dest.exists()
+    assert read_retained_artifact(dest) == source.read_bytes()
+    assert source.exists()
+
+
+def test_same_name_in_unknown_folder_is_not_excluded(run_tree):
+    tree = run_tree
+    source = tree.run_dir / "evidence" / f"outcome_learning_{tree.run_id}.json"
+    source.parent.mkdir()
+    source.write_bytes(b"unknown evidence")
+    with patch.object(shutil, "disk_usage", return_value=(10**12, 0, 10**12)):
+        assert orch.archive_outputs(tree.run_id)
+    assert (tree.archive_dir / tree.run_id / "runs" / tree.run_id / "evidence" / source.name).read_bytes() == b"unknown evidence"
+
+
+def test_rearchive_preserves_previous_snapshot_instead_of_overwriting(run_tree):
+    tree = run_tree
+    source = tree.run_dir / "options" / "options_intelligence.csv"
+    with patch.object(shutil, "disk_usage", return_value=(10**12, 0, 10**12)):
+        assert orch.archive_outputs(tree.run_id)
+        source.write_bytes(b"new revision")
+        assert orch.archive_outputs(tree.run_id)
+    original = tree.archive_dir / tree.run_id / "runs" / tree.run_id / "options" / source.name
+    assert original.read_bytes() == b"x" * 2048
+    revisions = list((tree.archive_dir / tree.run_id / "revisions").iterdir())
+    assert len(revisions) == 1
+    assert (revisions[0] / "runs" / tree.run_id / "options" / source.name).read_bytes() == b"new revision"
+
+
+def test_run_age_never_authorises_whole_folder_removal(run_tree, monkeypatch):
+    tree = run_tree
+    monkeypatch.setattr(orch.cfg, "RUNS_RETENTION_DAYS", 0)
+    orch.prune_old_runs()
+    assert (tree.run_dir / "options" / "options_intelligence.csv").exists()
