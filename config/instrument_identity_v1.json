@@ -1,0 +1,31 @@
+{
+  "version": "instrument_identity_v1",
+  "business_owner": "ACK",
+  "recorded_at": "2026-11-14",
+  "authority": "DISPLAY_ONLY",
+  "policy_basis": "CURRENT_REVIEW_POLICY_NOT_HISTORICAL_DECISION",
+  "macro_policy": "ADVISORY_ONLY",
+  "rank_policy": "PRESERVE_CANONICAL_RANK",
+  "special_product_policy": "RESEARCH_ONLY",
+  "research_board_groups": ["Volatility products", "Leveraged & inverse"],
+  "types": {
+    "EQUITY": {"wrapper": "EQUITY"},
+    "INDEX": {"wrapper": "INDEX"},
+    "EQUITY_INDEX_ETF": {"wrapper": "ETF"},
+    "SECTOR_ETF": {"wrapper": "ETF"},
+    "INDUSTRY_ETF": {"wrapper": "ETF"},
+    "FACTOR_ETF": {"wrapper": "ETF"},
+    "COUNTRY_ETF": {"wrapper": "ETF"},
+    "REGIONAL_ETF": {"wrapper": "ETF"},
+    "THEMATIC_ETF": {"wrapper": "ETF"},
+    "FIXED_INCOME_ETF": {"wrapper": "ETF"},
+    "COMMODITY_ETF": {"wrapper": "ETF"},
+    "CRYPTO_ETF": {"wrapper": "ETF"},
+    "ETF_OTHER": {"wrapper": null, "review_reason": "UNRESOLVED_MASTER_CLASSIFICATION"},
+    "ETN": {"wrapper": "ETN"},
+    "LEVERAGED_BOND_ETF": {"wrapper": "ETF", "leveraged": true, "research_only": true},
+    "LEVERAGED_INVERSE_ETF": {"wrapper": "ETF", "leveraged": true, "inverse": true, "research_only": true},
+    "LEVERAGED_VOL_ETF": {"wrapper": null, "volatility": true, "research_only": true,
+      "review_reason": "LEGACY_VOLATILITY_TYPE_CONFLATES_WRAPPER_AND_LEVERAGE"}
+  }
+}

@@ -342,6 +342,8 @@ function renderTradeCard(s, profile) {
   const sections = [
     tcSection('1 · What and which side', [
       tcRow('Ticker / side', `<strong>${tcEsc(s.ticker)}</strong> · ${side} · tier ${tcShow(s.tier)}`),
+      tcRow('Instrument identity', tcShow(s.instrument_type, 'not recorded'),
+            `${tcEsc(s.instrument_identity_state || 'not assessed')} · ${tcEsc(s.instrument_review_policy || 'policy not recorded')} · source-reported, display only`),
       // Three separate claims: what the structure says, whether the trigger happened, whether an edge was measured.
       tcRow('Structural bias', tcStructuralBias(s), 'the side the top-down thesis takes'),
       tcRow('Trigger state', TC_READINESS[String(s.thesis__readiness || '').toUpperCase()] || tcShow(s.thesis__readiness, 'readiness not recorded')),

@@ -25,6 +25,7 @@ import zlib
 from contracts.lab_review_display import display_sector, display_policy, valuation_disclosure
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from canonical_data.instrument_identity import IDENTITY_FIELDS
 
 SCHEMA = "lab_review_projection_v1"
 FAMILIES = ("structure", "option_risk", "context", "morning", "audit")
@@ -36,6 +37,8 @@ CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *RELIABILITY_FIELDS, 'scenario_
     'valuation_time_basis', 'anticipated_reach_state', 'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis',
     'contract_value_alternatives', 'doi_alternatives_json')))
 CARD_FIELDS = (*CARD_FIELDS, "review_validation_state", "lab_actionable_overlay_state", "lab_actionable_overlay_reason")
+HOME_FIELDS = (*HOME_FIELDS, 'instrument_type', 'instrument_identity_state', 'instrument_review_policy')
+CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *IDENTITY_FIELDS)))
 
 
 class ReviewRevisionConflict(ValueError):

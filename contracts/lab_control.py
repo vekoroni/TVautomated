@@ -841,6 +841,8 @@ FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from canonical_data.instrument_identity import IDENTITY_FIELDS, attach_identities, load_registry
+FINAL_BOOK_FIELDS += [f for f in IDENTITY_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in MONETISATION_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in (*RELIABILITY_FIELDS, 'scenario_exit_date', 'valuation_time_basis',
     'anticipated_reach_state', 'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis',
@@ -4286,7 +4288,10 @@ def build_final_opportunity_book(
         row["lab_rank"] = rank
         row["priority_rank"] = rank
         row["thesis__delivered_at"] = delivered_at
-    return rows
+    # ETF E1: dated source disclosure only, after canonical ranking. No selector
+    # or Lane B decision consumes these fields. Missing reference stays unknown.
+    return attach_identities(rows, load_registry(), as_of=manifest.get('decision_clock')
+                             or manifest.get('evidence_session') or manifest.get('market_session'))
 
 
 

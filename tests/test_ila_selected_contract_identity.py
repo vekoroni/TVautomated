@@ -91,6 +91,9 @@ LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"exit_clock_as_of", "exit_clock_state", "
 # A12 (ACK 12 Nov 2026): the saved-data monetisation clock, descriptive only, additive.
 from contracts.monetisation_clock import MONETISATION_FIELDS as _MON
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_MON)
+# ETF E1 (ACK 14 Nov 2026): dated instrument identity and review-policy disclosure, additive and display-only.
+from canonical_data.instrument_identity import IDENTITY_FIELDS as _IDENT
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_IDENT)
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",
