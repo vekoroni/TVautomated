@@ -88,6 +88,9 @@ LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_REL)
 # Same change: the exit engine publishes its clock and target basis; the US Money Index routing names its source.
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"exit_clock_as_of", "exit_clock_state", "exit_target_basis",
                                        "usmi_routing_source", "usmi_routing_source_sha256"}
+# A12 (ACK 12 Nov 2026): the saved-data monetisation clock, descriptive only, additive.
+from contracts.monetisation_clock import MONETISATION_FIELDS as _MON
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_MON)
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",

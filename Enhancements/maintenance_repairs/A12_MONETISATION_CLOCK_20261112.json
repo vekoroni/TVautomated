@@ -1,0 +1,20 @@
+{
+  "item": "A12",
+  "title": "Exact-contract observed monetisation clock",
+  "scope": "Compute and publish +20%/+30% first-observed-profit n_q50/n_q80 with evidence, failures, censoring and missing-data counts.",
+  "implementation_owner": "Codex: reliable measurement and publication",
+  "strategy_owner": "Claude: expiry selection and all entry/exit policies",
+  "authority": "DESCRIPTIVE_MEASUREMENT_ONLY",
+  "no_providers": true,
+  "no_pipeline_run": true,
+  "required_checks": [
+    "Exact OCC identity and same-contract ask-to-bid observations with shared costs",
+    "No data or archived receipts after the injected decision cutoff",
+    "Missing is not zero; zero bid is not a realised total loss",
+    "No half-target, ATR or modelled price proxy for observed profit",
+    "Non-overlapping origin windows and explicit count reconciliation",
+    "Quantiles explicitly conditional on observable hits; not an 80% success probability",
+    "No pooling across expiries or inferring a forecast from one contract's history",
+    "No changes to expiry, direction, rank, permission or Lane B"
+  ]
+}

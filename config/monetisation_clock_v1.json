@@ -1,0 +1,18 @@
+{
+  "version": "monetisation_clock_v1",
+  "authority": "DESCRIPTIVE_MEASUREMENT_ONLY",
+  "validation_state": "NOT_VALIDATED_FOR_FORECAST_OR_SELECTION",
+  "profit_levels": [0.2, 0.3],
+  "observation_sessions": 20,
+  "lookback_calendar_days": 365,
+  "close_quote_tolerance_seconds": 1800,
+  "entry_rule": "EXACT_CONTRACT_SAVED_ASK_PLUS_SHARED_OPEN_FEE",
+  "exit_rule": "FIRST_OBSERVED_BID_NET_OF_SHARED_CLOSE_FEE",
+  "quote_kind": "STANDARD_OCC_NEAR_CLOSE_SNAPSHOTS_NOT_INTRADAY_FIRST_PASSAGE",
+  "origin_rule": "NON_OVERLAPPING_FULL_OBSERVATION_WINDOWS",
+  "failure_rule": "NO_OBSERVED_PROFIT_BY_WINDOW_END_OR_EXPIRY_NOT_A_REALISED_LOSS",
+  "quantile_rule": "NEAREST_RANK_AMONG_UNAMBIGUOUS_OBSERVED_HITS",
+  "rationale": "A12 measurement uses the saved-data study window; configurable, never a thesis hold cap or an expiry rule.",
+  "business_owner": "ACK",
+  "expiry_selection_owner": "CLAUDE_LANE_B"
+}

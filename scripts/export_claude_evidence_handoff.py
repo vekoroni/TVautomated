@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from contracts.handoff_reliability import reliability_fields
 from domain.macro_advisory_context import project_usmi_context
 from domain.sector_resolution import resolve_sector
+from contracts.monetisation_clock import attach_clock, MONETISATION_FIELDS
 
 
 def _receipt(path, root):
@@ -28,7 +29,7 @@ def _receipt(path, root):
             'sha256':digest.hexdigest(),'bytes':path.stat().st_size}
 
 
-def build_saved_handoff(run_dir):
+def build_saved_handoff(run_dir,*,monetisation_packet=None):
     root=Path(run_dir).resolve(); rid=root.name
     candidate=root/'forecast/behavioural_candidate_packet_v1/candidates.csv'
     morning=root/'morning_validation'/f'morning_validated_trades_{rid}.csv'
@@ -66,6 +67,13 @@ def build_saved_handoff(run_dir):
     if before!=after:raise ValueError('SOURCE_CHANGED_DURING_EXPORT')
     out['state']='PARTIAL_MISSING_SOURCES' if any(r['state']=='MISSING' for r in before) else 'SAVED_EVIDENCE_EXPORTED_NOT_VALIDATION'
     out['counts']={k:len(out[k]) for k in ('pre_option_candidates','morning_assessments','typed_catalysts')}
+    if monetisation_packet is not None:
+        if monetisation_packet.get('source_rows_sha256')!=before[1].get('sha256'):
+            raise ValueError('MONETISATION_MORNING_SOURCE_HASH_MISMATCH')
+        attached,receipt=attach_clock([r['values'] for r in out['morning_assessments']],monetisation_packet,run_id=rid)
+        for entry,row in zip(out['morning_assessments'],attached):
+            entry['monetisation_clock']={f:row.get(f) for f in MONETISATION_FIELDS}
+        out['monetisation_clock_receipt']=receipt
     out['content_sha256']=hashlib.sha256(json.dumps(out,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
     return out
 
@@ -74,10 +82,12 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir',required=True,type=Path)
     parser.add_argument('--output',required=True,type=Path)
+    parser.add_argument('--monetisation-clock',type=Path,help='Optional saved A12 packet; exact run/source hashes must match')
     args=parser.parse_args()
     if args.output.resolve().is_relative_to(args.run_dir.resolve()):
         parser.error('Use a new output outside the saved run; source artifacts must stay immutable.')
-    result=build_saved_handoff(args.run_dir)
+    packet=json.loads(args.monetisation_clock.read_text(encoding='utf-8')) if args.monetisation_clock else None
+    result=build_saved_handoff(args.run_dir,monetisation_packet=packet)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     with args.output.open('x',encoding='utf-8') as stream:json.dump(result,stream,ensure_ascii=False,allow_nan=False)
     print(json.dumps({'state':result['state'],'counts':result['counts'],'content_sha256':result['content_sha256'],'output':str(args.output)}))
