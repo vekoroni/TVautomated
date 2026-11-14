@@ -1360,7 +1360,8 @@ def theta_drag_pct(*, theta_per_calendar_day: Any, hold_sessions: Any, mark: Any
 
 
 def contract_runway_policy(horizon: object, *, evidence_hold: Optional[int] = None,
-                           evidence_basis: Optional[str] = None, hold_is_evidence: bool = True) -> Dict[str, Any]:
+                           evidence_basis: Optional[str] = None, hold_is_evidence: bool = True,
+                           as_of_date: Any = None) -> Dict[str, Any]:
     """Runway floor for the contract, in calendar days - a floor, never a ceiling (ACK 18 Sep 2026).
 
     The hold that sizes it is the setup's own q80 time to its level, else its pooled evidence, else the volatility
@@ -1372,11 +1373,11 @@ def contract_runway_policy(horizon: object, *, evidence_hold: Optional[int] = No
     if evidence_hold:
         hold = int(evidence_hold)
         basis = str(evidence_basis or "DURATION_EVIDENCE_Q80")
-        requirement = calculate_dte_requirement(hold, evidence_hold=bool(hold_is_evidence))
+        requirement = calculate_dte_requirement(hold, evidence_hold=bool(hold_is_evidence), as_of_date=as_of_date)
     else:
         hold = None
         basis = str(evidence_basis or "NO_RUNWAY_ESTIMATE")
-        requirement = calculate_dte_requirement(None)
+        requirement = calculate_dte_requirement(None, as_of_date=as_of_date)
     floor = requirement["minimum_required_dte"]
     return {
         "contract_runway_floor_days": int(floor if floor is not None else requirement["minimum_holdable_dte"]),
@@ -5112,6 +5113,7 @@ def parse_structural_context(signal_row: pd.Series) -> Dict:
         evidence_hold=_runway_hold,
         evidence_basis=_runway_basis,
         hold_is_evidence=_runway_is_evidence,
+        as_of_date=_CDS_V2_SESSION or signal_row.get('evidence_session_date') or signal_row.get('bar_data_asof'),
     )
 
     # Expected hold days — use L2 if available, else DTE target
@@ -6378,6 +6380,8 @@ def _options_liquidity_lifecycle_fields(
                 bid=_repair_alt_float(contract.get("bid")),
                 ask=_repair_alt_float(contract.get("ask")),
                 dte=float(required["dte"]),
+                as_of_date=evidence_session,
+                expiry_date=contract.get("expiry"),
                 remaining_hold_sessions=_repair_alt_float(ctx.get("contract_runway_hold_sessions")),
                 hold_is_evidence=str(ctx.get("contract_runway_basis") or "").startswith(
                     ("DURATION_EVIDENCE", "POOLED_EVIDENCE")),
@@ -6415,6 +6419,7 @@ def _options_liquidity_lifecycle_fields(
         **base,
         "planned_hold_sessions": _repair_alt_float(ctx.get("contract_runway_hold_sessions")),
         "planned_hold_source": ctx.get("contract_runway_basis"),
+        "planned_hold_reference_at_utc": evidence_session,
         "invalidation_spot": required["invalidation_spot"],
         "invalidation_source": governed_handoff.get("invalidation_source"),
         "thesis_state": (
@@ -10817,7 +10822,7 @@ def run_options_layer(
         'governed_direction_record_sha256',
         'horizon_bucket','horizon_action','horizon_size_multiplier',
         'entry_spot','target_spot','invalidation_spot','invalidation_source','invalidation_candidate_state',
-        'invalidation_policy_version','planned_hold_sessions','planned_hold_source',
+        'invalidation_policy_version','planned_hold_sessions','planned_hold_source','planned_hold_reference_at_utc',
         'ev3_handoff_schema_version','contract_quote_timestamp_utc','contract_prepared_at_utc','quote_timestamp_utc',
         'ev3_barrier_state_key','ev3_barrier_state_key_source','ev3_barrier_state_key_version',
         'contract_quote_timestamp_source',

@@ -45,7 +45,11 @@ def test_without_an_expected_move_nothing_is_confirmed_and_adverse_stays_flagged
 def _row(**over):
     row = {"ticker": "TEST", "final_direction": "CALL", "thesis_spot": 100.0, "signal_price": 100.0,
            "contract_strike": 100.0, "invalidation_price": 95.0, "contract_dte": 40, "planned_hold_sessions": 20,
-           "hv_30d": 0.25, "contract_symbol": "TEST261120C00100000", "thesis_id": "T:CALL:2026-10-01",
+           # Expiry about 60 days from the test day: Morning now reads the contract's real expiry (exact XNYS
+           # sessions, A/C reliability 12 Nov 2026), so a fixed date would turn DTE-unsuitable as it approached.
+           "hv_30d": 0.25, "contract_symbol": "TEST" + (__import__("datetime").date.today()
+                                                        + __import__("datetime").timedelta(days=60)).strftime("%y%m%d")
+           + "C00100000", "thesis_id": "T:CALL:2026-10-01",
            "lifecycle_contract_version": "v1", "target_price": 110.0}
     row.update(over)
     return row

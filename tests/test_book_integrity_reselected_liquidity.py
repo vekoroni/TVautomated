@@ -130,6 +130,8 @@ def test_hit_classifies_liquidity_exactly_as_the_normal_eod_path() -> None:
         remaining_hold_sessions=5.0, forecast_vol_annual=0.30, thesis_spot=100.0,
         current_spot=100.0, structural_target=90.0, invalidation_spot=105.0,
         quote_age_seconds=None, listed_market=True,
+        # Same evidence session and expiry as the book row: the runway is counted in exact XNYS sessions.
+        as_of_date=SESSION, expiry_date="2026-09-18",
     ))
     for field in ("recovery_disposition", "moneyness_state", "delta_band", "minimum_required_dte"):
         assert row[field] == normal[field], field

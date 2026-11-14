@@ -82,6 +82,12 @@ from domain.option_walls import GOVERNED_WALL_FIELDS as _GOV_WALLS
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_GOV_WALLS) - {"call_wall", "put_wall", "call_wall_state", "put_wall_state"}
 # Output-trust item 9 (ACK 9-10 Oct 2026): earnings confirmation tiers - the conflict, each source, the note.
 LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"earnings_disagreement", "earnings_sources_json", "earnings_confirmation_note"}
+# A/C reliability (12 Nov 2026): hand-off reliability, exit-clock and session-timing fields, additive and labelled.
+from contracts.handoff_reliability import RELIABILITY_FIELDS as _REL
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= set(_REL)
+# Same change: the exit engine publishes its clock and target basis; the US Money Index routing names its source.
+LATER_ADDITIVE_FIELDS_TEV_AND_CARD |= {"exit_clock_as_of", "exit_clock_state", "exit_target_basis",
+                                       "usmi_routing_source", "usmi_routing_source_sha256"}
 LATER_ADDITIVE_FIELDS = {"iv_percentile", "ivp_source", "iv_rank_definition", "iv_rank_window_sessions",
                          # INT-001: canonical cumulative move and its horizon convention.
                          "expected_move_5d_fraction", "expected_move_10d_fraction",

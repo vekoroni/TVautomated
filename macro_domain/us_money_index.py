@@ -96,7 +96,7 @@ def sector_advisory(
 ) -> dict[str, Any]:
     """Return display/ranking context; never a verdict or permission."""
 
-    if not isinstance(packet, Mapping):
+    if not isinstance(packet, Mapping) or not packet:
         return {"alignment": "UNAVAILABLE", "priority": None, "reason": "USMI_UNAVAILABLE"}
     sector_text = str(sector).strip().upper()
     industry_text = str(industry).strip().upper()
@@ -108,6 +108,14 @@ def sector_advisory(
     elif "AI HARDWARE" in industry_text:
         category = "AI_HARDWARE"
     routes = packet.get("sector_routing")
+    # A partial baseline with no directional evidence is unknown, not a flat
+    # neutral signal. Explicit published routes below still take precedence.
+    if (str(packet.get('quality_status') or '').startswith('PARTIAL')
+            and (not isinstance(routes, Mapping) or not any(
+                isinstance(routes.get(side), Mapping) and bool(routes.get(side))
+                for side in ('CALL', 'PUT')))):
+        return {'alignment': 'UNAVAILABLE', 'priority': None,
+                'reason': 'USMI_ROUTING_UNASSESSED'}
     if isinstance(routes, Mapping):
         directional = routes.get(str(direction).strip().upper())
         if isinstance(directional, Mapping):

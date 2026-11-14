@@ -129,7 +129,9 @@ def test_every_scenario_is_return_on_premium_after_spread_and_fees_from_one_engi
     fee_open, fee_close = pol["fee_usd_per_contract_open"] / 100.0, pol["fee_usd_per_contract_close"] / 100.0
     cost = 6.0 + fee_open
     assert out["valuation_entry_cost_usd_per_share"] == pytest.approx(cost)
-    years = (90 - 10 * 1.4484) / 365.0
+    # Ten XNYS sessions after 8 Oct is 22 Oct, not a fixed 14.484 days.
+    assert out['scenario_exit_date'] == '2026-10-22'
+    years = (date.fromisoformat(CONTRACT['expiry']) - date(2026, 10, 22)).days / 365.0
     level = out["scenario_target_exit_spot"]
     model = option_value("CALL", level, 100.0, years, 0.30, rate=out["valuation_rate_annual"], dividend_yield=0.0,
                          style="AMERICAN")["value"]

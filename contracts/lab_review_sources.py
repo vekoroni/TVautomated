@@ -2,7 +2,8 @@
 
 Reuse the existing accepted-handoff verifier and allowlisted evidence merge.
 Keep separate source dates and missing context. No providers, new decisions,
-money-flow inference, ticker-only event matching or full stage-file joins.
+money-flow inference or ticker-only event matching. Timing repairs read a bounded
+saved Morning population and attach reasons only on exact contract/thesis identity.
 """
 from __future__ import annotations
 from collections import defaultdict
@@ -135,7 +136,9 @@ def _context(root, run_id, issues, watches):
             "bias_as_of_utc": stamp, "breadth_generated_at_utc": diagnostic.get("generated_at_utc"),
             "breadth_source": diagnostic.get("source_files", {}).get("sectors"),
             "breadth_state": "PUBLISHED_OBSERVATION" if observed else "NOT_PUBLISHED_FOR_SECTOR",
-            "money_flow": None, "money_flow_state": "NOT_PUBLISHED"})
+            "money_flow": None, "money_flow_state": "NOT_PUBLISHED",
+            "observation_origin": "RUN_FROZEN_DIAGNOSTIC_SLICE",
+            "source_limitation": "Original CSV path is provenance only; absent sectors and flows are not inferred."})
     sector = {"state": "AVAILABLE_PARTIAL" if rows else "NOT_PUBLISHED", "authority": "ADVISORY_ONLY",
               "rotation_signal": rotation.get("rotation_signal"), "as_of_utc": stamp,
               "source": macro["source"], "rows": rows, "breadth_status": breadth.get("status"),
@@ -260,4 +263,79 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
                 row["review_validation_state"] = "EVENT_REJECTED"; issues.append(f"VALIDATION_EVENT_REJECTED:{row.get('ticker')}:{error}")
         receipt["validation_event_state"] = "VERIFIED_IDENTITY_PROJECTED"
     receipt["validation_unmatched_rows"] = len(output["rows"]) - receipt["validation_events_applied"]
+    # Saved-only timing assessment, separate from the immutable accepted book.
+    # Never promote a row. A newly established runway defect can only send an
+    # existing GO display back to manual review; its original label is retained.
+    from domain.trade_timing import timing_for_row
+    meta_path = root / 'run_meta.json'
+    _watch(root, meta_path, watches)
+    meta = _load(meta_path, issues, 'TIMING_META_UNAVAILABLE') if meta_path.is_file() else {}
+    anchor = ((meta or {}).get('dynamic_plan') or {}).get('evidence_cutoff_utc')
+    saved_reasons = defaultdict(list)
+    morning = root / 'morning_validation' / f'morning_validated_trades_{run_id}.csv'
+    _watch(root, morning, watches)
+    if morning.is_file():
+        import csv
+        old_limit = csv.field_size_limit()
+        try:
+            csv.field_size_limit(max(old_limit, 64*1024*1024))
+            with morning.open(encoding='utf-8-sig', newline='') as stream:
+                for r in csv.DictReader(stream):
+                    key = (_text(r.get('ticker')).upper(), _text(r.get('selected_contract_symbol') or r.get('contract_symbol')).removeprefix('O:'))
+                    saved_reasons[key].append({k:r.get(k) for k in ('block_reason','flag_reason','execution_viability_reason','execution_viability_state','monetisability_reason','monetisability_state','verdict','thesis_id','ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc')})
+        finally:
+            csv.field_size_limit(old_limit)
+    for row in output['rows']:
+        key = (_text(row.get('ticker')).upper(), _contract(row))
+        matches = saved_reasons.get(key, [])
+        matched = len(matches) == 1 and (not matches[0].get('thesis_id') or matches[0]['thesis_id'] == row.get('thesis_id'))
+        timing_input = dict(row)
+        if matched:
+            for field in ('ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc'):
+                if not _text(timing_input.get(field)):
+                    timing_input[field] = matches[0].get(field)
+        timing = timing_for_row(timing_input, planned_at=anchor,
+            as_of=row.get('validation_evidence_cutoff_utc') or book.get('created_at_utc'))
+        timing['published_lab_verdict'] = row.get('lab_verdict')
+        reasons = []
+        if matched:
+            reasons = [matches[0][k] for k in ('block_reason','flag_reason','execution_viability_reason','monetisability_reason') if _text(matches[0].get(k))]
+            if matches[0].get('execution_viability_state') == 'EXECUTABLE_QUOTE':
+                reasons = [r for r in reasons if r != matches[0].get('execution_viability_reason')]
+            timing['saved_morning_verdict'] = matches[0].get('verdict')
+        timing['exclusion_reasons'] = list(dict.fromkeys(reasons))
+        if timing['expiry_session_check_state'] in {'INSUFFICIENT_XNYS_RUNWAY','HOLD_BUDGET_EXHAUSTED'}:
+            timing['exclusion_reasons'].append(timing['expiry_session_check_state'])
+            if _text(row.get('lab_verdict')).upper() in {'GO','GO_LIMIT','GO_LMT','GO_WITH_LIMIT'}:
+                row['lab_verdict'] = 'MANUAL_REVIEW'
+                timing['review_override'] = 'EXACT_SESSION_RUNWAY_REQUIRES_MANUAL_REVIEW'
+        row['timing_details'] = timing
+    receipt['timing_assessment_version'] = 'trade_timing_sessions_v1'
+    # _watch added above extends the same mutable watch-list retained in receipt.
     return output, context, receipt
+
+
+def republish_saved_review(run_id: str, runs_dir: Path | str, *, book=None):
+    """Explicit display publication after run evidence is final; never called by GET.
+
+    Only the review generation/manifest is written. The source book, decision
+    artifacts and providers are untouched. EOD can reuse its governed in-memory
+    book; an operator repair reads only the explicitly selected saved book.
+    """
+    from contracts.lab_review_projection import (
+        _folder, publish_review_projection, source_file_receipt,
+    )
+    runs = Path(runs_dir).resolve()
+    folder = _folder(runs, run_id)  # validates exact run identity/path
+    root = folder.parent.parent
+    source = root / 'intelligence_lab' / f'final_opportunity_book_{run_id}.json'
+    before = source_file_receipt(source)
+    if book is None:
+        book = json.loads(source.read_text(encoding='utf-8-sig'))
+    if book.get('run_id') != run_id:
+        raise ValueError('Saved review run identity mismatch')
+    prepared, context, receipt = prepare_review_publication(book, root)
+    if source_file_receipt(source) != before:
+        raise ValueError('Source book changed during review preparation')
+    return publish_review_projection(prepared, runs, context=context,
+        source_receipt={**before, **receipt})

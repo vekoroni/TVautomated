@@ -60,6 +60,7 @@ def evaluate_candidate_expressions(records: Iterable[Mapping], rows_by_ticker: M
                                    max_candidates: Optional[int] = None) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     chains: Dict[str, Any] = {}
+    contexts: Dict[str, Any] = {}
     for record in sorted(records, key=lambda r: (_rank(r), str(r["Candidate_ID"]))):
         base = {k: record.get(k) for k in _RECORD_FIELDS}
         ticker = str(record.get("Ticker") or "").upper()
@@ -84,7 +85,13 @@ def evaluate_candidate_expressions(records: Iterable[Mapping], rows_by_ticker: M
             try:
                 if ticker not in chains:
                     chains[ticker] = fetch_chain(ticker)
-                ctx = copy.copy(parse_context(rows_by_ticker[ticker]))
+                # One frozen upstream row per ticker in this invocation.
+                # Parse it once, but give every expression its own nested
+                # context so selector mutations cannot leak across theses.
+                # Failed parses are not cached and retain per-row error handling.
+                if ticker not in contexts:
+                    contexts[ticker] = parse_context(rows_by_ticker[ticker])
+                ctx = copy.deepcopy(contexts[ticker])
                 ctx["direction"] = expression["right"]
                 ctx["structural_target"] = expression["target"]
                 ctx["invalidation_spot"] = expression["invalidation"]

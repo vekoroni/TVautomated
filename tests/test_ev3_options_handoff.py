@@ -246,7 +246,11 @@ def test_lifecycle_uses_governed_put_invalidation_and_the_contract_runway_hold()
     assert lifecycle["invalidation_source"] == "stop_loss"
     assert lifecycle["planned_hold_sessions"] == 5.0
     assert lifecycle["planned_hold_source"] == "DURATION_EVIDENCE_Q80:1d:n=50"
-    assert lifecycle["minimum_required_dte"] == 19          # 13 sessions in calendar days (R3)
+    # 13 sessions (5 hold + 3 monitor + 5 exit) counted on the XNYS calendar from the 28 Aug evidence session,
+    # across Labor Day, end on 17 Sep: 20 calendar days. (Was 19 from the approximate sessions-to-days factor;
+    # exact session counting, A/C reliability 12 Nov 2026.)
+    assert lifecycle["minimum_required_dte"] == 20
+    assert lifecycle["expiry_session_basis"] == "XNYS_STRICTLY_AFTER_REFERENCE_THROUGH_EXPIRY"
     # Completed-session evidence can prepare and rank the thesis, but cannot
     # claim current executability.  That state is minted only by the governed
     # post-open contract refresh.

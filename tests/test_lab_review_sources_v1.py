@@ -175,3 +175,37 @@ def test_compression_uses_discovery_canonical_columns_on_the_exact_setup_timefra
     rejected,_,_=m.prepare_review_publication(b,root)
     assert rejected['rows'][0].get('compression_state') is None
     assert rejected['rows'][0]['compression_projection_state']=='SETUP_IDENTITY_MISMATCH'
+
+
+def test_republish_after_macro_appears_preserves_source_and_all_rows(tmp_path, monkeypatch):
+    from contracts.lab_review_projection import read_review_summary, read_review_rows, ReviewRevisionConflict
+    import requests
+    def forbidden(*args, **kwargs):
+        raise AssertionError('Display publication must not call providers')
+    monkeypatch.setattr(requests.sessions.Session, 'request', forbidden)
+    m=module(); root=tmp_path/'RUN'
+    path=root/'intelligence_lab/final_opportunity_book_RUN.json'
+    write(path,book()); original=path.read_bytes()
+    old=m.republish_saved_review('RUN',tmp_path)
+    write(root/'interpreter/interpreter_macro_context.json',{
+        'schema_version':'interpreter_macro_context_v1','regime_state':'PINNED_ADVISORY'})
+    with pytest.raises(ReviewRevisionConflict): read_review_summary(tmp_path,'RUN')
+    new=m.republish_saved_review('RUN',tmp_path)
+    assert new['revision']!=old['revision'] and new['row_count']==2
+    assert read_review_summary(tmp_path,'RUN')['macro_context']['regime_state']=='PINNED_ADVISORY'
+    assert read_review_rows(tmp_path,'RUN')['total_rows']==2
+    assert path.read_bytes()==original
+    assert (root/'intelligence_lab/review_projection'/old['database_file']).is_file()
+    write(root/'interpreter/interpreter_macro_context.json',{'changed':True})
+    with pytest.raises(ReviewRevisionConflict): read_review_summary(tmp_path,'RUN')
+
+
+def test_eod_review_waits_for_shared_macro_without_worker3():
+    root=Path(__file__).resolve().parents[1]
+    text=(root/'intelligent_orchestrator.py').read_text(encoding='utf-8')
+    start=text.index('_lab_book = write_final_opportunity_book(')
+    end=text.index('# AVS-FIX-001 W3.9:',start)
+    body=text[start:end]
+    assert 'publish_review=False' in body
+    assert body.index('materialize_lab_macro_evidence(')<body.index('republish_saved_review(')
+    assert 'materialize_worker3_market_environment(' not in body

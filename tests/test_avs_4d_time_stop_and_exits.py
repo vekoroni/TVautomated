@@ -39,10 +39,23 @@ def test_without_evidence_the_governed_fraction_of_the_real_contract_life_is_use
 def test_exit_theta_date_never_passes_expiry_and_target_is_the_anticipated_level():
     out = compute_exit_rules({"live_price": 15.92, "anticipated_level": 15.21, "structural_target": 4.875,
                               "invalidation_spot": 19.495, "contract_theta": -0.0005, "contract_mid": 1.5,
-                              "dte": 78, "contract_expiry": "2026-12-18", "canonical_direction": "PUT"})
+                              "dte": 78, "contract_expiry": "2026-12-18", "canonical_direction": "PUT",
+                              "evidence_session_date": "2026-10-01"})
     assert out["exit_target_price"] == 15.21
     assert out["exit_theta_date"] <= "2026-12-18"
     assert out["exit_stop_price"] == 19.495
+    assert out["exit_clock_as_of"] == "2026-10-01" and out["exit_clock_state"] == "SAVED_REFERENCE"
+
+
+def test_without_a_saved_reference_date_the_exit_clock_is_blank_never_todays_date():
+    # A/C reliability (12 Nov 2026): the exit clock counts from the row's saved evidence date. A row with no
+    # reference date gets no theta date and says why; the engine no longer invents one from the run day.
+    out = compute_exit_rules({"live_price": 15.92, "anticipated_level": 15.21, "invalidation_spot": 19.495,
+                              "contract_theta": -0.0005, "contract_mid": 1.5, "dte": 78,
+                              "contract_expiry": "2026-12-18", "canonical_direction": "PUT"})
+    assert out["exit_theta_date"] is None
+    assert out["exit_clock_as_of"] is None and out["exit_clock_state"] == "REFERENCE_NOT_RECORDED"
+    assert out["exit_target_price"] == 15.21 and out["exit_stop_price"] == 19.495
 
 
 def _plan(**kw):

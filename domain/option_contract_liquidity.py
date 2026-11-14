@@ -202,6 +202,7 @@ def calculate_dte_requirement(
     monitor_sessions: Any = DEFAULT_MONITOR_SESSIONS,
     exit_buffer_sessions: Any = DEFAULT_EXIT_BUFFER_SESSIONS,
     evidence_hold: bool = False,
+    as_of_date: Any = None,
 ) -> Dict[str, Any]:
     """Runway the contract should have: hold + monitor + exit buffer sessions, in calendar days.
 
@@ -211,6 +212,11 @@ def calculate_dte_requirement(
     DTE that leaves one session before the exit buffer - below it the contract cannot be held at all.
     """
     hold = _finite_number(remaining_hold_sessions)
+    # Dates are supplied by production adapters. Legacy date-less callers retain
+    # their explicitly unverified conversion; no invented reference date.
+    from domain.trade_timing import expiry_requirement
+    exact = expiry_requirement(remaining_hold_sessions, as_of_date,
+                               monitor=monitor_sessions, exit_buffer=exit_buffer_sessions)
     # L3 (ACK 7 Oct 2026): no evidence hold -> no hold-based minimum DTE, stated (NO_EVIDENCE_HOLD). The contract
     # must still be holdable past issue (minimum_holdable_dte). The retired {5, 10, 20} restriction is gone: a
     # caller-stated hold (e.g. contract selection's governed window) is used as stated.
@@ -227,6 +233,7 @@ def calculate_dte_requirement(
             "minimum_holdable_dte": math.ceil((exit_buffer + 1) * CALENDAR_DAYS_PER_SESSION),
             "dte_requirement_basis": "NO_EVIDENCE_HOLD",
             "calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+            **(exact or {"expiry_session_basis": "UNASSESSED_NO_REFERENCE_DATE"}),
         }
     monitor = _finite_number(monitor_sessions)
     exit_buffer = _finite_number(exit_buffer_sessions)
@@ -248,6 +255,7 @@ def calculate_dte_requirement(
         "minimum_holdable_dte": math.ceil((exit_buffer + 1) * CALENDAR_DAYS_PER_SESSION),
         "dte_requirement_basis": "EVIDENCE_HOLD" if evidence_hold else "STATED_HOLD",
         "calculation_version": OPTIONS_LIQUIDITY_LIFECYCLE_VERSION,
+        **(exact or {"expiry_session_basis": "UNASSESSED_NO_REFERENCE_DATE"}),
     }
 
 
@@ -799,6 +807,8 @@ class LifecycleInputs:
     one_session_expected_move_abs: float | None = None
     confirmation_min_expected_move_fraction: float | None = None
     hold_is_evidence: bool = False      # step 4b: the hold is a daily event's q80 time (duration evidence)
+    as_of_date: Any = None
+    expiry_date: Any = None
 
 
 def evaluate_options_liquidity_lifecycle(
@@ -815,6 +825,7 @@ def evaluate_options_liquidity_lifecycle(
         monitor_sessions=monitor_sessions,
         exit_buffer_sessions=exit_buffer_sessions,
         evidence_hold=bool(values.get("hold_is_evidence")),
+        as_of_date=values.get("as_of_date"),
     )
     moneyness = classify_moneyness(
         values["side"],
@@ -822,13 +833,17 @@ def evaluate_options_liquidity_lifecycle(
         strike=values["strike"],
         delta=values.get("delta"),
     )
+    from domain.trade_timing import day, sessions_between
+    reference, expiry = day(values.get("as_of_date")), day(values.get("expiry_date"))
+    exact_dte = (expiry-reference).days if reference and expiry else values["dte"]
+    available_sessions = sessions_between(reference, expiry) if reference and expiry else None
     liquidity = classify_current_executability(
         bid=values.get("bid"),
         ask=values.get("ask"),
         bid_size=values.get("bid_size"),
         ask_size=values.get("ask_size"),
         quote_age_seconds=values.get("quote_age_seconds"),
-        dte=values["dte"],
+        dte=exact_dte,
         minimum_required_dte=dte_requirement["minimum_required_dte"],
         minimum_holdable_dte=dte_requirement["minimum_holdable_dte"],
         moneyness_treatment=moneyness["moneyness_treatment"],
@@ -876,4 +891,10 @@ def evaluate_options_liquidity_lifecycle(
         **liquidity,
         **runway,
         **maturation,
+        "expiry_sessions_remaining": available_sessions,
+        "expiry_session_check_state": (
+            "UNASSESSED_MISSING_DATES" if available_sessions is None else
+            "NO_EVIDENCE_HOLD" if dte_requirement["minimum_required_sessions"] is None else
+            "SUFFICIENT_XNYS_RUNWAY" if available_sessions >= dte_requirement["minimum_required_sessions"]
+            else "INSUFFICIENT_XNYS_RUNWAY"),
     }
