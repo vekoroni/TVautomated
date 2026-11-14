@@ -4,3 +4,7 @@
 .convexity-table .convexity-caveat{max-width:none;background:var(--soft);color:var(--muted);font-size:12px;padding-top:6px;padding-bottom:8px}
 .convexity-watchlist button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
 @media(max-width:700px){.convexity-watchlist{padding:12px}}
+.saved-contract-details{border:1px solid var(--line);border-radius:6px;padding:10px;margin:10px 0;background:var(--bg)}
+.saved-contract-details dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0}
+.saved-contract-details dt{font-size:12px;color:var(--muted)}.saved-contract-details dd{margin:0;font-weight:bold;overflow-wrap:anywhere}
+.convexity-table .saved-contract-details dl{grid-template-columns:1fr}.convexity-table .saved-contract-details dd{margin-bottom:4px}

@@ -21,6 +21,7 @@ def candidate(**changes):
         anticipated_contract_symbol="AAA270115C00100000", expiry="2027-01-15",
         anticipated_valued_at_utc="2026-10-20T14:00:00Z", selected_quote_timestamp_utc="2026-10-20T14:00:00Z",
         contract_bid=4.8, contract_ask=5.0, contract_iv=0.4, contract_oi=1000, contract_volume=0,
+        dte=87, contract_dte=61,
         scenario_exit_sessions=10, scenario_target_exit_spot=125, live_price=99,
         invalidation_price=94, thesis_trigger_level=101, scenario_invalidation_return_on_premium=-.5,
         scenario_stall_return_on_premium=-.2, valuation_entry_cost_usd_per_share=5.011,
@@ -111,6 +112,12 @@ def test_publication_api_reads_only_and_revision_pin(tmp_path, monkeypatch):
     result=client.get('/api/lab/TEST/convexity?revision='+receipt['revision'])
     assert result.status_code == 200
     assert result.json['groups']['waiting'][0]['row_key']
+    details=result.json['groups']['waiting'][0]['contract_details']
+    assert details['strike']==100 and details['calendar_dte']==87
+    # Exact XNYS sessions from the saved reference date 20 Oct 2026 to the 15 Jan 2027 expiry (Thanksgiving,
+    # Christmas and New Year excluded) = 60; the row's stored contract_dte of 61 was an approximation.
+    assert details['trading_sessions_remaining']==60
+    assert details['saved_reference_date']=='2026-10-20'
     assert client.get('/api/lab/TEST/convexity?revision=wrong').status_code == 409
     path=tmp_path/'TEST/intelligence_lab/review_projection'/receipt['convexity_watchlist']['file']
     path.write_text('{}')

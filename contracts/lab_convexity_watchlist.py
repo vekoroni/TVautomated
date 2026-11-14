@@ -92,4 +92,24 @@ def read_convexity(runs_dir, run_id, revision=None):
         raise ReviewIntegrityError("Convexity publication identity/digest mismatch")
     if payload.get("authority") != "RESEARCH_DISPLAY_ONLY" or payload.get("population") != manifest["row_count"]:
         raise ReviewIntegrityError("Convexity population/authority mismatch")
+    # Add display details from the same immutable indexed cards. Old sidecars remain
+    # unchanged; this bounded lookup neither rebuilds the watchlist nor reprices it.
+    from contracts.lab_contract_display import saved_contract_details
+    from contracts.lab_review_projection import _connect
+    items = [item for group in payload["groups"].values() for item in group]
+    keys = list(dict.fromkeys(item["row_key"] for item in items))
+    if keys:
+        with closing(_connect(database)) as conn:
+            cards = dict(conn.execute("SELECT row_key,card_json FROM rows WHERE row_key IN ("+
+                                     ",".join("?" for _ in keys)+")", keys))
+        if len(cards) != len(keys):
+            raise ReviewIntegrityError("Convexity contract card is missing from the saved revision")
+        for item in items:
+            values = json.loads(cards[item["row_key"]])["values"]
+            if len(values) != len(manifest["card_fields"]):
+                raise ReviewIntegrityError("Convexity contract card schema mismatch")
+            fields = dict(zip(manifest["card_fields"], values))
+            if fields.get("contract_symbol") != item.get("contract_symbol"):
+                raise ReviewIntegrityError("Convexity exact contract mismatch")
+            item["contract_details"] = saved_contract_details(fields)
     return payload

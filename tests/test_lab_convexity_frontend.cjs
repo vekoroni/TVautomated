@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'intelligence-lab/static/convexity-watchlist.js'), 'utf8');
+const contractSource = fs.readFileSync(path.join(root, 'intelligence-lab/static/contract-details.js'), 'utf8');
 function env(payload) {
   const elements = new Map(); const events = new Map(); const calls = [];
   function el(id) {
@@ -16,13 +17,16 @@ function env(payload) {
   const context = {document:{getElementById:el},window,AbortController,setTimeout,clearTimeout,
     CustomEvent:class {constructor(type,init){this.type=type;this.detail=init.detail}},
     fetch:async url=>{calls.push(url);return {ok:true,json:async()=>payload}}};
+  vm.runInNewContext(contractSource,context);
   vm.runInNewContext(source,context);
   return {el,events,calls};
 }
 const item={ticker:'<script>bad</script>',direction:'CALL',contract_symbol:'TEST270115C00100000',
   row_key:'key',stress:{delay_return:1,iv_return:.8,combined_return:.6,delay_sessions:20,
   iv_original:.4,iv_stressed:.32,state:'COMPLETE'},target_return:1.2,target_sessions:10,
-  invalidation_return:-.5,stall_return:-.2,entry_per_contract:501.1};
+  invalidation_return:-.5,stall_return:-.2,entry_per_contract:501.1,
+  contract_details:{strike:100,call_put:'Call',expiry:'2027-01-15',calendar_dte:87,
+    trading_sessions_remaining:61,saved_reference_date:'2026-10-20'}};
 const payload={run_id:'TEST',revision:'abc',source_publication_utc:'2026-10-20T15:00Z',population:2,
   groups:{waiting:[item],entry_ready:[{...item,ticker:'READY'}],review_only:[]},
   exclusions:[],disclosures:['No automatic capital authority'],policy:{waiting_min_target_return:.75,
@@ -40,6 +44,9 @@ const payload={run_id:'TEST',revision:'abc',source_publication_utc:'2026-10-20T1
   assert.ok(!html.includes('<script>bad</script>'));
   assert.ok(html.includes('&lt;script&gt;bad&lt;/script&gt;'));
   assert.ok(!html.includes('NaN'));
+  for (const expected of ['Strike','$100.00','Call/Put','Expiry','2027-01-15',
+    'Calendar DTE','Trading sessions remaining','Saved reference date','2026-10-20',
+    'not a live countdown']) assert.ok(html.includes(expected),expected);
   a.el('review-run').listeners.change();
   assert.equal(a.el('convexity-content').innerHTML,'');
   const b=env({...payload,revision:'wrong'});

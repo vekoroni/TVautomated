@@ -11,6 +11,7 @@
 <p class="muted">Saved data only. Waiting can increase premium or IV and consume runway; early entry adds failed-trigger risk. A saved pre-trigger payoff is not a post-confirmation offer.</p>
 <p id="convexity-status" role="status" aria-live="polite">Comparisons load on demand from a revision-pinned publication. No providers, pipeline or on-page repricing.</p>
 <div id="convexity-content"></div></section>
+<section class="ticker-search" aria-labelledby="short-horizon-heading"><h2 id="short-horizon-heading">Find 1–5-session candidates</h2><p>Short planned holds and fast median arrivals are different. A fast arrival with a longer hold is not automatically a 1–5-session trade.</p><label for="short-horizon-mode">Saved timing group</label> <select id="short-horizon-mode"><option value="planned">Planned hold: 1–5 sessions</option><option value="arrival">Median arrival: 1–5 sessions</option></select> <button type="button" id="short-horizon-load">Show saved short-duration candidates</button><p id="short-horizon-status" role="status">Load saved candidates and exclusion reasons; no providers or recalculation.</p><div id="short-horizon-results" class="table-wrap"></div></section>
 <section class="ticker-search" aria-labelledby="ticker-search-heading">
 <h2 id="ticker-search-heading">Find trade cards</h2>
 <form id="ticker-search-form"><label for="ticker-search-input">Search up to five tickers</label>
@@ -27,4 +28,4 @@
 <div class="pager"><button type="button" id="page-prev">Previous</button><span id="page-state"></span><button type="button" id="page-next">Next</button></div></section>
 <section id="review-card" aria-live="polite"><p class="muted">Select a ticker to review its thesis and expression.</p></section>
 <footer>Published decisions first · evidence on demand · no provider calls on page load</footer>
-</main><script src="/static/review-app.js" defer></script><script src="/static/convexity-watchlist.js" defer></script></body></html>
+</main><script src="/static/contract-details.js" defer></script><script src="/static/trade-timing.js?v=session-timing-20261112" defer></script><script src="/static/review-app.js?v=session-timing-20261112" defer></script><script src="/static/short-horizons.js" defer></script><script src="/static/convexity-watchlist.js" defer></script></body></html>
