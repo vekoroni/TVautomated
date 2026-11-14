@@ -1,0 +1,16 @@
+{
+  "approved_by": "ACK, 13 November 2026",
+  "scope": "Ticker-agnostic quarantine at existing Discovery, Options, EOD, book and Morning station boundaries",
+  "root_cause": "Discovery cent-rounding (main line dated May 2026, f30023d3) converted RBOT's saved 12 November Polygon close 0.0001 into 0.0. October 10 enforcement (1f37f1c) stopped on any invalid row without local fault isolation.",
+  "quarantine_checks": ["positive_prices", "sane_quotes"],
+  "systemic_stop_checks_preserved": ["identity", "lineage", "unaccounted loss", "direction mismatch", "unrelated geometry", "future timestamps", "all rows invalid", "quarantine limits", "uncertain receipt/preimage", "source changed", "I/O failure"],
+  "limits": {"max_tickers_per_station": 5, "max_fraction_per_station": 0.01, "max_tickers_per_run": 5, "small_population_allowance": "one ticker, but never the entire population", "status": "Initial conservative operational safety limits, not financial model thresholds"},
+  "audit": "Exact raw preimage and content hash retained. Durable PREPARED intent, atomic just-produced delivery replacement and verification, then COMMITTED receipt. Interrupted receipts stop. Exclusions are run-scoped, never permanent blacklists.",
+  "population": "Inputs reconcile to retained rows plus exclusions. Discovery lifecycle retains every input and records known exclusions as DROP before Packages worklist publication. Later stations cannot resurrect excluded tickers. Morning summaries and score checks account for named exclusions. Drop-off audit collates ticker/station/reasons.",
+  "precision": "Retain numeric reference and early-entry price precision; no new minimum-price filter. Positive sub-cent prices and zero bids alone are not quarantined.",
+  "saved_replay_report": "STATION_QUARANTINE_SAVED_VERIFICATION_20261113_v2.json in the Codex evidence workspace",
+  "no_providers": true,
+  "no_pipeline_run": true,
+  "historical_run_and_databases_unchanged": true,
+  "resumption": "Not performed; needs a separate request."
+}

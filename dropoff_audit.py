@@ -850,6 +850,23 @@ def build_dropoff_audit(run_id: str, *, runs_dir: Path = RUNS_DIR, output_path: 
         )
 
     out = pd.DataFrame(records)
+    # Integrity exclusions are not "no signal" or unexplained population loss.
+    # The same verified receipts govern delivery and the end-of-run audit.
+    from domain.station_inspection import station_quarantines
+    for quarantined in station_quarantines(run_dir):
+        ticker = quarantined['ticker']
+        if out.empty or ticker not in set(out['ticker']):
+            out = pd.concat([out, pd.DataFrame([{'ticker': ticker}])], ignore_index=True)
+        mask = out['ticker'].eq(ticker)
+        for field, value in {
+            'dropoff_stage': 'STATION_QUARANTINE',
+            'dropoff_reason': ';'.join(quarantined['checks']),
+            'dropoff_reason_class': 'DATA_INTEGRITY_QUARANTINE',
+            'audit_layer': 'STATION_INTEGRITY',
+            'audit_behavior': 'EXCLUDED_WITH_RECEIPT',
+            'last_stage_reached': quarantined['station'].upper(),
+        }.items():
+            out.loc[mask, field] = value
     if not out.empty:
         out["_stage_sort"] = out["last_stage_reached"].map(STAGE_ORDER).fillna(0)
         out = out.sort_values(["_stage_sort", "dropoff_stage", "ticker"], ascending=[False, True, True]).drop(columns=["_stage_sort"])

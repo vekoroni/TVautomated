@@ -81,7 +81,7 @@ def test_every_station_is_inspected_in_the_run():
         assert f'_run_station_inspection(canonical_run_id, "{station}"' in src or \
                f'_run_station_inspection(run_id, "{station}"' in src, station
     import morning_gate
-    assert '"morning"' in inspect.getsource(morning_gate.run_morning_gate) and "inspect_station(" in \
+    assert '"morning"' in inspect.getsource(morning_gate.run_morning_gate) and "prepare_station(" in \
         inspect.getsource(morning_gate)
 
 

@@ -599,7 +599,7 @@ def detect_early_position(df: pd.DataFrame, wyckoff_data: dict, precor_data: dic
             'tier_label': 'TIER_0_EARLY',
             'signal_type': 'EARLY_POSITION',
             'entry_size': 0.33,
-            'entry_price': round(current_price, 2),
+            'entry_price': float(current_price),
             'stop_loss': round(stop_loss, 2),
             'stop_pct': 3.0,
             'days_in_range': days_in_range,
@@ -1032,23 +1032,41 @@ def load_bars(
                     datetime.now() - timedelta(days=lookback_days)
                 ).strftime('%Y-%m-%d')
 
-            df = polygon_fetcher.fetch_daily_bars(ticker, start_date, end_date)
+            # Only the unmodified production method supports delegated commit.
+            # Alternative/subclass fetchers retain the defensive write below.
+            delegated_commit = (
+                _write_canonical_history is not None
+                and PolygonDataFetcher is not None
+                and getattr(polygon_fetcher.fetch_daily_bars, "__func__", None)
+                is PolygonDataFetcher.fetch_daily_bars
+            )
+            if delegated_commit:
+                df = polygon_fetcher.fetch_daily_bars(
+                    ticker, start_date, end_date, persist_history=False,
+                )
+            else:
+                df = polygon_fetcher.fetch_daily_bars(ticker, start_date, end_date)
 
             if df is not None and not df.empty:
                 data_dir.mkdir(parents=True, exist_ok=True)
-                # The production Polygon fetcher writes through itself. Repeat
-                # the governed commit here so alternative/test fetchers cannot
-                # bypass the canonical database; ingestion is idempotent.
+                # One governed commit, retaining the production fetcher's
+                # original provenance. Force-refresh and revision handling are
+                # unchanged; this removes only the second identical ingestion.
                 try:
                     if _write_canonical_history is not None:
                         _write_canonical_history(
                             ticker,
                             df,
                             provider="POLYGON",
-                            source_kind="DISCOVERY_INCREMENTAL_REFRESH",
+                            source_kind=("POLYGON_DATA_FETCHER" if delegated_commit
+                                         else "DISCOVERY_INCREMENTAL_REFRESH"),
                             source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
                         )
                 except Exception:
+                    if delegated_commit:
+                        # Previously a failed fetcher-owned commit returned no
+                        # fresh data. Do not turn that failure into a fresh hit.
+                        raise
                     pass
 
                 resolved = None
@@ -2100,7 +2118,9 @@ def scan_ticker_ultimate(
     #   1. asymmetry_gate (shelf geometry, R≥2.0)   — most precise
     #   2. Wyckoff initial_target / stop_loss        — structural range levels
     #   3. ATR fallback                              — last resort
-    current_price = round(px, 2)
+    # Prices are numeric evidence, not display text: a valid sub-cent close
+    # must not become a fabricated zero before the integrity boundary.
+    current_price = float(px)
 
     _use_asymmetry = (
         _SWING_FUSION_AVAILABLE

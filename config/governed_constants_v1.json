@@ -307,9 +307,17 @@
     "authority": "DISPLAY_AND_CONTEXT_ONLY until ACK decides which readers may use a wall as a price level (design section 8)"
   },
   "station_inspection": {
-    "version": "station_inspection_v1",
-    "approved": "ACK 9-10 Oct 2026: output-trust item 10 (C-2) - integrity defects stop the line with the reason",
+    "version": "station_inspection_v2",
+    "approved": "ACK 9-10 Oct 2026 integrity enforcement; amended 13 Nov 2026: quarantine isolated invalid market observations and continue; systemic and identity/lineage failures STOP",
     "enforce": true,
+    "quarantine": {
+      "enabled": true,
+      "checks": ["positive_prices", "sane_quotes"],
+      "max_tickers_per_station": 5,
+      "max_fraction_per_station": 0.01,
+      "max_tickers_per_run": 5,
+      "basis": "ACK 13 Nov 2026: isolate ticker-local invalid market data, preserve raw preimages and collate exclusions. Initial conservative safety limits: at most 5 unique tickers per station/run, and 1% per station (one-ticker allowance for small batches). All-invalid populations and all identity, lineage, direction or time corruption still STOP. Not a trading or price-floor rule."
+    },
     "stop_checks": [
       "unique_tickers",
       "nonblank_tickers",
