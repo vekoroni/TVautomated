@@ -1,0 +1,8 @@
+Enhancements/production_eligibility_release_20261112.md
+avshunter/c0_run/canonical_manifest.py
+intelligent_orchestrator.py
+orchestrator/dynamic_dispatcher.py
+orchestrator/production_eligibility.py
+tests/test_canonical_manifest_p1.py
+tests/test_production_eligibility.py
+tests/verify_saved_production_eligibility.py

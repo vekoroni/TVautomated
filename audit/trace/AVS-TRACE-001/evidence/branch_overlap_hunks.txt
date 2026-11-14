@@ -1,0 +1,332 @@
+##### Run-MacroInputs.ps1
+  -- claude/dexuseu-h10-release
+     @@ -34,8 +34,11 @@
+     @@ -159,6 +162,11 @@ $startAt  = Get-ETOnDate $etNow $StartAtET
+     @@ -181,13 +189,15 @@ if (-not $SkipBoard)     { $publish += New-Step "board"  "ETF macro board"
+     @@ -210,25 +220,25 @@ if ($PlanOnly) {
+     @@ -241,7 +251,7 @@ foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "A
+     @@ -372,16 +382,20 @@ try {
+     @@ -396,7 +410,7 @@ try {
+     @@ -408,7 +422,7 @@ try {
+     @@ -419,7 +433,7 @@ try {
+     @@ -432,10 +446,10 @@ try {
+     @@ -444,7 +458,7 @@ try {
+  -- macro-delivery-publication-guards-20261110
+     @@ -55,6 +55,8 @@
+     @@ -90,6 +92,8 @@ param(
+     @@ -207,11 +211,17 @@ $forced = $Force -and -not $offSession          # weekends already start at once
+     @@ -224,13 +234,20 @@ $producers = @(
+     @@ -287,7 +304,11 @@ if ($Now) {
+     @@ -337,7 +358,7 @@ function Add-Result($Step, [int]$Code, [TimeSpan]$Elapsed, [string]$Mode) {
+     @@ -356,19 +377,34 @@ function Invoke-StepInline($Step) {
+     @@ -522,12 +558,18 @@ try {
+##### contracts/handoff_reliability.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -0,0 +1,75 @@
+  -- fix/ac-reliability-20261112
+     @@ -0,0 +1,75 @@
+##### contracts/lab_control.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -839,6 +839,12 @@ from domain.option_walls import GOVERNED_WALL_FIELDS as _GOVERNED_WALL_FIELDS
+     @@ -4229,6 +4235,11 @@ def opportunity_book_row(
+     @@ -5000,9 +5011,17 @@ def write_final_opportunity_book(
+     @@ -5018,6 +5037,8 @@ def write_final_opportunity_book(
+  -- fix/ac-reliability-20261112
+     @@ -839,6 +839,10 @@ from domain.option_walls import GOVERNED_WALL_FIELDS as _GOVERNED_WALL_FIELDS
+     @@ -4229,6 +4233,10 @@ def opportunity_book_row(
+     @@ -5000,9 +5008,17 @@ def write_final_opportunity_book(
+     @@ -5018,6 +5034,8 @@ def write_final_opportunity_book(
+##### contracts/lab_macro_desk.py
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,150 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,198 @@
+##### contracts/lab_review_projection.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -23,12 +23,18 @@ from typing import Any, Mapping
+     @@ -159,6 +165,14 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
+     @@ -248,7 +262,10 @@ def _read_manifest(runs_dir: Path | str, run_id: str, revision: str | None = Non
+     @@ -347,13 +364,14 @@ def read_review_rows(runs_dir: Path | str, run_id: str, *, revision: str | None
+     @@ -378,10 +396,17 @@ def _record(runs_dir, run_id, row_key, revision, family=None):
+  -- fix/ac-reliability-20261112
+     @@ -23,12 +23,16 @@ from typing import Any, Mapping
+     @@ -159,6 +163,12 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
+     @@ -248,7 +258,10 @@ def _read_manifest(runs_dir: Path | str, run_id: str, revision: str | None = Non
+     @@ -347,13 +360,14 @@ def read_review_rows(runs_dir: Path | str, run_id: str, *, revision: str | None
+     @@ -378,10 +392,17 @@ def _record(runs_dir, run_id, row_key, revision, family=None):
+##### contracts/lab_review_sources.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -135,7 +135,9 @@ def _context(root, run_id, issues, watches):
+     @@ -189,7 +191,8 @@ def _canonical_structure_readings(root, run_id, rows, issues, watches, receipt):
+     @@ -198,6 +201,15 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *,
+  -- fix/ac-reliability-20261112
+     @@ -135,7 +135,9 @@ def _context(root, run_id, issues, watches):
+  -- macroboard-lab-worker3-decommission
+     @@ -261,3 +261,29 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *,
+  -- market-mentality-redesign
+     @@ -261,3 +261,29 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *,
+##### contracts/us_money_index_contract.py
+  -- macro-delivery-publication-guards-20261110
+     @@ -6,6 +6,8 @@ from copy import deepcopy
+     @@ -14,8 +16,11 @@ CONTRACT_VERSIONS = {
+     @@ -58,6 +63,18 @@ def _parse_date(value: Any, field: str) -> date:
+     @@ -85,6 +102,8 @@ def _number(
+     @@ -157,7 +176,9 @@ def _v2_metrics(state: Mapping[str, Any], as_of: str) -> dict[str, Any]:
+     @@ -204,14 +225,32 @@ V2_STATE_FLAGS = ("regime_change_since_monday", "monetisation_change_since_monda
+     @@ -223,6 +262,17 @@ def _state_flag(value: Any, field: str) -> tuple[bool, str]:
+     @@ -230,15 +280,15 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
+     @@ -257,9 +307,37 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
+     @@ -269,6 +347,18 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
+     @@ -398,7 +488,7 @@ def normalise_us_money_index_sidecar(
+     @@ -409,6 +499,18 @@ def normalise_us_money_index_sidecar(
+     @@ -426,11 +528,15 @@ def normalise_us_money_index_sidecar(
+     @@ -440,6 +546,8 @@ def normalise_us_money_index_sidecar(
+     @@ -452,7 +560,7 @@ def normalise_us_money_index_sidecar(
+     @@ -467,7 +575,7 @@ def normalise_us_money_index_sidecar(
+     @@ -488,11 +596,47 @@ def normalise_us_money_index_sidecar(
+     @@ -521,6 +665,13 @@ def attach_us_money_index(macro: Mapping[str, Any], sidecar: Mapping[str, Any])
+  -- macro-null-usmi-fixes
+     @@ -204,6 +204,13 @@ V2_STATE_FLAGS = ("regime_change_since_monday", "monetisation_change_since_monda
+     @@ -212,6 +219,8 @@ def _state_flag(value: Any, field: str) -> tuple[bool, str]:
+##### contracts/worker3_integration_v1.json
+  -- macroboard-lab-worker3-decommission
+     @@ -1,11 +1,11 @@
+  -- market-mentality-redesign
+     @@ -1,11 +1,11 @@
+##### docs/LAB_MACRO_DESK_AND_WORKER3_RETIREMENT.md
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,31 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,110 @@
+##### domain/anticipated_move.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -23,6 +23,7 @@ import json
+     @@ -38,6 +39,7 @@ ANTICIPATED_MOVE_FIELDS = (
+     @@ -52,6 +54,8 @@ _ESTIMATED = {"IN_SAMPLE_REPLAY_NOT_VALIDATED", "VALIDATED"}
+     @@ -142,7 +146,11 @@ def anticipated_move_fields(
+     @@ -152,6 +160,7 @@ def anticipated_move_fields(
+     @@ -185,9 +194,8 @@ def anticipated_move_fields(
+     @@ -199,9 +207,20 @@ def anticipated_move_fields(
+     @@ -235,6 +254,7 @@ def anticipated_move_fields(
+  -- fix/ac-reliability-20261112
+     @@ -23,6 +23,7 @@ import json
+     @@ -38,6 +39,7 @@ ANTICIPATED_MOVE_FIELDS = (
+     @@ -52,6 +54,8 @@ _ESTIMATED = {"IN_SAMPLE_REPLAY_NOT_VALIDATED", "VALIDATED"}
+     @@ -142,7 +146,11 @@ def anticipated_move_fields(
+     @@ -152,6 +160,7 @@ def anticipated_move_fields(
+     @@ -185,9 +194,8 @@ def anticipated_move_fields(
+     @@ -199,9 +207,20 @@ def anticipated_move_fields(
+     @@ -235,6 +254,7 @@ def anticipated_move_fields(
+##### domain/option_valuation.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -178,6 +178,13 @@ def resolve_dividend(dividend_yield: Any, basis: Any) -> tuple[float, str]:
+  -- fix/ac-reliability-20261112
+     @@ -178,6 +178,13 @@ def resolve_dividend(dividend_yield: Any, basis: Any) -> tuple[float, str]:
+##### domain/trade_timing.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -0,0 +1,129 @@
+  -- fix/ac-reliability-20261112
+     @@ -0,0 +1,129 @@
+##### intelligence-lab/intelligence_lab.py
+  -- macroboard-lab-worker3-decommission
+     @@ -164,23 +164,13 @@ from contracts.lab_evidence_overlay import (
+  -- market-mentality-redesign
+     @@ -164,23 +164,13 @@ from contracts.lab_evidence_overlay import (
+##### intelligence-lab/static/macro-desk.html
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,11 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,15 @@
+##### intelligence-lab/static/macro-desk.js
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,14 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,52 @@
+##### intelligence-lab/static/review-app.js
+  -- feat/a12-monetisation-clock-20261112
+     @@ -14,7 +14,7 @@ let run='',revision='',page=1,sector=null,total=0,selected='',sequence=0,cardSeq
+     @@ -31,8 +31,12 @@ const rowsPromise=loadRows(ticket);request(`${api()}/summary`).then(data=>{if(ti
+  -- fix/ac-reliability-20261112
+     @@ -14,7 +14,7 @@ let run='',revision='',page=1,sector=null,total=0,selected='',sequence=0,cardSeq
+     @@ -31,6 +31,7 @@ const rowsPromise=loadRows(ticket);request(`${api()}/summary`).then(data=>{if(ti
+  -- market-mentality-redesign
+     @@ -40,6 +40,12 @@ target.querySelector('.notice').insertAdjacentHTML('beforeend',pairs([['Economic
+##### intelligence-lab/static/review.html
+  -- macroboard-lab-worker3-decommission
+     @@ -3,7 +3,7 @@
+  -- market-mentality-redesign
+     @@ -3,7 +3,7 @@
+##### intelligent_orchestrator.py
+  -- fix/phantom-path-completeness-safeguards-20261113
+     @@ -4154,7 +4154,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+     @@ -4176,7 +4176,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+     @@ -4231,6 +4231,23 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+     @@ -4248,6 +4265,10 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+  -- fix/production-eligibility-20261112
+     @@ -2367,7 +2367,9 @@ def _integrate_provider_completeness_into_run_meta(
+     @@ -2392,11 +2394,18 @@ def _integrate_provider_completeness_into_run_meta(
+     @@ -2955,6 +2964,7 @@ def pin_run_directory(
+     @@ -3085,7 +3095,7 @@ def pin_run_directory(
+     @@ -3129,7 +3139,14 @@ def pin_run_directory(
+     @@ -3670,6 +3687,7 @@ def run_vanguard_pipeline(
+     @@ -3678,7 +3696,7 @@ def run_vanguard_pipeline(
+     @@ -5696,6 +5714,20 @@ def evening_workflow(
+     @@ -6248,6 +6280,7 @@ def evening_workflow(
+     @@ -8448,6 +8481,7 @@ def main() -> None:
+     @@ -8457,12 +8491,19 @@ def main() -> None:
+  -- fix/station-quarantine-20261113
+     @@ -3333,6 +3333,28 @@ def publish_cds3_discovery_worklist(
+     @@ -3478,10 +3500,12 @@ def _discovery_output_csv(run_id: str) -> Path:
+     @@ -3491,8 +3515,9 @@ def _run_station_inspection(run_id: str, station: str, output_path: Path, previo
+     @@ -3503,6 +3528,15 @@ def _run_station_inspection(run_id: str, station: str, output_path: Path, previo
+     @@ -7698,6 +7732,21 @@ def evening_workflow(
+  -- macroboard-lab-worker3-decommission
+     @@ -3154,6 +3154,20 @@ def pin_run_directory(
+     @@ -7584,6 +7598,7 @@ def evening_workflow(
+     @@ -7689,37 +7704,33 @@ def evening_workflow(
+  -- market-mentality-redesign
+     @@ -3154,6 +3154,20 @@ def pin_run_directory(
+     @@ -7584,6 +7598,7 @@ def evening_workflow(
+     @@ -7689,37 +7704,33 @@ def evening_workflow(
+  -- phantom-maintenance-provenance
+     @@ -1400,6 +1400,12 @@ def check_data_readiness(*, expected_session, phantom_path, iv_cache_path, price
+     @@ -1407,6 +1413,7 @@ def check_data_readiness(*, expected_session, phantom_path, iv_cache_path, price
+     @@ -1496,7 +1503,9 @@ def run_preflight_checks(
+  -- phantom-scoring-iv-hold-fixes-20261111
+     @@ -4154,7 +4154,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+     @@ -4176,7 +4176,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+     @@ -4231,6 +4231,23 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+     @@ -4248,6 +4265,10 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) ->
+##### macro_board/build_board.py
+  -- macro-board-event-timestamp-sort-20261110
+     @@ -896,7 +896,7 @@ def _dated(usmi: dict) -> list[dict]:
+     @@ -932,15 +932,35 @@ def build_intel(external: dict, packet: dict | None) -> dict:
+  -- macroboard-lab-worker3-decommission
+     @@ -446,6 +446,11 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
+  -- market-mentality-redesign
+     @@ -446,6 +446,11 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
+##### macro_domain/us_money_index.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -96,7 +96,7 @@ def sector_advisory(
+     @@ -108,6 +108,14 @@ def sector_advisory(
+  -- fix/ac-reliability-20261112
+     @@ -96,7 +96,7 @@ def sector_advisory(
+     @@ -108,6 +108,14 @@ def sector_advisory(
+##### scripts/exit_rules_engine.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -10,6 +10,7 @@ import math
+     @@ -39,7 +40,7 @@ def _expiry(row: dict):
+     @@ -49,7 +50,10 @@ def compute_exit_rules(row: dict) -> dict:
+     @@ -60,10 +64,10 @@ def compute_exit_rules(row: dict) -> dict:
+     @@ -84,6 +88,9 @@ def compute_exit_rules(row: dict) -> dict:
+  -- fix/ac-reliability-20261112
+     @@ -10,6 +10,7 @@ import math
+     @@ -39,7 +40,7 @@ def _expiry(row: dict):
+     @@ -49,7 +50,10 @@ def compute_exit_rules(row: dict) -> dict:
+     @@ -60,10 +64,10 @@ def compute_exit_rules(row: dict) -> dict:
+     @@ -84,6 +88,9 @@ def compute_exit_rules(row: dict) -> dict:
+##### scripts/export_claude_evidence_handoff.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -0,0 +1,95 @@
+  -- fix/ac-reliability-20261112
+     @@ -0,0 +1,85 @@
+##### scripts/finalize_phantom_weekly_snapshot.py
+  -- fix/phantom-path-completeness-safeguards-20261113
+     @@ -140,6 +140,30 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str,
+  -- phantom-maintenance-provenance
+     @@ -47,6 +47,8 @@ def nearest_iv(group: pd.DataFrame, target_delta: float) -> float | None:
+     @@ -96,7 +98,8 @@ def _surface_and_atm(frame: pd.DataFrame, quote_date: str, built_at: str):
+     @@ -136,17 +139,20 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str,
+     @@ -273,7 +279,7 @@ def main() -> int:
+  -- phantom-scoring-iv-hold-fixes-20261111
+     @@ -140,6 +140,30 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str,
+##### scripts/phantom_database.py
+  -- fix/phantom-path-completeness-safeguards-20261113
+     @@ -11,6 +11,8 @@ from __future__ import annotations
+     @@ -359,40 +361,64 @@ class PhantomDatabase:
+  -- phantom-maintenance-provenance
+     @@ -286,13 +286,18 @@ class PhantomDatabase:
+  -- phantom-scoring-iv-hold-fixes-20261111
+     @@ -11,6 +11,8 @@ from __future__ import annotations
+     @@ -359,40 +361,64 @@ class PhantomDatabase:
+##### scripts/phantom_engine.py
+  -- fix/phantom-path-completeness-safeguards-20261113
+     @@ -5,7 +5,8 @@ from __future__ import annotations
+     @@ -212,11 +213,17 @@ def apply_payload(row: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any
+     @@ -248,6 +255,12 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
+  -- phantom-scoring-iv-hold-fixes-20261111
+     @@ -5,7 +5,8 @@ from __future__ import annotations
+     @@ -212,11 +213,17 @@ def apply_payload(row: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any
+     @@ -248,6 +255,12 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
+##### scripts/phantom_maintenance.py
+  -- fix/phantom-path-completeness-safeguards-20261113
+     @@ -222,16 +222,9 @@ def drain_pending(db_path, iv_cache_path=None, *, max_pairs=500, min_free_gib=15
+  -- phantom-maintenance-provenance
+     @@ -0,0 +1,237 @@
+  -- phantom-scoring-iv-hold-fixes-20261111
+     @@ -222,16 +222,9 @@ def drain_pending(db_path, iv_cache_path=None, *, max_pairs=500, min_free_gib=15
+##### tests/fixtures/worker3_prepare_only_policy.json
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,28 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,28 @@
+##### tests/js/macro_desk_harness.cjs
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,16 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,23 @@
+##### tests/test_ac_calendar_helpers.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -0,0 +1,48 @@
+  -- fix/ac-reliability-20261112
+     @@ -0,0 +1,48 @@
+##### tests/test_ac_reliability_contract.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -0,0 +1,138 @@
+  -- fix/ac-reliability-20261112
+     @@ -0,0 +1,138 @@
+##### tests/test_evening_saved_repairs.py
+  -- fix/phantom-path-completeness-safeguards-20261113
+     @@ -0,0 +1,137 @@
+  -- phantom-scoring-iv-hold-fixes-20261111
+     @@ -0,0 +1,137 @@
+##### tests/test_lab_macro_desk.py
+  -- macroboard-lab-worker3-decommission
+     @@ -0,0 +1,99 @@
+  -- market-mentality-redesign
+     @@ -0,0 +1,101 @@
+##### tests/test_lab_review_sources_v1.py
+  -- macroboard-lab-worker3-decommission
+     @@ -175,3 +175,37 @@ def test_compression_uses_discovery_canonical_columns_on_the_exact_setup_timefra
+  -- market-mentality-redesign
+     @@ -175,3 +175,37 @@ def test_compression_uses_discovery_canonical_columns_on_the_exact_setup_timefra
+##### tests/test_ot4_one_valuation_engine.py
+  -- feat/a12-monetisation-clock-20261112
+     @@ -129,7 +129,9 @@ def test_every_scenario_is_return_on_premium_after_spread_and_fees_from_one_engi
+  -- fix/ac-reliability-20261112
+     @@ -129,7 +129,9 @@ def test_every_scenario_is_return_on_premium_after_spread_and_fees_from_one_engi
+##### tests/test_worker3_activation.py
+  -- macroboard-lab-worker3-decommission
+     @@ -19,7 +19,7 @@ from tests.test_worker3_avshunter_source_bridge import RUN_ID, SourceFixture
+  -- market-mentality-redesign
+     @@ -19,7 +19,7 @@ from tests.test_worker3_avshunter_source_bridge import RUN_ID, SourceFixture
+##### tests/test_worker3_browser_launch.py
+  -- macroboard-lab-worker3-decommission
+     @@ -19,7 +19,7 @@ class BrowserLaunchTests(unittest.TestCase):
+  -- market-mentality-redesign
+     @@ -19,7 +19,7 @@ class BrowserLaunchTests(unittest.TestCase):
+##### tests/test_worker3_coordinator.py
+  -- macroboard-lab-worker3-decommission
+     @@ -13,7 +13,7 @@ from tests.test_worker3_avshunter_source_bridge import RUN_ID, SourceFixture
+  -- market-mentality-redesign
+     @@ -13,7 +13,7 @@ from tests.test_worker3_avshunter_source_bridge import RUN_ID, SourceFixture
+##### tests/test_worker3_current_canary.py
+  -- macroboard-lab-worker3-decommission
+     @@ -24,7 +24,9 @@ class CurrentCanaryTests(unittest.TestCase):
+  -- market-mentality-redesign
+     @@ -24,7 +24,9 @@ class CurrentCanaryTests(unittest.TestCase):
+##### worker3/integration/coordinator.py
+  -- macroboard-lab-worker3-decommission
+     @@ -91,6 +91,8 @@ def _policy(path: str | Path) -> CoordinatorPolicy:
+  -- market-mentality-redesign
+     @@ -91,6 +91,8 @@ def _policy(path: str | Path) -> CoordinatorPolicy:

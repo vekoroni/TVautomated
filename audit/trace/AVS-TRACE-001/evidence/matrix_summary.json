@@ -1,0 +1,70 @@
+{
+ "trace_rows": 944,
+ "register_rows": 127,
+ "register_mapped": 127,
+ "inbox_candidates": 855,
+ "inbox_mapped": 855,
+ "inbox_files": 96,
+ "doc_records": 1775,
+ "doc_mapped": 1775,
+ "status": {
+  "APPROVED": 216,
+  "DECISION_PENDING": 23,
+  "PROPOSED": 523,
+  "BUILT_UNMERGED": 11,
+  "CLOSED_OFFLINE": 35,
+  "MERGED": 7,
+  "NOT_FOUND": 128,
+  "REJECTED": 1
+ },
+ "status_by_family": {
+  "curated": {
+   "APPROVED": 6,
+   "DECISION_PENDING": 4,
+   "PROPOSED": 13,
+   "BUILT_UNMERGED": 11,
+   "CLOSED_OFFLINE": 2,
+   "MERGED": 3,
+   "NOT_FOUND": 2
+  },
+  "etf": {
+   "PROPOSED": 12,
+   "DECISION_PENDING": 3
+  },
+  "fixlist": {
+   "PROPOSED": 14
+  },
+  "register": {
+   "MERGED": 4,
+   "PROPOSED": 28,
+   "NOT_FOUND": 26,
+   "APPROVED": 1,
+   "CLOSED_OFFLINE": 2
+  },
+  "inbox_cluster": {
+   "PROPOSED": 24
+  },
+  "document": {
+   "PROPOSED": 432,
+   "APPROVED": 209,
+   "CLOSED_OFFLINE": 31,
+   "REJECTED": 1,
+   "DECISION_PENDING": 16
+  },
+  "document_group": {
+   "NOT_FOUND": 100
+  }
+ },
+ "impact": {
+  "HIGH": 441,
+  "MEDIUM": 199,
+  "LOW": 171,
+  "NONE": 133
+ },
+ "open_high": 424,
+ "claim_not_supported": 33,
+ "non_proposed_without_evidence": 0,
+ "closed": 0,
+ "inbox_unregistered": 402,
+ "doc_rows_citing_a_run": 130
+}

@@ -1,0 +1,298 @@
+##### claude/dexuseu-h10-release
+COMMIT d6caa69 | 2026-10-10T18:43:31+01:00 | ACK Verissimo | fix(macro-inputs): weekend runs are off-session instead of skipped
+ACK 10 Oct 2026: the trading-day rule does not apply at weekends. On
+Saturday and Sunday there is no US session, so the session windows, the
+regular-hours guard and the not-a-trading-day skip do not apply: the run
+starts at once, cuts at the last completed session (Friday; stops with
+exit 6 if the cut-off is unavailable) and sets AVSH_RUN_SESSION=OffSession,
+so the board files an off-session build and never overwrites Friday's
+scored evening record. Weekday XNYS holidays still skip (the Mon-Fri
+scheduled tasks fire on them). Logs: macro_inputs_offsession_<time>.log.
+
+Tests drive the real script with -PlanOnly and a simulated clock (-NowET).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+
+ Run-MacroInputs.ps1                       | 60 +++++++++++++++++++++++++++++++++++++-----------------------
+ tests/test_macro_inputs_runner_weekend.py | 54 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 91 insertions(+), 23 deletions(-)
+##### feat/a12-monetisation-clock-20261112
+COMMIT b709669 | 2026-11-12T23:07:52Z | ACK Verissimo | feat: add saved-data A12 monetisation clock
+Measure exact-contract +20%/+30% first-observed net profit timing with explicit evidence, failure, censoring and unassessed counts. Add hash-bound Lab and Claude handoff disclosures, saved-only publication tools and offline regression tests. No expiry selection or Lane B policy changes.
+
+
+ Enhancements/maintenance_repairs/A12_MONETISATION_CLOCK_20261112.json |  20 ++++++++++++++++++++
+ avshunter/c12_outcome/adapters/monetisation_history.py                |  65 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ avshunter/c12_outcome/monetisation.py                                 | 115 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ config/monetisation_clock_v1.json                                     |  18 ++++++++++++++++++
+ contracts/lab_control.py                                              |   3 +++
+ contracts/lab_review_projection.py                                    |   4 ++++
+ contracts/lab_review_sources.py                                       |  12 +++++++++++-
+ contracts/monetisation_clock.py                                       |  48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ intelligence-lab/static/review-app.js                                 |   5 ++++-
+ scripts/export_claude_evidence_handoff.py                             |  14 ++++++++++++--
+ scripts/publish_monetisation_clock.py                                 | 115 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/verify_monetisation_publication.py                            |  65 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_a12_monetisation_clock.py                                  | 120 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 13 files changed, 600 insertions(+), 4 deletions(-)
+COMMIT da9a922 | 2026-11-12T22:14:59Z | ACK Verissimo | fix: harden A/C evidence clocks and reliability handoffs
+
+
+ contracts/handoff_reliability.py          |  75 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ contracts/lab_control.py                  |  22 ++++++++++++++++++++--
+ contracts/lab_review_projection.py        |  33 +++++++++++++++++++++++++++------
+ contracts/lab_review_sources.py           |   4 +++-
+ domain/anticipated_move.py                |  34 +++++++++++++++++++++++++++-------
+ domain/option_valuation.py                |   7 +++++++
+ domain/trade_timing.py                    | 129 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ intelligence-lab/static/review-app.js     |   3 ++-
+ macro_domain/us_money_index.py            |  10 +++++++++-
+ scripts/exit_rules_engine.py              |  15 +++++++++++----
+ scripts/export_claude_evidence_handoff.py |  85 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ac_calendar_helpers.py         |  48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ac_reliability_contract.py     | 138 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ot4_one_valuation_engine.py    |   4 +++-
+ 14 files changed, 584 insertions(+), 23 deletions(-)
+##### fix/ac-reliability-20261112
+COMMIT da9a922 | 2026-11-12T22:14:59Z | ACK Verissimo | fix: harden A/C evidence clocks and reliability handoffs
+
+
+ contracts/handoff_reliability.py          |  75 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ contracts/lab_control.py                  |  22 ++++++++++++++++++++--
+ contracts/lab_review_projection.py        |  33 +++++++++++++++++++++++++++------
+ contracts/lab_review_sources.py           |   4 +++-
+ domain/anticipated_move.py                |  34 +++++++++++++++++++++++++++-------
+ domain/option_valuation.py                |   7 +++++++
+ domain/trade_timing.py                    | 129 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ intelligence-lab/static/review-app.js     |   3 ++-
+ macro_domain/us_money_index.py            |  10 +++++++++-
+ scripts/exit_rules_engine.py              |  15 +++++++++++----
+ scripts/export_claude_evidence_handoff.py |  85 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ac_calendar_helpers.py         |  48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ac_reliability_contract.py     | 138 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ot4_one_valuation_engine.py    |   4 +++-
+ 14 files changed, 584 insertions(+), 23 deletions(-)
+##### fix/garch-d1-cumulative-windows-20261113
+COMMIT fff3a3e | 2026-11-13T22:06:45Z | ACK Verissimo | fix(garch): publish cumulative trading-session expected moves
+
+
+ Enhancements/garch_d1/offline_guard.py    | 11 +++++++++++
+ domain/volatility_budget.py               | 10 ++++++++--
+ layer3_forward_variance.py                | 37 +++++++++++++++++--------------------
+ tests/test_garch_d1_cumulative_windows.py | 79 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 115 insertions(+), 22 deletions(-)
+##### fix/phantom-path-completeness-safeguards-20261113
+COMMIT f845857 | 2026-11-13T21:19:14Z | ACK Verissimo | fix(phantom): verify path completeness and guard historical backfills
+
+
+ Enhancements/phase0/backfill_runbook.py                           |   8 ++
+ Enhancements/phase0/guarded_phantom_backfill.py                   | 538 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ Enhancements/phase0/phantom_named_contract_supplement_20261113.py | 229 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ Enhancements/phase0/phantom_path_supplement_20261113.py           |  32 +++++++
+ data/scratch/workaround/build_lab_handoff.py                      | 575 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ data/scratch/workaround/collect_decisions.py                      |  18 ++++
+ data/scratch/workaround/lab_reader.py                             | 166 +++++++++++++++++++++++++++++++++++++
+ dropbox/macro/coaching/model/scripts/backfill_report.py           | 210 ++++++++++++++++++++++++++++++++++++++++++++++
+ dropbox/macro/coaching/model/scripts/decision_events.py           | 435 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ dropbox/macro/coaching/model/scripts/score_decisions.py           | 346 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/phantom_offline_guard.py                                    |  11 +++
+ tests/test_guarded_phantom_backfill.py                            | 228 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_phantom_named_contract_supplement.py                   | 115 ++++++++++++++++++++++++++
+ tests/test_phantom_path_supplement.py                             |  63 ++++++++++++++
+ tests/test_research_path_complete.py                              |  44 ++++++++++
+ tests/test_research_runtime_foundation.py                         |  31 +++++++
+ 16 files changed, 3049 insertions(+)
+COMMIT 1332983 | 2026-11-11T11:15:06Z | ACK Verissimo | fix(phantom): optimise scoring and reconcile IV and hold lineage
+Stream exact as-of IV history through a guarded covering index and cache only scoring fields. Acknowledge IV work after both stores commit and cache receipts verify; preserve explicit IV_UNAVAILABLE states. Preserve and recover measured contract holding periods without inventing defaults. Add offline regression coverage; 69 isolated tests passed.
+
+
+ intelligent_orchestrator.py                 |  25 +++++++++++++++++++++++--
+ scripts/finalize_phantom_weekly_snapshot.py |  24 ++++++++++++++++++++++++
+ scripts/phantom_database.py                 |  88 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------
+ scripts/phantom_engine.py                   |  19 ++++++++++++++++---
+ scripts/phantom_maintenance.py              |  15 ++++-----------
+ tests/test_evening_saved_repairs.py         | 137 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 261 insertions(+), 47 deletions(-)
+##### fix/production-eligibility-20261112
+COMMIT eb50549 | 2026-11-12T12:18:34Z | ACK Verissimo | fix(orchestrator): gate production eligibility before acquisition
+
+
+ Enhancements/production_eligibility_release_20261112.md |  48 +++++++++++++++++++++++++++++++++++++++++
+ avshunter/c0_run/canonical_manifest.py                  |   5 ++++-
+ intelligent_orchestrator.py                             |  55 +++++++++++++++++++++++++++++++++++++++++------
+ orchestrator/dynamic_dispatcher.py                      |  12 +++++++++--
+ orchestrator/production_eligibility.py                  |  39 ++++++++++++++++++++++++++++++++++
+ tests/test_canonical_manifest_p1.py                     |  14 ++++++++++++
+ tests/test_production_eligibility.py                    | 159 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/verify_saved_production_eligibility.py            |  88 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 410 insertions(+), 10 deletions(-)
+##### fix/station-quarantine-20261113
+COMMIT 58a4904 | 2026-11-13T07:29:04Z | ACK Verissimo | fix: quarantine isolated station data defects
+Preserve sub-cent reference prices and isolate bounded invalid market observations with durable preimages, verified exclusion receipts and reconciled worklists. Keep systemic, identity, lineage and timestamp failures fatal. Add offline station, audit and Morning handoff regression coverage.
+
+
+ Enhancements/maintenance_repairs/STATION_QUARANTINE_20261113.json |  16 ++++++++++
+ avshunter_discovery_ULTIMATE.py                                   |   6 ++--
+ config/governed_constants_v1.json                                 |  12 ++++++--
+ domain/station_inspection.py                                      | 192 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ dropoff_audit.py                                                  |  17 +++++++++++
+ intelligent_orchestrator.py                                       |  55 ++++++++++++++++++++++++++++++++--
+ morning_gate.py                                                   |  38 ++++++++++++++++++++----
+ tests/test_ot10_station_inspection.py                             |   2 +-
+ tests/test_station_quarantine.py                                  | 203 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 520 insertions(+), 21 deletions(-)
+##### macro-board-event-timestamp-sort-20261110
+COMMIT 66d0501 | 2026-11-10T22:46:33Z | ACK Verissimo | fix(macro-board): sort events by native source timestamps
+Recognize nested observation-window cutoffs, normalize aware times to UTC, and sort before the display limit. Preserve the eight-row default and unknown timestamps. Add isolated board-only regression tests.
+
+
+ macro_board/build_board.py                        | 26 +++++++++++++++++++++++---
+ macro_board/tests/test_event_timestamp_sorting.py | 88 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 111 insertions(+), 3 deletions(-)
+##### macro-delivery-publication-guards-20261110
+COMMIT 4601ce5 | 2026-11-10T21:59:07Z | ACK Verissimo | fix(macro): guard FULL publication and defer busy delivery
+Include the minimum macro-delivery foundation and offline regression fixtures. Preserve FULL ownership and the existing PostClose timing formula. Keep event raw-export and merged-view identities distinct; make GEX ordering tests independent of display wording.
+
+
+ Enhancements/macro_delivery_publication_guards.md  |    44 +
+ Run-MacroInputs.ps1                                |    54 +-
+ build_macro_json.py                                |    64 +-
+ config/fred_publication_v1.json                    |   154 ++
+ config/macro_delivery_v1.json                      |    30 +
+ config/source_recovery_v1.json                     |    14 +
+ contracts/fred_publication.py                      |   111 ++
+ contracts/futures_freshness.py                     |    31 +
+ contracts/macro_export_receipt.py                  |   102 ++
+ contracts/macro_feed_delivery.py                   |   262 +++
+ contracts/macro_health.py                          |   257 +++
+ contracts/macro_preview_checkpoint.py              |    50 +
+ contracts/source_transport.py                      |    85 +
+ contracts/us_money_index_contract.py               |   181 ++-
+ scripts/publish_macro_data_only.py                 |   150 ++
+ scripts/sync_macro_feeds.py                        |    81 +
+ tests/fixtures/macro_delivery_20261022/events.json |   286 ++++
+ tests/fixtures/macro_delivery_20261022/macro.json  |  1745 ++++++++++++++++++++
+ tests/fixtures/macro_delivery_20261022/news.json   |  2403 +++++++++++++++++++++++++++
+ tests/fixtures/macro_delivery_20261022/usmi.json   | 12307 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_macro_builder_health_publication.py     |    41 +
+ tests/test_macro_delivery_deferred.py              |    65 +
+ tests/test_macro_delivery_runner.py                |    32 +
+ tests/test_macro_feed_delivery.py                  |   153 ++
+ tests/test_macro_full_publication_guard.py         |    53 +
+ tests/test_macro_inputs_runner_steps.py            |     6 +-
+ tests/test_macro_preview_checkpoint.py             |    43 +
+ tests/test_macro_publication_scope.py              |    16 +
+ tests/test_macro_publication_seed_recovery.py      |    39 +
+ tests/test_macro_research_binding.py               |    25 +
+ tests/test_usmi_null_contract_compatibility.py     |    46 +
+ tests/test_usmi_rebaseline_contract.py             |    75 +
+ 32 files changed, 18976 insertions(+), 29 deletions(-)
+##### macro-null-usmi-fixes
+COMMIT 4d47a85 | 2026-10-17T16:44:25+01:00 | ACK Verissimo | fix(macro): handle absent gamma flips and accept explicit USMI rev43 flag
+
+
+ Enhancements/colab/avshunter_macro_module_v2_8.py | 26 +++++++++++++++++++++-----
+ contracts/us_money_index_contract.py              |  9 +++++++++
+ tests/test_macro_module_null_gex.py               | 34 ++++++++++++++++++++++++++++++++++
+ tests/test_us_money_index_text_flags.py           | 27 +++++++++++++++++++++++++++
+ 4 files changed, 91 insertions(+), 5 deletions(-)
+##### macroboard-lab-worker3-decommission
+COMMIT 0724adf | 2026-10-18T13:10:28+01:00 | ACK Verissimo | feat(lab): integrate Macroboard scenarios and decommission Worker 3 reversibly
+Publish independent advisory macro context after board builds; retain shared frozen review evidence and preserve disabled Worker 3 code/history. Include isolated regression coverage; no generated data or unrelated changes.
+
+
+ contracts/lab_macro_desk.py                     | 150 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ contracts/lab_review_sources.py                 |  26 +++++++++++++++++++++++++
+ contracts/worker3_integration_v1.json           |  10 +++++-----
+ docs/LAB_MACRO_DESK_AND_WORKER3_RETIREMENT.md   |  31 ++++++++++++++++++++++++++++++
+ intelligence-lab/intelligence_lab.py            |  22 ++++++---------------
+ intelligence-lab/static/macro-desk.html         |  11 +++++++++++
+ intelligence-lab/static/macro-desk.js           |  14 ++++++++++++++
+ intelligence-lab/static/review.html             |   2 +-
+ intelligent_orchestrator.py                     |  65 ++++++++++++++++++++++++++++++++++++--------------------------
+ macro_board/build_board.py                      |   5 +++++
+ tests/fixtures/worker3_prepare_only_policy.json |  28 +++++++++++++++++++++++++++
+ tests/js/macro_desk_harness.cjs                 |  16 ++++++++++++++++
+ tests/test_lab_macro_desk.py                    |  99 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_lab_review_sources_v1.py             |  34 +++++++++++++++++++++++++++++++++
+ tests/test_worker3_activation.py                |   2 +-
+ tests/test_worker3_browser_launch.py            |   2 +-
+ tests/test_worker3_coordinator.py               |   2 +-
+ tests/test_worker3_current_canary.py            |   4 +++-
+ worker3/integration/coordinator.py              |   2 ++
+ 19 files changed, 472 insertions(+), 53 deletions(-)
+##### market-mentality-redesign
+COMMIT a4f0ecc | 2026-10-19T09:33:49+01:00 | ACK Verissimo | feat(lab): redefine Market Mentality around evidence-based crowd behaviour
+Separate confidence, concern, directional progress, urgency and unknown positioning. Add dated evidence, counterevidence, reaction sensitivities, immutable history and independent post-run trade context without changing frozen decisions.
+
+
+ contracts/lab_macro_desk.py                   | 232 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------
+ contracts/lab_market_mentality.py             | 282 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/LAB_MACRO_DESK_AND_WORKER3_RETIREMENT.md |  89 +++++++++++++++++++++++++++++++++++++++++++---
+ intelligence-lab/intelligence_lab.py          |   2 +-
+ intelligence-lab/static/macro-desk.html       |  20 ++++++-----
+ intelligence-lab/static/macro-desk.js         |  62 +++++++++++++++++++++++++-------
+ intelligence-lab/static/market-mentality.css  |   1 +
+ intelligence-lab/static/review-app.js         |   6 ++++
+ intelligence-lab/static/review.html           |   2 +-
+ tests/js/macro_desk_harness.cjs               |  29 +++++++++------
+ tests/test_lab_macro_desk.py                  |  14 ++++----
+ tests/test_lab_market_mentality.py            | 175 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 12 files changed, 778 insertions(+), 136 deletions(-)
+COMMIT 0724adf | 2026-10-18T13:10:28+01:00 | ACK Verissimo | feat(lab): integrate Macroboard scenarios and decommission Worker 3 reversibly
+Publish independent advisory macro context after board builds; retain shared frozen review evidence and preserve disabled Worker 3 code/history. Include isolated regression coverage; no generated data or unrelated changes.
+
+
+ contracts/lab_macro_desk.py                     | 150 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ contracts/lab_review_sources.py                 |  26 +++++++++++++++++++++++++
+ contracts/worker3_integration_v1.json           |  10 +++++-----
+ docs/LAB_MACRO_DESK_AND_WORKER3_RETIREMENT.md   |  31 ++++++++++++++++++++++++++++++
+ intelligence-lab/intelligence_lab.py            |  22 ++++++---------------
+ intelligence-lab/static/macro-desk.html         |  11 +++++++++++
+ intelligence-lab/static/macro-desk.js           |  14 ++++++++++++++
+ intelligence-lab/static/review.html             |   2 +-
+ intelligent_orchestrator.py                     |  65 ++++++++++++++++++++++++++++++++++++--------------------------
+ macro_board/build_board.py                      |   5 +++++
+ tests/fixtures/worker3_prepare_only_policy.json |  28 +++++++++++++++++++++++++++
+ tests/js/macro_desk_harness.cjs                 |  16 ++++++++++++++++
+ tests/test_lab_macro_desk.py                    |  99 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_lab_review_sources_v1.py             |  34 +++++++++++++++++++++++++++++++++
+ tests/test_worker3_activation.py                |   2 +-
+ tests/test_worker3_browser_launch.py            |   2 +-
+ tests/test_worker3_coordinator.py               |   2 +-
+ tests/test_worker3_current_canary.py            |   4 +++-
+ worker3/integration/coordinator.py              |   2 ++
+ 19 files changed, 472 insertions(+), 53 deletions(-)
+##### phantom-maintenance-provenance
+COMMIT 808f9c3 | 2026-10-17T16:09:59+01:00 | ACK Verissimo | fix(phantom): complete ingestion Greeks and audit provenance with bounded weekly maintenance
+
+
+ canonical_data/phantom_option_projection.py         |   5 ++-
+ intelligent_orchestrator.py                         |  11 ++++++-
+ scripts/finalize_phantom_weekly_snapshot.py         |  14 ++++++---
+ scripts/options_db_writer.py                        |  30 ++++++++++++++++--
+ scripts/phantom_compute_historical_greeks.py        |  32 +++++++++++++++----
+ scripts/phantom_database.py                         |   7 ++++-
+ scripts/phantom_greek_rehydrate.py                  |   4 +++
+ scripts/phantom_maintenance.py                      | 237 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/phantom_marketdata_quote_greek_rehydrate.py |  10 ++++--
+ scripts/phantom_provenance_labels.py                | 190 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/phantom_weekly_maintenance.py               | 127 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/run_phantom_backfill.py                     |   4 ++-
+ scripts/run_phantom_backfill_parallel.py            |   6 +++-
+ tests/test_phantom_incremental_maintenance.py       | 137 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_phantom_provenance_labels.py             |  98 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 15 files changed, 893 insertions(+), 19 deletions(-)
+##### phantom-scoring-iv-hold-fixes-20261111
+COMMIT 1332983 | 2026-11-11T11:15:06Z | ACK Verissimo | fix(phantom): optimise scoring and reconcile IV and hold lineage
+Stream exact as-of IV history through a guarded covering index and cache only scoring fields. Acknowledge IV work after both stores commit and cache receipts verify; preserve explicit IV_UNAVAILABLE states. Preserve and recover measured contract holding periods without inventing defaults. Add offline regression coverage; 69 isolated tests passed.
+
+
+ intelligent_orchestrator.py                 |  25 +++++++++++++++++++++++--
+ scripts/finalize_phantom_weekly_snapshot.py |  24 ++++++++++++++++++++++++
+ scripts/phantom_database.py                 |  88 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------
+ scripts/phantom_engine.py                   |  19 ++++++++++++++++---
+ scripts/phantom_maintenance.py              |  15 ++++-----------
+ tests/test_evening_saved_repairs.py         | 137 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 261 insertions(+), 47 deletions(-)

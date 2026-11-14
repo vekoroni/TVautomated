@@ -1,0 +1,14 @@
+contracts/handoff_reliability.py
+contracts/lab_control.py
+contracts/lab_review_projection.py
+contracts/lab_review_sources.py
+domain/anticipated_move.py
+domain/option_valuation.py
+domain/trade_timing.py
+intelligence-lab/static/review-app.js
+macro_domain/us_money_index.py
+scripts/exit_rules_engine.py
+scripts/export_claude_evidence_handoff.py
+tests/test_ac_calendar_helpers.py
+tests/test_ac_reliability_contract.py
+tests/test_ot4_one_valuation_engine.py

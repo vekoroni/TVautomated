@@ -1,0 +1,235 @@
+ M CLAUDE.md
+ M Enhancements/colab/avshunter_fred_monitor_v2_6.py
+ M Enhancements/colab/avshunter_liquidity_monitor_v3_7.py
+ M Enhancements/colab/avshunter_macro_module_v2_8.py
+ M Enhancements/colab/avshunter_market_intelligence_v5_4_3.py
+ M Enhancements/colab/avshunter_vix_engine_v4_1.py
+ M Enhancements/outcomes/2026-10-02/outcome_report.json
+ M Enhancements/outcomes/2026-10-02/outcome_report.md
+ M Enhancements/phase0/backfill_runbook.py
+ M Run-MacroBoard.ps1
+ M Run-MacroInputs.ps1
+ M avshunter_discovery_ULTIMATE.py
+ M bond_macro_intelligence.py
+ M build_macro_json.py
+ M config/governed_constants_v1.json
+ M contracts/interpreter_macro_context.py
+ M contracts/lab_control.py
+ M contracts/lab_convexity_watchlist.py
+ M contracts/lab_review_projection.py
+ M contracts/lab_review_sources.py
+ M contracts/macro_enrichment_delta.py
+ M contracts/us_money_index_contract.py
+ M domain/anticipated_move.py
+ M domain/option_contract_liquidity.py
+ M domain/option_valuation.py
+ M domain/station_inspection.py
+ M domain/volatility_budget.py
+ M dropoff_audit.py
+ M intelligence-lab/static/convexity-watchlist.css
+ M intelligence-lab/static/convexity-watchlist.js
+ M intelligence-lab/static/review-app.css
+ M intelligence-lab/static/review-app.js
+ M intelligence-lab/static/review.html
+ M intelligent_orchestrator.py
+ M layer3_forward_variance.py
+ M macro_board/board_template.html
+ M macro_board/build_board.py
+ M macro_board/config/macro_board_config_v1.json
+ M macro_board/measured_sheet.py
+ M macro_board/session_plan.py
+ M macro_board/sources.py
+ M macro_board/tests/test_session_plan.py
+ M macro_domain/us_money_index.py
+ M morning_gate.py
+ M pipeline_interpreter/news_macro_readers.py
+ M polygon_data_fetcher.py
+ M scripts/avshunter_options_intelligence.py
+ M scripts/build_completed_market_profiles.py
+ M scripts/exit_rules_engine.py
+ M scripts/finalize_phantom_weekly_snapshot.py
+ M scripts/macro_quant_packet.py
+ M scripts/options_candidate_lane.py
+ M scripts/phantom_database.py
+ M scripts/phantom_engine.py
+ M scripts/phantom_maintenance.py
+ M tests/test_completed_session_database_refresh.py
+ M tests/test_lab_convexity_frontend.cjs
+ M tests/test_lab_convexity_watchlist.py
+ M tests/test_lab_review_sources_v1.py
+ M tests/test_macro_inputs_runner_steps.py
+ M tests/test_ot10_station_inspection.py
+ M tests/test_ot4_one_valuation_engine.py
+ M tests/test_us_money_index_text_flags.py
+ M tools/avs_verify/avs_verify.py
+?? .claude/
+?? .testdeps/
+?? AVSHUNTER_Document_Review_and_Decision_Register.docx
+?? "Claude outputs/"
+?? Enhancements/assessment/AVS_CURRENT_CALCULATION_INVENTORY_20260928/calculation_condition_register.jsonl
+?? Enhancements/assessment/AVS_CURRENT_CALCULATION_INVENTORY_20260928/dependency_call_register.jsonl
+?? Enhancements/backtest/activity_tournament/s_act_model_scores.csv.gz
+?? Enhancements/backtest/contract_execution_tournament/cex_selected_rows.csv.gz
+?? Enhancements/colab/avshunter_fred_monitor_v2_5.py
+?? Enhancements/direction_evidence/DIRECTION_EDGE_STUDY_PREREG_20261007.md
+?? Enhancements/direction_evidence/DIRECTION_EDGE_STUDY_RESULTS_20261007.md
+?? Enhancements/direction_evidence/MAGNITUDE_AND_STRENGTH_STUDY_PREREG_20261007.md
+?? Enhancements/direction_evidence/MAGNITUDE_AND_STRENGTH_STUDY_RESULTS_20261007.md
+?? Enhancements/direction_evidence/SHORT_HORIZON_DIRECTION_STUDY_PREREG_20261007.md
+?? Enhancements/direction_evidence/SHORT_HORIZON_DIRECTION_STUDY_RESULTS_20261007.md
+?? Enhancements/direction_evidence/TOP_DOWN_BIAS_STUDY_PREREG_20261007.md
+?? Enhancements/direction_evidence/TOP_DOWN_BIAS_STUDY_RESULTS_20261007.md
+?? Enhancements/direction_evidence/WP1_DIRECTION_AUDIT_PREREG_20261007.md
+?? Enhancements/direction_evidence/WP1_DIRECTION_AUDIT_RESULTS_20261007.md
+?? Enhancements/direction_evidence/direction_edge_study.py
+?? Enhancements/direction_evidence/direction_edge_study_20261007.json
+?? Enhancements/direction_evidence/earnings/
+?? Enhancements/direction_evidence/magnitude_posthoc_normal_vol.py
+?? Enhancements/direction_evidence/magnitude_posthoc_normal_vol_20261007.json
+?? Enhancements/direction_evidence/magnitude_strength_study.py
+?? Enhancements/direction_evidence/magnitude_strength_study_20261007.json
+?? Enhancements/direction_evidence/short_horizon_direction_study.py
+?? Enhancements/direction_evidence/short_horizon_direction_study_20261007.json
+?? Enhancements/direction_evidence/survivorship/
+?? Enhancements/direction_evidence/top_down_bias_study.py
+?? Enhancements/direction_evidence/top_down_bias_study_20261007.json
+?? Enhancements/direction_evidence/wp1_direction_audit.py
+?? Enhancements/direction_evidence/wp1_direction_audit_20261007.json
+?? Enhancements/fred_publication_audit_20261024.json
+?? Enhancements/garch_d1/
+?? Enhancements/gpt_era/
+?? Enhancements/latest_public_release_acceptance_20261024.json
+?? Enhancements/lean_path_test/
+?? Enhancements/macro_board_replay/
+?? Enhancements/macro_delivery/
+?? Enhancements/macro_delivery_transport_runbook.md
+?? Enhancements/maintenance_repairs/
+?? Enhancements/morning_pricing_window/
+?? Enhancements/outcomes/2026-10-05/
+?? Enhancements/outcomes/2026-10-08/
+?? Enhancements/outcomes/2026-10-09/
+?? Enhancements/outcomes/2026-10-12/
+?? Enhancements/outcomes/2026-10-13/
+?? Enhancements/outcomes/2026-10-15/
+?? Enhancements/outcomes/2026-10-16/
+?? Enhancements/outcomes/2026-10-19/
+?? Enhancements/outcomes/2026-10-21/
+?? Enhancements/outcomes/2026-11-06/
+?? Enhancements/outcomes/2026-11-10/
+?? Enhancements/outcomes/2026-11-11/
+?? Enhancements/outcomes/beh001/eval_v2/candidates.jsonl
+?? Enhancements/outcomes/beh001/eval_v3/candidates.jsonl
+?? Enhancements/outcomes/beh001/eval_v4/candidates.jsonl
+?? Enhancements/outcomes/beh001/eval_v4/duration_records.jsonl
+?? Enhancements/outcomes/beh001/eval_v4_holdout/candidates.jsonl
+?? Enhancements/outcomes/beh001/eval_v4_holdout/duration_records.jsonl
+?? Enhancements/outcomes/beh001/eval_v5/duration_records.jsonl
+?? Enhancements/outcomes/beh001/eval_v5_holdout/duration_records.jsonl
+?? Enhancements/outcomes/beh001/intraday_pilot/
+?? Enhancements/outcomes/beh001/intraday_v1/records.jsonl
+?? Enhancements/outcomes/beh001/replay_v1.jsonl
+?? Enhancements/outcomes/beh001/replay_v2.jsonl
+?? Enhancements/outcomes/beh001/uncapped_v1.jsonl
+?? Enhancements/outcomes/dir002/panel_v1.jsonl
+?? Enhancements/outcomes/dir002/population_mirror_20260929.jsonl
+?? Enhancements/outcomes/intraday_backfill/intraday_backfill_20250902_20260903_shard1of3_receipt.json
+?? Enhancements/outcomes/intraday_backfill/intraday_backfill_20250902_20260903_shard2of3_receipt.json
+?? Enhancements/outcomes/intraday_backfill/intraday_backfill_20250902_20260903_shard3of3_receipt.json
+?? Enhancements/performance/
+?? Enhancements/phase0/PHANTOM_BACKFILL_WINDOW_DESIGN_20261113.md
+?? Enhancements/phase0/backfill_receipts/PHANTOM_GUARDED_20261113_20OCT_09NOV/
+?? Enhancements/phase0/guarded_phantom_backfill.py
+?? Enhancements/phase0/phantom_named_contract_supplement_20261113.py
+?? Enhancements/phase0/phantom_path_supplement_20261113.py
+?? Enhancements/tradeability/
+?? Enhancements/volatility_evidence/
+?? audit/AVS_SOR001_BUILD_RECEIPT_20260927.md
+?? audit/AVS_TEV001_BUILD_IN_PROGRESS_20260927.md
+?? audit/AVS_TEV001_DESCRIPTIVE_PATH_BUILD_RECEIPT_20260927.md
+?? audit/AVS_TEV001_S0_BASELINE_20260927.md
+?? audit/AVS_TEV001_STRUCTURAL_COHORT_20260927.md
+?? audit/avs_tev001_research_ev_canary.py
+?? audit/avs_tev001_s0_support_audit.py
+?? audit/avs_tev001_structural_cohort.py
+?? audit/intelligence_lab/
+?? audit/interpreter_report_failures/
+?? audit/laneb_fixB/triage_prompt_update_2026-11-13.md
+?? audit/macro_domain_smoke_20260906/control_plane.sqlite-shm
+?? audit/macro_domain_smoke_20260906/control_plane.sqlite-wal
+?? audit/macro_input/
+?? audit/trace/
+?? audit/verify/
+?? config/fred_publication_v1.json
+?? config/macro_delivery_manifest_v1.schema.json
+?? config/macro_delivery_v1.json
+?? config/morning_pricing_policy_v1.json
+?? config/source_recovery_v1.json
+?? config/us_money_index_producer_v2.schema.json
+?? contracts/fred_publication.py
+?? contracts/futures_freshness.py
+?? contracts/handoff_reliability.py
+?? contracts/lab_contract_display.py
+?? contracts/macro_export_receipt.py
+?? contracts/macro_feed_delivery.py
+?? contracts/macro_health.py
+?? contracts/macro_preview_checkpoint.py
+?? contracts/source_transport.py
+?? data/daily_history_v7/refresh_20261001/
+?? data/governance/
+?? data/phantom/staging/phantom_spy_qqq_20260918_pre_greeks_20260920_164214.json.gz
+?? data/phantom/staging/phantom_spy_qqq_20260918_pre_greeks_20260920_164214.json.gz.manifest.json
+?? data/phantom/staging/phantom_weekly_snapshot_20260920_maintenance.json
+?? data/phantom/staging/phantom_weekly_snapshot_20260920_preflight.json
+?? data/scratch/workaround/strategy_layer.py
+?? data/universe/universe_remediation_log_2026-09-23.md
+?? domain/morning_pricing_window.py
+?? domain/trade_timing.py
+?? intelligence-lab/static/contract-details.js
+?? intelligence-lab/static/short-horizons.js
+?? intelligence-lab/static/trade-timing.js
+?? macro_board/tests/test_current_market.py
+?? macro_board/tests/test_event_timestamp_sorting.py
+?? scripts/export_claude_evidence_handoff.py
+?? scripts/publish_macro_data_only.py
+?? scripts/refresh_completed_gex.py
+?? scripts/refresh_futures_snapshot.py
+?? scripts/sync_macro_feeds.py
+?? tests/fixtures/macro_delivery_20261022/
+?? tests/test_ac_reliability_contract.py
+?? tests/test_evening_saved_repairs.py
+?? tests/test_event_source_clock_alias.py
+?? tests/test_event_source_cutoff.py
+?? tests/test_fred_publication_policy.py
+?? tests/test_garch_d1_cumulative_windows.py
+?? tests/test_guarded_phantom_backfill.py
+?? tests/test_lab_contract_display.py
+?? tests/test_lab_contract_display_frontend.cjs
+?? tests/test_lab_review_ticker_search.py
+?? tests/test_lab_trade_timing_frontend.cjs
+?? tests/test_latest_public_release.py
+?? tests/test_macro_builder_health_publication.py
+?? tests/test_macro_completion.py
+?? tests/test_macro_delivery_deferred.py
+?? tests/test_macro_delivery_runner.py
+?? tests/test_macro_feed_delivery.py
+?? tests/test_macro_full_publication_guard.py
+?? tests/test_macro_module_null_gex.py
+?? tests/test_macro_preview_checkpoint.py
+?? tests/test_macro_priority.py
+?? tests/test_macro_publication_seed_recovery.py
+?? tests/test_macro_refresh_reliability.py
+?? tests/test_macro_research_binding.py
+?? tests/test_morning_pricing_window.py
+?? tests/test_nightly_performance_parity.py
+?? tests/test_phantom_named_contract_supplement.py
+?? tests/test_phantom_path_supplement.py
+?? tests/test_research_path_complete.py
+?? tests/test_source_health_publication.py
+?? tests/test_source_recovery.py
+?? tests/test_station_quarantine.py
+?? tests/test_trade_timing_sessions.py
+?? tests/test_usmi_null_contract_compatibility.py
+?? tests/test_usmi_rebaseline_contract.py
+?? tools/auction_mining.py
+?? tools/export_card_bars.py
+?? tools/journal_real_fill.py
