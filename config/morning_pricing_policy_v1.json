@@ -1,0 +1,14 @@
+{
+  "version": "morning_pricing_policy_v2",
+  "business_owner": "ACK",
+  "effective_from": "2026-11-14",
+  "timezone": "America/New_York",
+  "market_hours_basis": "XNYS_REGULAR_SESSION_OPEN_TO_CLOSE_INCLUDING_EARLY_CLOSES",
+  "preferred_start_et": "09:35",
+  "preferred_last_start_minute_et": "09:45",
+  "guard_scope": "PRICING_START_NOT_BATCH_COMPLETION",
+  "outside_preferred_window_action": "PRICE_AND_LABEL",
+  "outside_market_hours_action": "STOP_BEFORE_PRICING",
+  "rationale": "ACK 14 Nov 2026: the Morning gate may run at any time during market hours. A start outside the preferred 09:35-09:45 ET window is priced and labelled, never refused; only a start outside the XNYS regular session is refused. A valid start does not waive per-quote freshness checks.",
+  "supersedes": "morning_pricing_policy_v1 (13 Nov 2026): refused any start outside 09:35-09:45 ET."
+}

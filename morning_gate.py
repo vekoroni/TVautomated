@@ -568,6 +568,7 @@ def _check_morning_handoff_score_integrity(
     run_id: str,
     input_rows: List[Dict[str, Any]],
     output_rows: List[Dict[str, Any]],
+    *, quarantined_tickers=(),
 ) -> Dict[str, Any]:
     """Compare candidate scores before and after Morning Gate materialisation.
 
@@ -582,6 +583,9 @@ def _check_morning_handoff_score_integrity(
         for score in [_score_integrity_value(row)]
         if score is not None
     }
+    original_input_count = len(input_scores)
+    excluded = set(quarantined_tickers) & set(input_scores)
+    input_scores = {t:s for t,s in input_scores.items() if t not in excluded}
     output_scores = {
         _ticker(row.get("ticker")): score
         for row in output_rows
@@ -615,7 +619,9 @@ def _check_morning_handoff_score_integrity(
         "checked_at_utc": _utc_now(),
         "integrity_scope": "MORNING_CANDIDATES_TO_VALIDATED_HANDOFF",
         "integrity_source": "morning_candidates_vs_morning_validated_trades",
-        "input_tickers": len(input_scores),
+        "input_tickers": original_input_count,
+        "accepted_input_tickers": len(input_scores),
+        "accounted_quarantined_tickers": sorted(excluded),
         "output_tickers": len(output_scores),
         "compared": compared,
         "coverage_complete": coverage_complete,
@@ -757,7 +763,7 @@ def _close_final_run_manifest(
         run_dir / "morning_validation" / f"morning_gate_summary_{run_id}.json"
     )
     row_counts = dict(manifest.get("row_counts", {}) or {})
-    row_counts["morning_validation"] = int(summary.get("input_candidates", 0) or 0)
+    row_counts["morning_validation"] = int(summary.get("accepted_candidates", summary.get("input_candidates", 0)) or 0)
     stale_flags = [
         flag for flag in list(manifest.get("stale_flags", []) or [])
         if flag not in {
@@ -775,9 +781,15 @@ def _close_final_run_manifest(
         output_files=output_files,
         row_counts=row_counts,
         morning_validation_completed_at_utc=summary.get("validated_at_utc"),
+        morning_pricing_started_at_utc=summary.get("morning_pricing_started_at_utc"),
+        morning_pricing_policy_version=summary.get("morning_pricing_policy_version"),
         morning_validated_count=validated,
         morning_flag_count=int(summary.get("flag_count", 0) or 0),
         morning_block_count=int(summary.get("block_count", 0) or 0),
+        morning_quarantined_count=int(summary.get('quarantined_candidates', 0) or 0),
+        morning_quarantined_tickers=list(summary.get('quarantined_tickers', [])),
+        morning_validation_coverage_state=('COMPLETE_WITH_EXCLUSIONS'
+            if summary.get('quarantined_candidates') else 'NO_STATION_QUARANTINE'),
         morning_capital_permission=(
             "HUMAN_APPROVAL_REQUIRED" if validated else "NO"
         ),
@@ -2164,7 +2176,18 @@ def _morning_liquidity_lifecycle(
     previous_symbol = _s(
         row.get("contract_symbol_original") or row.get("previous_contract_symbol")
     )
+    from domain.trade_timing import timing_for_row
+    live_leg = live_data.get('selected_long_leg') or {}
+    selected_expiry = live_leg.get('expiry') or live_leg.get('expiration') or (None if contract_changed else row.get('expiry') or row.get('contract_expiry'))
+    timing = timing_for_row(
+        {**row, 'contract_symbol': selected_symbol, 'expiry': selected_expiry, 'contract_expiry': None},
+        as_of=live_data.get('live_options_fetched_at') or live_data.get('live_contract_provider_updated'),
+    )
+    if timing['hold_clock_state'] in {'SAVED_PLANNING_BUDGET', 'EXHAUSTED'}:
+        hold = timing['remaining_hold_sessions']
     base = {
+        "timing_details": timing,
+        "planned_hold_reference_at_utc": row.get('planned_hold_reference_at_utc') or row.get('evidence_session_date') or row.get('bar_data_asof'),
         "thesis_id": thesis_id,
         "previous_contract_symbol": previous_symbol,
         "contract_changed": bool(contract_changed),
@@ -2177,6 +2200,12 @@ def _morning_liquidity_lifecycle(
         "maturation_score_is_probability": False,
         "maturation_execution_authority": False,
     }
+    if timing['hold_clock_state'] == 'EXHAUSTED':
+        return {**base, 'thesis_state': 'ACTIVE', 'liquidity_state': 'RUNWAY_SHORT_REVIEW',
+                'morning_transition_state': 'CONTRACT_REPRICE_REQUIRED',
+                'recovery_disposition': 'CONTRACT_REPAIR', 'executable_now': False,
+                'remaining_hold_sessions': 0,
+                'liquidity_lifecycle_reason': 'HOLD_BUDGET_EXHAUSTED_REQUIRES_NEW_THESIS_ASSESSMENT'}
     required = {
         "side": side if side in {"CALL", "PUT"} else None,
         "current_spot": current_spot,
@@ -2238,6 +2267,8 @@ def _morning_liquidity_lifecycle(
             bid=bid,
             ask=ask,
             dte=float(required["dte"]),
+            as_of_date=timing.get('expiry_reference_date'),
+            expiry_date=timing.get('expiry_date'),
             remaining_hold_sessions=hold,          # L3: None = no evidence hold (no hold-based minimum)
             # Step 4b: a hold sourced from a daily event's duration evidence (planned_hold_source) is accepted.
             hold_is_evidence=str(row.get("planned_hold_source") or "").startswith("DURATION_EVIDENCE"),
@@ -3451,15 +3482,11 @@ def run_morning_gate(
     execution_mode = _u(execution_mode)
     if execution_mode not in {"PREOPEN_THESIS_CHECK", "POSTOPEN_CONTRACT_REFRESH"}:
         raise ValueError(f"unsupported Morning execution_mode: {execution_mode}")
-    now_et = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
-    minute_of_day = now_et.hour * 60 + now_et.minute
-    refresh_window_state = (
-        "NOT_APPLICABLE_PREOPEN"
-        if execution_mode == "PREOPEN_THESIS_CHECK"
-        else "DEFAULT_WINDOW"
-        if 9 * 60 + 35 <= minute_of_day <= 9 * 60 + 45
-        else "PERMITTED_LATE_REFRESH"
-    )
+    # Stop before any rate/store/provider setup for a start outside market hours.
+    from domain.morning_pricing_window import require_morning_pricing_start
+    pricing_start = require_morning_pricing_start(execution_mode, datetime.now(timezone.utc))
+    now_et = datetime.fromisoformat(pricing_start["observed_at_et"])
+    refresh_window_state = pricing_start["state"]
 
     run_dir    = RUNS_DIR / run_id
     mv_dir     = run_dir / "morning_validation"
@@ -3631,6 +3658,9 @@ def run_morning_gate(
         log.info("VIX regime check skipped: %s", _vix_exc)
 
     # Fetch all live data
+    # Preparation is not permission to begin pricing after the close.
+    # Batch completion is governed by quote freshness, not a batch deadline.
+    pricing_fetch_start = require_morning_pricing_start(execution_mode, datetime.now(timezone.utc))
     log.info("Fetching live data for %d tickers...", len(candidates))
     live_map = _fetch_all_live(
         candidates,
@@ -3727,12 +3757,23 @@ def run_morning_gate(
     log.info("Output written: %s", output_path)
     # Output-trust item 10.3 (ACK 9-10 Oct 2026): inspect the Morning's part - every candidate kept, sound values.
     import pandas as _pd_station
-    from domain.station_inspection import enforce, inspect_station, write_station_report
-    _station = inspect_station("morning", _pd_station.DataFrame(results), run_id=run_id,
-                               previous_tickers={_ticker(r.get("ticker")) for r in candidates}, accounted_tickers=set())
+    from domain.station_inspection import (enforce, prepare_station, commit_station_quarantine,
+        station_quarantines, write_station_report)
+    _station_root = ROOT / 'data' / 'output' / 'runs' / run_id
+    _prior_quarantined = {r['ticker'] for r in station_quarantines(_station_root)}
+    _station_frame = _pd_station.DataFrame(results)
+    _accepted_station, _station = prepare_station("morning", _station_frame, run_id=run_id,
+        previous_tickers={_ticker(r.get("ticker")) for r in candidates},
+        accounted_tickers=_prior_quarantined, prior_quarantined=_prior_quarantined)
     log.info("Station morning inspected: rows=%d stop_defects=%d | %s", _station["rows"],
              len(_station["stop_defects"]), write_station_report(_station, ROOT / "data" / "output" / "runs" / run_id).name)
     enforce(_station)
+    commit_station_quarantine(output_path, _station_frame, _station, _station_root)
+    _excluded_ordinals = set(_station['quarantine']['row_indices'])
+    results = [row for i, row in enumerate(results) if i not in _excluded_ordinals]
+    write_station_report(_station, _station_root)
+    if _excluded_ordinals:
+        log.warning('Morning quarantined invalid market data: %s', ', '.join(_station['quarantine']['tickers']))
 
     # Summary
     go_list    = [r for r in results if r["verdict"] == "GO"]
@@ -3773,11 +3814,19 @@ def run_morning_gate(
         "morning_execution_mode": execution_mode,
         "postopen_contract_refresh_window_state": refresh_window_state,
         "postopen_contract_refresh_observed_at_et": now_et.isoformat(),
+        "morning_pricing_policy_version": pricing_start["policy_version"],
+        "morning_pricing_guard_scope": pricing_start["guard_scope"],
+        "morning_pricing_fetch_started_at_et": pricing_fetch_start["observed_at_et"],
+        "morning_pricing_started_at_utc": pricing_fetch_start["observed_at_utc"],
         "quote_provider_timestamp_session_distribution": quote_timestamp_distribution,
         "quote_provider_timestamp_hour_distribution": quote_timestamp_hour_distribution,
         "quote_provider_timestamp_missing_count": quote_timestamp_missing,
         "quote_provider_timestamp_present_count": len(results) - quote_timestamp_missing,
         "input_candidates": len(candidates),
+        "accepted_candidates": len(results),
+        "quarantined_candidates": len(_excluded_ordinals),
+        "quarantined_tickers": _station['quarantine']['tickers'],
+        "population_reconciled_with_quarantine": len(candidates) == len(results) + len(_excluded_ordinals),
         "go_count":         len(go_list),
         "flag_count":       len(flag_list),
         "block_count":      len(block_list),
@@ -3886,7 +3935,8 @@ def run_morning_gate(
     integrity = _normalise_score_integrity(
         run_dir,
         run_id,
-        _check_morning_handoff_score_integrity(run_id, candidates, results),
+        _check_morning_handoff_score_integrity(run_id, candidates, results,
+            quarantined_tickers=_prior_quarantined | set(_station['quarantine']['tickers'])),
     )
     log.info(
         "Morning score integrity: compared=%d mismatches=%d rate=%.1f%% pass=%s; Lab=%s",
@@ -4647,11 +4697,16 @@ def main() -> int:
             )
         except Exception:
             execution_mode = "POSTOPEN_CONTRACT_REFRESH"
-    results = run_morning_gate(
-        run_id=run_id,
-        spread_threshold=args.spread_threshold,
-        execution_mode=execution_mode,
-    )
+    from domain.morning_pricing_window import MorningPricingWindowClosed
+    try:
+        results = run_morning_gate(
+            run_id=run_id,
+            spread_threshold=args.spread_threshold,
+            execution_mode=execution_mode,
+        )
+    except MorningPricingWindowClosed as timing_error:
+        log.error("Morning start refused: %s", timing_error)
+        return 2
     try:
         from morning_handoff_finalizer import (
             finalize_morning_handoff,

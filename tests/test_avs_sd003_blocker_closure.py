@@ -153,10 +153,11 @@ def test_eod_finalisation_materialises_lab_before_audit_and_manifest_refresh() -
         "_uat_report = write_uat_audit_report(canonical_run_id"
     )
     manifest_refresh = source.index("_manifest = _refresh_final_run_manifest(")
-    worker3_macro = source.index(
-        "_worker3_macro = materialize_worker3_market_environment("
-    )
-    assert lab_write < worker3_macro < audit_write < uat_write < manifest_refresh
+    # Worker 3 is decommissioned and retained (ACK, 18-19 Oct 2026): the per-ticker Worker 3 packet is no longer
+    # built here. The shared Lab macro evidence is frozen at the same point, after the book and before the audit.
+    assert "_worker3_macro = materialize_worker3_market_environment(" not in source
+    macro_evidence = source.index("_lab_macro_evidence = materialize_lab_macro_evidence(")
+    assert lab_write < macro_evidence < audit_write < uat_write < manifest_refresh
 
 
 def _write_empty_shadow_fixture(root: Path, *, eligible: bool) -> tuple[Path, str]:

@@ -27,7 +27,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-VERSION = "avs_verify_v1_2"
+VERSION = "avs_verify_v1_3"
 SEV = {"P0": 0, "P1": 1, "P2": 2}
 csv.field_size_limit(2**31 - 1)
 
@@ -143,7 +143,13 @@ def r_self_report(man, cfg, phase, nrows, f: F):
 
 def r_timing(run_id, phase, man, cfg, f: F):
     t, src = None, cfg["phases"][phase]["run_time_source"]
-    if src.startswith("manifest.") and man:
+    # Quote age is measured at the Morning verdict, never the old Evening
+    # manifest's creation time. Start-window compliance is a separate clock.
+    if phase == "morning" and man:
+        t = parse_ts(man.get("morning_validation_completed_at_utc"))
+        if t is not None:
+            src = "manifest.morning_validation_completed_at_utc"
+    if t is None and src.startswith("manifest.") and man:
         t = parse_ts(dig(man, src.split(".", 1)[1]))
     if t is None:
         m = re.match(r"(\d{8}_\d{6})", run_id)
@@ -154,21 +160,29 @@ def r_timing(run_id, phase, man, cfg, f: F):
     if t is None:
         f.b("R01_RUN_TIMING", "P1", "SKIPPED", "Run time unknown.")
         return None
-    et, T = to_et(t), cfg["timing"]
+    timing_t = t
+    if phase == "morning" and man and man.get("morning_pricing_started_at_utc"):
+        timing_t = parse_ts(man["morning_pricing_started_at_utc"])
+        if timing_t is None or timing_t > t or to_et(timing_t).date() != to_et(t).date():
+            f.b("R01_RUN_TIMING", "P0", "FAIL", "Morning pricing start is invalid or later than completion.")
+            return t
+        src = "manifest.morning_pricing_started_at_utc"
+    et, T = to_et(timing_t), cfg["timing"]
     wk = et.weekday() < 5
     rth = wk and hhmm(T["rth_open_et"]) <= et.time() < hhmm(T["evening_earliest_et"])
-    ev = {"utc": t.isoformat(), "et": et.strftime("%a %Y-%m-%d %H:%M ET"), "source": src}
+    ev = {"utc": timing_t.isoformat(), "et": et.strftime("%a %Y-%m-%d %H:%M ET"), "source": src,
+          "quote_age_reference_utc": t.isoformat()}
     if phase == "evening":
         f.b("R01_RUN_TIMING", "P0", "FAIL" if rth else "PASS",
             f"Evening run at {ev['et']} — " + ("INSIDE the trading session; session anchor and quotes are the prior day's."
                                                if rth else "outside the regular session."), ev)
     else:
         lo, hi = (hhmm(x) for x in T["morning_quote_window_et"])
-        if wk and lo <= et.time() <= hi:
-            f.b("R01_RUN_TIMING", "P1", "PASS", f"Morning validation at {ev['et']} — inside quote window.", ev)
+        if wk and lo <= et.time().replace(second=0, microsecond=0) <= hi:
+            f.b("R01_RUN_TIMING", "P1", "PASS", f"Morning pricing start at {ev['et']} — inside start window.", ev)
         else:
             f.b("R01_RUN_TIMING", "P1", "WARN",
-                f"Morning validation at {ev['et']} — outside the {lo:%H:%M}–{hi:%H:%M} ET quote window.", ev)
+                f"Morning pricing start at {ev['et']} — outside the {lo:%H:%M}–{hi:%H:%M} ET start window.", ev)
     return t
 
 

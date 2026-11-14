@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "source_reports_unchanged": true,
+  "pipeline_runs": 0,
+  "provider_calls": 0,
+  "records": [
+    {
+      "run_id": "20261111_231951",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261111_231951\\morning_validation\\morning_gate_summary_20261111_231951.json",
+      "source_sha256": "0e6e05a9833e6eaf211bf83b3d4ed78203e9c96cbfae12b8f6723f6d0971a9fc",
+      "saved_window_state": "PERMITTED_LATE_REFRESH",
+      "saved_start": "2026-11-12T09:55:57.054250-05:00",
+      "result": "WOULD_STOP_BEFORE_PRICING",
+      "reason": "MORNING_PRICING_WINDOW_CLOSED:AFTER_APPROVED_LAST_START_MINUTE; observed=2026-11-12T09:55:57.054250-05:00; required=09:35-09:45 ET on an XNYS session. No pricing or handoff started; do not reuse an old Morning result as current."
+    },
+    {
+      "run_id": "20261110_231648",
+      "source": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\morning_validation\\morning_gate_summary_20261110_231648.json",
+      "source_sha256": "b39e8b89ade6783fe7c73fe27e03a24d3ea0923ab80dd7828abaa78fe3b14d5f",
+      "saved_window_state": "PERMITTED_LATE_REFRESH",
+      "saved_start": "2026-11-11T10:06:29.627866-05:00",
+      "result": "WOULD_STOP_BEFORE_PRICING",
+      "reason": "MORNING_PRICING_WINDOW_CLOSED:AFTER_APPROVED_LAST_START_MINUTE; observed=2026-11-11T10:06:29.627866-05:00; required=09:35-09:45 ET on an XNYS session. No pricing or handoff started; do not reuse an old Morning result as current."
+    }
+  ],
+  "limitation": "Two historical late starts replayed; five forward-session acceptance checks remain outstanding."
+}

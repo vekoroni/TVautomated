@@ -3163,6 +3163,20 @@ def pin_run_directory(
     return True
 
 
+def materialize_lab_macro_evidence(run_id: str) -> dict:
+    """Freeze shared run evidence without Worker 3 preparation or ticker jobs."""
+    from contracts.interpreter_macro_context import materialize_interpreter_macro_context
+    run_dir = cfg.RUNS_DIR / str(run_id)
+    meta = json.loads((run_dir / 'run_meta.json').read_text(encoding='utf-8-sig'))
+    session = str((meta.get('dynamic_plan') or {}).get('last_completed_session') or '').strip()
+    if not session:
+        raise RuntimeError('Lab macro evidence requires governed run session')
+    return materialize_interpreter_macro_context(
+        run_dir=run_dir, session_date=session, macro_dir=cfg.MACRO_DIR,
+        prefer_run_snapshot=True,
+    )
+
+
 def materialize_worker3_market_environment(
     run_id: str,
     *,
@@ -3333,6 +3347,28 @@ def publish_cds3_discovery_worklist(
         return False
     try:
         from canonical_data import publish_discovery_csv
+        from domain.station_inspection import station_quarantines, quarantine_lifecycle_rows
+
+        _quarantines = station_quarantines(cfg.RUNS_DIR / run_id)
+        if any(r['station'] == 'discovery' for r in _quarantines):
+            import io as _lifecycle_io
+            with outcome_path.open('r', encoding='utf-8-sig', newline='') as _stream:
+                _reader = csv.DictReader(_stream)
+                _fields = list(_reader.fieldnames or [])
+                _lifecycle_rows = quarantine_lifecycle_rows(list(_reader), _quarantines)
+            _accepted_buffer = _lifecycle_io.StringIO(newline='')
+            _writer = csv.DictWriter(_accepted_buffer, fieldnames=_fields)
+            _writer.writeheader(); _writer.writerows(_lifecycle_rows)
+            _accepted_bytes = _accepted_buffer.getvalue().encode('utf-8')
+            _accepted_digest = hashlib.sha256(_accepted_bytes).hexdigest()
+            _accepted_path = cfg.RUNS_DIR / run_id / 'diagnostics' / f'accepted_lifecycle_{_accepted_digest}.csv'
+            if _accepted_path.exists():
+                if _accepted_path.read_bytes() != _accepted_bytes:
+                    raise ValueError('Accepted lifecycle content conflict')
+            else:
+                with _accepted_path.open('xb') as _stream:
+                    _stream.write(_accepted_bytes)
+            outcome_path = _accepted_path
 
         registry_path = cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite"
         result = publish_discovery_csv(
@@ -3478,10 +3514,12 @@ def _discovery_output_csv(run_id: str) -> Path:
 def _run_station_inspection(run_id: str, station: str, output_path: Path, previous_path: Optional[Path] = None) -> bool:
     """Output-trust item 10.3 (ACK 9-10 Oct 2026): inspect a station's part right after it; an integrity defect
     stops the line with the station, check and rows (domain.station_inspection). Returns False to stop."""
-    from domain.station_inspection import StationDefect, enforce, inspect_station, station_policy, write_station_report
+    from domain.station_inspection import (StationDefect, enforce, prepare_station, station_policy,
+        write_station_report, station_quarantines, commit_station_quarantine)
     try:
         policy = station_policy()
         frame = _read_stage_frame(output_path)
+        prior_quarantined = {r['ticker'] for r in station_quarantines(cfg.RUNS_DIR / run_id)}
         previous = accounted = None
         if previous_path is not None and Path(previous_path).exists():
             previous = set(_read_stage_frame(previous_path)["ticker"].astype(str).str.strip().str.upper())
@@ -3491,8 +3529,9 @@ def _run_station_inspection(run_id: str, station: str, output_path: Path, previo
             if stages and audit_path.exists():
                 audit = _read_stage_frame(audit_path)
                 accounted = set(audit.loc[audit["dropoff_stage"].isin(stages), "ticker"].astype(str).str.upper())
-        report = inspect_station(station, frame, run_id=run_id, previous_tickers=previous,
-                                 accounted_tickers=accounted, policy=policy)
+        _accepted, report = prepare_station(station, frame, run_id=run_id, previous_tickers=previous,
+            accounted_tickers=set(accounted or ()) | prior_quarantined, policy=policy,
+            prior_quarantined=prior_quarantined)
         path = write_station_report(report, cfg.RUNS_DIR / run_id)
     except Exception as err:                                      # noqa: BLE001 - an inspection that cannot run is stated
         logger.critical("STATION INSPECTION %s could not run (%s: %s) - stopping the line", station,
@@ -3502,6 +3541,15 @@ def _run_station_inspection(run_id: str, station: str, output_path: Path, previo
         enforce(report, policy)
     except StationDefect as defect:
         logger.critical("%s | report %s", defect, path)
+        return False
+    try:
+        commit_station_quarantine(output_path, frame, report, cfg.RUNS_DIR / run_id)
+        write_station_report(report, cfg.RUNS_DIR / run_id)
+        if report['quarantine']['records']:
+            logger.warning('Station %s: quarantined %d ticker(s): %s; raw preimage and reasons retained',
+                station, len(report['quarantine']['tickers']), ', '.join(report['quarantine']['tickers']))
+    except Exception as error:
+        logger.critical('Station %s quarantine delivery failed; stopping: %s', station, error)
         return False
     logger.info("Station %s inspected: rows=%d stop_defects=%d other=%d | %s", station, report["rows"],
                 len(report["stop_defects"]), len(report["other_defects"]), path.name)
@@ -4154,7 +4202,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             _hp = horizon_dir / f"horizon_{_bucket}_{run_id}.csv"
             if not _hp.exists():
                 continue
-            _hdf = _pd_hp.read_csv(_hp, low_memory=False)
+            _hdf = _pd_hp.read_csv(_hp, low_memory=False, keep_default_na=False, na_values=[''])
             if _hdf.empty or "ticker" not in _hdf.columns:
                 continue
             _hdf["ticker"] = _hdf["ticker"].astype(str).str.strip().str.upper()
@@ -4176,7 +4224,7 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             return False
 
         route_df = _pd_hp.concat(horizon_frames, ignore_index=True)
-        target_df = _pd_hp.read_csv(target_csv, low_memory=False)
+        target_df = _pd_hp.read_csv(target_csv, low_memory=False, keep_default_na=False, na_values=[''])
 
         if target_df.empty or "ticker" not in target_df.columns:
             logger.warning("Horizon patch skipped for %s — target has no ticker rows", label)
@@ -4231,6 +4279,23 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
         ).fillna("HORIZON_UNAVAILABLE")
         # Step 3 (ACK 4 Oct 2026, decision 2): the planned hold is the evidence runway or nothing - never the
         # governed 20. Rows without evidence carry no hold, and the source says why.
+        # Contract selection owns the measured hold. The router must not erase
+        # a calibrated/pooled hold merely because narrower duration evidence
+        # was unavailable. Never recover from legacy buckets or hold labels.
+        _hold_bases = ("DURATION_EVIDENCE", "POOLED_EVIDENCE", "VOLATILITY_TIME_TO_LEVEL")
+        _owned_holds = []
+        for _row in patched.to_dict("records"):
+            _owned = None
+            for _value_field, _basis_field in (
+                ("planned_hold_sessions", "planned_hold_source"),
+                ("contract_runway_hold_sessions", "contract_runway_basis"),
+            ):
+                _basis = str(_row.get(_basis_field) or "")
+                _value = _pd_hp.to_numeric(_row.get(_value_field), errors="coerce")
+                if _basis.startswith(_hold_bases) and _pd_hp.notna(_value) and 0 <= _value < float('inf'):
+                    _owned = (round(float(_value)), _basis)
+                    break
+            _owned_holds.append(_owned)
         patched["planned_hold_sessions"] = _pd_hp.array([_pd_hp.NA] * len(patched), dtype="Int64")
         patched["planned_hold_source"] = "NO_EVIDENCE_HOLD"
         # Step 4b (ACK 3 Oct 2026, option B): a daily trade-side event's q80 time to its level is the runway
@@ -4248,6 +4313,10 @@ def patch_horizon_fields_into_csv(run_id: str, target_csv: Path, label: str) -> 
             _has_move = _ev_move.notna()
             patched.loc[_has_move, "anticipated_move_sessions"] = _ev_move[_has_move].round().astype("Int64")
             patched.loc[_has_move, "anticipated_move_source"] = "DURATION_EVIDENCE_Q50"
+        for _index, _owned in zip(patched.index, _owned_holds):
+            if _owned is not None:
+                patched.at[_index, "planned_hold_sessions"] = _owned[0]
+                patched.at[_index, "planned_hold_source"] = _owned[1]
         # Step 3 (ACK 4 Oct 2026, decision 1a): EV3 values at the nearest grid point at or below the evidence hold.
         from vanguard.ev3_stage0 import grid_hold_for
         _ev3 = [grid_hold_for(None if _pd_hp.isna(h) else h) for h in patched["planned_hold_sessions"]]
@@ -7593,6 +7662,7 @@ def evening_workflow(
                     _manifest,
                     cfg.RUNS_DIR,
                     sync_interpreter=False,
+                    publish_review=False,  # publish after shared run macro evidence is frozen
                 )
                 try:
                     from contracts.dynamic_session_contract import DynamicSessionFeatureFlags
@@ -7697,37 +7767,47 @@ def evening_workflow(
         return False
     if not _run_station_inspection(canonical_run_id, "book", _book_out, _eod_out):
         return False
+    # Publication below must use the accepted book, never an earlier in-memory
+    # population containing a row just quarantined by the integrity boundary.
+    from domain.station_inspection import station_quarantines as _read_run_quarantines
+    _run_quarantines = _read_run_quarantines(cfg.RUNS_DIR / canonical_run_id)
+    if _run_quarantines:
+        run_dropoff_audit_checkpoint(canonical_run_id, 'post_station_quarantine')
+    if (isinstance(locals().get('_lab_book'), dict) and _book_out.is_file()
+            and any(r['station'] == 'book' for r in _run_quarantines)):
+        _accepted_book = json.loads(_book_out.read_text(encoding='utf-8'))
+        _lab_book.update(rows=_accepted_book['rows'], candidate_count=_accepted_book['candidate_count'])
+        for _accepted_field in ('verdict_counts', 'reconciliation', 'station_quarantine',
+                                 'pre_quarantine_source_reconciliation'):
+            if _accepted_field in _accepted_book:
+                _lab_book[_accepted_field] = _accepted_book[_accepted_field]
 
-    # W3-ME2: freeze the advisory macro packet after the Lab book exists and
-    # before the authoritative manifest is refreshed. Worker 3 reads only this
-    # run-bound packet; it never reopens mutable Dropbox "latest" files.
+    # Retain shared frozen evidence for review/Deep Dive, but Worker 3 itself
+    # is decommissioned. No per-ticker contexts, prepared jobs or dispatch.
     try:
-        _worker3_rows = (
-            _lab_book.get("rows")
-            if isinstance(locals().get("_lab_book"), dict)
-            else None
-        )
-        _worker3_macro = materialize_worker3_market_environment(
-            canonical_run_id,
-            lab_rows=_worker3_rows,
-        )
-        logger.info(
-            "Worker 3 market environment: status=%s packet=%s bytes=%d contexts=%d invalid=%d authority=ADVISORY_ONLY",
-            _worker3_macro.get("status"),
-            _worker3_macro.get("packet_id"),
-            _worker3_macro.get("payload_bytes", 0),
-            (_worker3_macro.get("macro_ticker_context_diagnostics") or {}).get(
-                "macro_ticker_context_requested", 0
-            ),
-            (_worker3_macro.get("macro_ticker_context_diagnostics") or {}).get(
-                "macro_ticker_context_invalid", 0
-            ),
-        )
-    except Exception as _worker3_macro_error:
+        _lab_macro_evidence = materialize_lab_macro_evidence(canonical_run_id)
+        logger.info('Lab shared macro evidence frozen; Worker 3 decommissioned (no jobs)')
+    except Exception as _lab_macro_error:
         logger.warning(
-            "Worker 3 advisory handoff unavailable without changing pipeline authority: %s",
-            _worker3_macro_error,
+            "Lab macro evidence unavailable without changing pipeline authority: %s",
+            _lab_macro_error,
         )
+
+    # Publish the review only after the shared watched macro packet exists (or
+    # its failure is recorded). Publishing before it made every EOD view stale
+    # as soon as interpreter_macro_context.json appeared. No decisions rerun.
+    try:
+        if isinstance(locals().get('_lab_book'), dict):
+            from contracts.lab_review_sources import republish_saved_review
+            _review_publication = republish_saved_review(
+                canonical_run_id, cfg.RUNS_DIR, book=_lab_book,
+            )
+            _lab_book['review_projection'] = _review_publication
+            logger.info('EOD review published after macro handoff: revision=%s rows=%s',
+                        _review_publication['revision'], _review_publication['row_count'])
+    except Exception as _review_publication_error:
+        logger.warning('EOD review publication failed without changing decisions: %s',
+                       _review_publication_error)
 
     # AVS-FIX-001 W3.9: outcome maturation, as its own non-critical stage. It
     # was nested inside the decision-ledger APPEND block, so a failure appending
@@ -7878,7 +7958,8 @@ def premarket_workflow(
     run_condition: str = "POSTOPEN_CONTRACT_REFRESH",
 ) -> bool:
     """
-    Morning validation workflow — runs at 09:45 ET after market open.
+    Morning validation workflow — runs at any time during XNYS market hours
+    (preferred pricing start 09:35-09:45 ET; a start outside it is labelled).
 
     Reads morning_candidates_{run_id}.csv written by the previous evening's
     Phase 10 (EOD Candidate Engine) and scores each candidate against live
@@ -7887,9 +7968,22 @@ def premarket_workflow(
     DESIGN PRINCIPLE: Morning does NOT re-run the full pipeline.
     EOD = structural truth  |  Morning = live execution decision
     """
+    # Reject a start outside market hours before catalyst enrichment or other Morning stages.
+    from domain.morning_pricing_window import require_morning_pricing_start
+    _execution_mode = (
+        "PREOPEN_THESIS_CHECK"
+        if str(run_condition).upper() == "PREOPEN_THESIS_CHECK"
+        else "POSTOPEN_CONTRACT_REFRESH"
+    )
+    try:
+        require_morning_pricing_start(_execution_mode, datetime.now(timezone.utc))
+    except (RuntimeError, ValueError, OSError, KeyError) as timing_error:
+        logger.error("Morning start refused: %s", timing_error)
+        return False
+
     logger.info("\n" + "=" * 80)
     logger.info("🌅  MORNING VALIDATION — EXECUTION DECISION ENGINE")
-    logger.info("    Run at 09:45 ET — 15 minutes after open")
+    logger.info("    Any time in market hours; preferred start 09:35-09:45 ET; preopen remains thesis-only")
     logger.info("=" * 80 + "\n")
 
     # PATCH 7: Resolve run_id — CLI run_id wins; latest.json is the fallback.
@@ -7945,11 +8039,7 @@ def premarket_workflow(
         results = run_morning_gate(
             run_id=_run_id,
             spread_threshold=25.0,
-            execution_mode=(
-                "PREOPEN_THESIS_CHECK"
-                if str(run_condition).upper() == "PREOPEN_THESIS_CHECK"
-                else "POSTOPEN_CONTRACT_REFRESH"
-            ),
+            execution_mode=_execution_mode,
         )
         go_count    = sum(1 for r in results if r.get("verdict") == "GO")
         flag_count  = sum(1 for r in results if r.get("verdict") == "FLAG")
