@@ -17,9 +17,9 @@ Architecture:
     Output : ForwardVarianceResult dataclass with:
                forward_realised_vol    — annualised, decimal (e.g. 0.28 = 28%)
                vol_forecast_confidence — 0-100
-               expected_move_1_5d      — % move expected over 1-5 days
-               expected_move_6_10d     — % move expected over 6-10 days
-               expected_move_11_20d    — % move expected over 11-20 days
+               expected_move_1_5d      — cumulative % move to trading session 5 (legacy name)
+               expected_move_6_10d     — cumulative % move to trading session 10 (legacy name)
+               expected_move_11_20d    — cumulative % move to trading session 20 (legacy name)
                iv_tailwind_score       — signed: implied_vol - forecast (None when IV or forecast missing)
                jump_risk_flag          — True if recent vol cluster suggests jump; None when not assessed
                jump_risk_state         — 'ASSESSED' | 'NOT_ASSESSED_NO_FORECAST' | 'NOT_ASSESSED_SHORT_HISTORY'
@@ -166,9 +166,9 @@ class ForwardVarianceResult:
     ticker:                 str
     forward_realised_vol:   Optional[float] # annualised decimal; None when no forecast
     vol_forecast_confidence: Optional[float] # 0-100; None when no forecast
-    expected_move_1_5d:     Optional[float] # % (e.g. 3.2 = 3.2%)
-    expected_move_6_10d:    Optional[float]
-    expected_move_11_20d:   Optional[float]
+    expected_move_1_5d:     Optional[float] # cumulative % to session 5 (3.2 = 3.2%)
+    expected_move_6_10d:    Optional[float] # cumulative % to session 10, not a band increment
+    expected_move_11_20d:   Optional[float] # cumulative % to session 20, not a band increment
     iv_tailwind_score:      Optional[float] # implied_vol - forward_realised_vol (signed); None when missing
     jump_risk_flag:         Optional[bool]  # None when jump risk could not be assessed (never False-means-safe)
     method:                 str             # 'HAR_RV' | 'GARCH' | 'EWMA_FALLBACK' | 'ATR_PROXY' | 'NO_FORECAST'
@@ -273,6 +273,8 @@ class ForwardVarianceResult:
             **budget_v2,
             'l3_expected_move_legacy_deprecated': True,
             'l3_expected_move_legacy_unit': 'PERCENT',
+            'l3_expected_move_legacy_convention': 'CUMULATIVE_1SIGMA',
+            'l3_expected_move_legacy_horizon_basis': 'TRADING_SESSIONS',
         }
 
 
@@ -289,20 +291,15 @@ def _annualise(daily_vol: float) -> float:
     return float(daily_vol * math.sqrt(TRADING_DAYS_YEAR))
 
 
-def _expected_move(annualised_vol: float, days: float) -> float:
-    """1-sigma expected move % over N calendar days.
+def _expected_move(annualised_vol: float, sessions: int) -> float:
+    """Cumulative 1-sigma move %, using the canonical trading-session budget.
 
-    The engine intentionally converts calendar days to a trading-day fraction:
-        trading_days = days * 5 / 7
-
-    Formula:
-        annualised_vol * sqrt(trading_days / 252) * 100
-
-    A 5-calendar-day move is therefore about sqrt(5/7) of the naive
-    5-trading-day formula. This is expected output behavior, not drift.
+    D1: checkpoints are from now to session N, never differences of standard
+    deviations. This scales the existing annual forecast; it is not a new fit
+    or a calibrated probability of hitting a target.
     """
-    trading_frac = days * (5 / 7)
-    return float(annualised_vol * math.sqrt(trading_frac / TRADING_DAYS_YEAR) * 100)
+    from domain.volatility_budget import calculate_volatility_budget
+    return float(calculate_volatility_budget(annualised_vol, sessions).expected_move_fraction * 100)
 
 
 def _jump_risk(returns: np.ndarray) -> tuple:
@@ -688,8 +685,8 @@ def compute_forward_variance(
 
     # ── Expected moves ─────────────────────────────────────────────────────────
     em_1_5   = _expected_move(ann_vol, 5)
-    em_6_10  = _expected_move(ann_vol, 10) - _expected_move(ann_vol, 5)
-    em_11_20 = _expected_move(ann_vol, 20) - _expected_move(ann_vol, 10)
+    em_6_10  = _expected_move(ann_vol, 10)
+    em_11_20 = _expected_move(ann_vol, 20)
 
     # ── IV tailwind score ──────────────────────────────────────────────────────
     # Positive = market IV > forecast realised vol = options EXPENSIVE (headwind)

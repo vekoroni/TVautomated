@@ -1,0 +1,1689 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "source_files_unchanged": true,
+  "scope": "D1 calculation integrity, not predictive accuracy or profitability validation",
+  "saved_forecast_rows": 2800,
+  "finite_forecasts_tested": 2799,
+  "unassessed_missing_forecasts": 1,
+  "old_non_cumulative_rows": 2799,
+  "corrected_non_cumulative_rows": 0,
+  "r17_arithmetic_pass_rate": 1.0,
+  "r17_existing_verifier_on_replay_rows": {
+    "rule": "R17_GARCH_MONOTONIC",
+    "severity": "P1",
+    "status": "PASS",
+    "message": "0/2799 tradeable rows have non-cumulative GARCH windows (0%).",
+    "known_defect": null,
+    "evidence": {}
+  },
+  "point_in_time_replays": 81,
+  "methods": {
+    "HAR_RV": 27,
+    "EWMA_FALLBACK": 27,
+    "ATR_PROXY": 27
+  },
+  "all_non_move_result_fields_unchanged": true,
+  "source_before": {
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\historical_prices.sqlite": {
+      "size": 1774452736,
+      "mtime_ns": 1794531903761636100,
+      "header_sha256": "c872d3ce58f30372cbc7faccf05df325f2f9a04fbf416a80e0a157818fd1102f"
+    },
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\historical_prices.sqlite-wal": {
+      "size": 0,
+      "mtime_ns": 1794552907381316900,
+      "header_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261111_231951\\qomega\\garch_forecasts_20261111_231951.csv": {
+      "size": 868375,
+      "mtime_ns": 1794477713547160000,
+      "header_sha256": "a0c64ef52338ce77d0094371fb314f815a92920759d50539c1756ecf06e90640"
+    }
+  },
+  "source_after": {
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\historical_prices.sqlite": {
+      "size": 1774452736,
+      "mtime_ns": 1794531903761636100,
+      "header_sha256": "c872d3ce58f30372cbc7faccf05df325f2f9a04fbf416a80e0a157818fd1102f"
+    },
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\canonical\\historical_prices.sqlite-wal": {
+      "size": 0,
+      "mtime_ns": 1794552907381316900,
+      "header_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261111_231951\\qomega\\garch_forecasts_20261111_231951.csv": {
+      "size": 868375,
+      "mtime_ns": 1794477713547160000,
+      "header_sha256": "a0c64ef52338ce77d0094371fb314f815a92920759d50539c1756ecf06e90640"
+    }
+  },
+  "code_sha256": "0feab2760f3dd7c2eb48fd2cd22c95377aed905d0e7be5b4ea4e7c911769ffaf",
+  "replays": [
+    {
+      "ticker": "SPY",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.1259598076252511,
+      "before_percent": [
+        1.4995215193482276,
+        0.6211221503843452,
+        0.8783993689638825
+      ],
+      "after_percent": [
+        1.7742577889877738,
+        2.5091794283326108,
+        3.5485155779755475
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.09561082531797156,
+      "before_percent": [
+        1.138224110928233,
+        0.47146786376653216,
+        0.6667562471617008
+      ],
+      "after_percent": [
+        1.3467649302598106,
+        1.9046132297018799,
+        2.693529860519621
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.11771554965273373,
+      "before_percent": [
+        1.4013755911039731,
+        0.5804687758138785,
+        0.8209068152900947
+      ],
+      "after_percent": [
+        1.6581299606118975,
+        2.3449498784745115,
+        3.316259921223795
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.19867640023962774,
+      "before_percent": [
+        2.365195240947949,
+        0.9796959464609412,
+        1.385499294487008
+      ],
+      "after_percent": [
+        2.7985367496111175,
+        3.957728626099561,
+        5.597073499222235
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.20884297572674645,
+      "before_percent": [
+        2.4862259015088863,
+        1.0298284875282553,
+        1.456397413980631
+      ],
+      "after_percent": [
+        2.9417421584270675,
+        4.160251657452261,
+        5.883484316854135
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.1919800655081509,
+      "before_percent": [
+        2.2854769703351296,
+        0.9466755576041828,
+        1.3388014127309469
+      ],
+      "after_percent": [
+        2.704212819787884,
+        3.8243344452872163,
+        5.408425639575768
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.14384420385273813,
+      "before_percent": [
+        1.7124309982468826,
+        0.7093121441019565,
+        1.003118854144926
+      ],
+      "after_percent": [
+        2.0261756817362953,
+        2.8654451288620204,
+        4.0523513634725905
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.20855620910823286,
+      "before_percent": [
+        2.4828120131932483,
+        1.0284144086874911,
+        1.4543976045057572
+      ],
+      "after_percent": [
+        2.9377027912978866,
+        4.154539129674769,
+        5.875405582595773
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "SPY",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2087715361611803,
+      "before_percent": [
+        2.485375430490242,
+        1.029476210897927,
+        1.455899219592315
+      ],
+      "after_percent": [
+        2.9407358675471644,
+        4.1588285472422095,
+        5.881471735094329
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.20859730360964523,
+      "before_percent": [
+        2.4833012334481577,
+        1.0286170503520626,
+        1.454684183096095
+      ],
+      "after_percent": [
+        2.938281644509797,
+        4.155357751737676,
+        5.876563289019594
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.16853674661369009,
+      "before_percent": [
+        2.0063898406391676,
+        0.8310738834003364,
+        1.1753159572388312
+      ],
+      "after_percent": [
+        2.373992474644368,
+        3.3573323546137313,
+        4.747984949288736
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.19695865995114628,
+      "before_percent": [
+        2.3447459517993607,
+        0.9712255735547068,
+        1.373520378244654
+      ],
+      "after_percent": [
+        2.7743408243889727,
+        3.923510420496238,
+        5.548681648777945
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.304718769014569,
+      "before_percent": [
+        3.627604393030584,
+        1.5026029385174873,
+        2.1250014545130966
+      ],
+      "after_percent": [
+        4.292239402138318,
+        6.070143175456194,
+        8.584478804276635
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.33338645117061383,
+      "before_percent": [
+        3.9688863234596887,
+        1.643966542694093,
+        2.3249197807655957
+      ],
+      "after_percent": [
+        4.696049627928085,
+        6.641217073393024,
+        9.39209925585617
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3215846860403871,
+      "before_percent": [
+        3.828389119528418,
+        1.5857706953502628,
+        2.242618424178155
+      ],
+      "after_percent": [
+        4.529811094376122,
+        6.406120284654825,
+        9.059622188752243
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2563279765259652,
+      "before_percent": [
+        3.051523530071014,
+        1.2639824320560367,
+        1.7875410980149775
+      ],
+      "after_percent": [
+        3.6106113327811795,
+        5.10617551527714,
+        7.221222665562359
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3313903514676618,
+      "before_percent": [
+        3.9451232317578793,
+        1.6341235478272882,
+        2.310999683930591
+      ],
+      "after_percent": [
+        4.667932758647882,
+        6.601453815525489,
+        9.335865517295764
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "QQQ",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3352064243320271,
+      "before_percent": [
+        3.9905526706193704,
+        1.6529410375347173,
+        2.337611633084653
+      ],
+      "after_percent": [
+        4.721685595609086,
+        6.677471806572057,
+        9.443371191218173
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.23323051260196676,
+      "before_percent": [
+        2.776553721451985,
+        1.150086208082901,
+        1.626467513369084
+      ],
+      "after_percent": [
+        3.2852626676344183,
+        4.646063020526609,
+        6.570525335268837
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.17111701256359133,
+      "before_percent": [
+        2.0371072924237064,
+        0.8437974685310334,
+        1.193309823892673
+      ],
+      "after_percent": [
+        2.410337853742537,
+        3.408732482663954,
+        4.820675707485074
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.22472104298787957,
+      "before_percent": [
+        2.6752505117604715,
+        1.1081250447167497,
+        1.5671254670437218
+      ],
+      "after_percent": [
+        3.165399093470605,
+        4.47655032830963,
+        6.33079818694121
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2657262765219584,
+      "before_percent": [
+        3.163408053832838,
+        1.3103265192178393,
+        1.853081534614999
+      ],
+      "after_percent": [
+        3.7429948865949907,
+        5.293394132515782,
+        7.485989773189981
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2566171609312327,
+      "before_percent": [
+        3.0549662015622943,
+        1.2654084332785205,
+        1.7895577682837738
+      ],
+      "after_percent": [
+        3.614684756623063,
+        5.111936206519626,
+        7.229369513246126
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.33446163098626547,
+      "before_percent": [
+        3.9816860831698273,
+        1.6492683767611496,
+        2.3324177064086777
+      ],
+      "after_percent": [
+        4.711194507858021,
+        6.662635167990453,
+        9.422389015716043
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2429555580708645,
+      "before_percent": [
+        2.8923280722721967,
+        1.198041514367573,
+        1.6942865579046238
+      ],
+      "after_percent": [
+        3.422248726892205,
+        4.839790563385015,
+        6.84449745378441
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.25858719307087963,
+      "before_percent": [
+        3.0784189651295195,
+        1.275122886023195,
+        1.8032960791063246
+      ],
+      "after_percent": [
+        3.642434440702638,
+        5.15118018609653,
+        7.284868881405276
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "AAPL",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.34027768311965795,
+      "before_percent": [
+        4.050924799043547,
+        1.6779479919173417,
+        2.3729768071262054
+      ],
+      "after_percent": [
+        4.79311886129568,
+        6.778493699710637,
+        9.58623772259136
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3756951341632872,
+      "before_percent": [
+        4.472561120991514,
+        1.8525954748572993,
+        2.619965646134215
+      ],
+      "after_percent": [
+        5.292005685315051,
+        7.48402621232807,
+        10.584011370630101
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3169526967579225,
+      "before_percent": [
+        3.7732463899752675,
+        1.5629298289030764,
+        2.210316561072191
+      ],
+      "after_percent": [
+        4.464565336877257,
+        6.313848849512624,
+        8.929130673754514
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3389228224765806,
+      "before_percent": [
+        4.0347955056735785,
+        1.6712670198520074,
+        2.363528485821571
+      ],
+      "after_percent": [
+        4.77403442401133,
+        6.75150422967285,
+        9.54806884802266
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.48202540259641063,
+      "before_percent": [
+        5.73839764995727,
+        2.3769221329021972,
+        3.361475517055073
+      ],
+      "after_percent": [
+        6.789763664859709,
+        9.602175860152652,
+        13.579527329719419
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4959047028475469,
+      "before_percent": [
+        5.903627414851749,
+        2.4453625424292076,
+        3.458264872422541
+      ],
+      "after_percent": [
+        6.985266159191415,
+        9.87865813911432,
+        13.97053231838283
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5456588690708863,
+      "before_percent": [
+        6.495938917510552,
+        2.6907059999800733,
+        3.8052329175304784
+      ],
+      "after_percent": [
+        7.686098580426835,
+        10.869784854176224,
+        15.37219716085367
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4526165654149701,
+      "before_percent": [
+        5.388292445416311,
+        2.231903808923925,
+        3.1563886364923857
+      ],
+      "after_percent": [
+        6.375513600351165,
+        9.016337800710739,
+        12.75102720070233
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5430546737613677,
+      "before_percent": [
+        6.464936592397236,
+        2.677864416453036,
+        3.7870721759442
+      ],
+      "after_percent": [
+        7.649416134660441,
+        10.817908041872373,
+        15.298832269320881
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "NVDA",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.8145965646823089,
+      "before_percent": [
+        9.697578150979869,
+        4.0168683923088615,
+        5.680709758671007
+      ],
+      "after_percent": [
+        11.47432920880811,
+        16.227151986230176,
+        22.94865841761622
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.254943710207559,
+      "before_percent": [
+        3.0350441691376076,
+        1.2571564572581786,
+        1.777887711879429
+      ],
+      "after_percent": [
+        3.591112689969874,
+        5.0786002701655235,
+        7.182225379939748
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.20702883652046608,
+      "before_percent": [
+        2.464629006196025,
+        1.020882760584516,
+        1.4437462456115089
+      ],
+      "after_percent": [
+        2.9161883672794398,
+        4.124113139441237,
+        5.8323767345588795
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.26598231563473806,
+      "before_percent": [
+        3.1664561385087864,
+        1.3115890772298795,
+        1.8548670612789069
+      ],
+      "after_percent": [
+        3.7466014290207017,
+        5.298494553727496,
+        7.493202858041403
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.30180155045679896,
+      "before_percent": [
+        3.5928756006761784,
+        1.4882178017194532,
+        2.1046577989567252
+      ],
+      "after_percent": [
+        4.2511477408704454,
+        6.012030790790727,
+        8.502295481740891
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3625946269814847,
+      "before_percent": [
+        4.316602702160532,
+        1.7879953826112427,
+        2.5286073195492893
+      ],
+      "after_percent": [
+        5.107473195585019,
+        7.223057862653386,
+        10.214946391170038
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5095102927045638,
+      "before_percent": [
+        6.065598722673379,
+        2.5124532548442344,
+        3.553145467829145
+      ],
+      "after_percent": [
+        7.176913195120566,
+        10.149687976513928,
+        14.353826390241132
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3001159806500989,
+      "before_percent": [
+        3.572809293453559,
+        1.479906065121099,
+        2.0929032283324602
+      ],
+      "after_percent": [
+        4.227404965974204,
+        5.9784534365240924,
+        8.454809931948407
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3592412041215785,
+      "before_percent": [
+        4.276681001447363,
+        1.771459272742848,
+        2.505221728704515
+      ],
+      "after_percent": [
+        5.060237202285792,
+        7.156256080297455,
+        10.120474404571585
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "PH",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4418583733171736,
+      "before_percent": [
+        5.260218729966352,
+        2.1788539390010406,
+        3.0813647909653117
+      ],
+      "after_percent": [
+        6.2239747366071745,
+        8.802029484377378,
+        12.447949473214349
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4491544603683639,
+      "before_percent": [
+        5.347076909147189,
+        2.2148317748207758,
+        3.1322451343264133
+      ],
+      "after_percent": [
+        6.326746720176893,
+        8.947371017373658,
+        12.653493440353786
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.36694261808226125,
+      "before_percent": [
+        4.3683645009793,
+        1.8094358216948043,
+        2.558928679284496
+      ],
+      "after_percent": [
+        5.168718581890737,
+        7.309671918599711,
+        10.337437163781473
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4030534940624262,
+      "before_percent": [
+        4.7982558816955505,
+        1.9875026619347693,
+        2.810753219760781
+      ],
+      "after_percent": [
+        5.677372923167573,
+        8.029017786593364,
+        11.354745846335145
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.49034200950568013,
+      "before_percent": [
+        5.83740487506762,
+        2.4179322683158313,
+        3.419472606751789
+      ],
+      "after_percent": [
+        6.906910593430937,
+        9.767846635328436,
+        13.813821186861874
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.42393252947191745,
+      "before_percent": [
+        5.046815827046636,
+        2.0904595623619056,
+        2.9563562646847306
+      ],
+      "after_percent": [
+        5.971473016683555,
+        8.444938127538862,
+        11.94294603336711
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4088946516572292,
+      "before_percent": [
+        4.867793472109872,
+        2.016306074979128,
+        2.851487397130744
+      ],
+      "after_percent": [
+        5.7596509097306985,
+        8.14537643107569,
+        11.519301819461397
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4375651215346822,
+      "before_percent": [
+        5.209108589698598,
+        2.1576834257273445,
+        3.0514251639712535
+      ],
+      "after_percent": [
+        6.163500403097285,
+        8.71650586175222,
+        12.32700080619457
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.40601190035526313,
+      "before_percent": [
+        4.8334750042293235,
+        2.0020909001431386,
+        2.831384104086185
+      ],
+      "after_percent": [
+        5.719044750927686,
+        8.087950650580593,
+        11.438089501855371
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "BILI",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4691194248464394,
+      "before_percent": [
+        5.584755057695707,
+        2.313281287429299,
+        3.2714737702664083
+      ],
+      "after_percent": [
+        6.607971298079381,
+        9.345082629516007,
+        13.215942596158762
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.0620159345789988,
+      "before_percent": [
+        12.643046840226177,
+        5.236921470939986,
+        7.40612536928619
+      ],
+      "after_percent": [
+        14.959454761648711,
+        21.155863809630386,
+        29.918909523297422
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.7452657032443886,
+      "before_percent": [
+        8.872210752909389,
+        3.6749900220874743,
+        5.197220730821915
+      ],
+      "after_percent": [
+        10.49774133333725,
+        14.846048167890158,
+        20.9954826666745
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.298373381714717,
+      "before_percent": [
+        15.456825972794249,
+        6.402426949172085,
+        9.054399023622164
+      ],
+      "after_percent": [
+        18.288763129707423,
+        25.86421685706125,
+        36.577526259414846
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.106287836239579,
+      "before_percent": [
+        13.170093288566417,
+        5.455231257843085,
+        7.7148620307233315
+      ],
+      "after_percent": [
+        15.58306452920474,
+        22.037781200536454,
+        31.16612905840948
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.036337815470371,
+      "before_percent": [
+        12.337354946075846,
+        5.1102997424754,
+        7.227055203600447
+      ],
+      "after_percent": [
+        14.597755234680672,
+        20.64434343308825,
+        29.195510469361345
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.1748019037077457,
+      "before_percent": [
+        13.985736948901737,
+        5.793081924017605,
+        8.192655024884132
+      ],
+      "after_percent": [
+        16.548147123029374,
+        23.40261409353345,
+        33.09629424605875
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.2802307093128582,
+      "before_percent": [
+        15.240841777534028,
+        6.312963366237062,
+        8.927878411296966
+      ],
+      "after_percent": [
+        18.03320718349781,
+        25.50280617198653,
+        36.06641436699562
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.3612178814897837,
+      "before_percent": [
+        16.20497477964028,
+        6.712320331640964,
+        9.492654447999318
+      ],
+      "after_percent": [
+        19.173984735893804,
+        27.116109258235728,
+        38.34796947178761
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "LWLG",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 1.9488517192024797,
+      "before_percent": [
+        23.200615704791428,
+        9.61000968033083,
+        13.590606024460598
+      ],
+      "after_percent": [
+        27.451338705315997,
+        38.82205550235537,
+        54.902677410631995
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5621568692763683,
+      "before_percent": [
+        6.692343681861527,
+        2.7720595170889384,
+        3.920284164772589
+      ],
+      "after_percent": [
+        7.918487831563086,
+        11.198432884882836,
+        15.836975663126172
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5667571385828105,
+      "before_percent": [
+        6.747108792652506,
+        2.7947439687234272,
+        3.952364823929079
+      ],
+      "after_percent": [
+        7.98328678451703,
+        11.29007244297788,
+        15.96657356903406
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.49897839378182274,
+      "before_percent": [
+        5.940218973593129,
+        2.4605192623282592,
+        3.4796997112648693
+      ],
+      "after_percent": [
+        7.028561875371811,
+        9.93988752812929,
+        14.057123750743623
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5480749346238647,
+      "before_percent": [
+        6.524701602665056,
+        2.7026198942613355,
+        3.8220817084037204
+      ],
+      "after_percent": [
+        7.72013104845688,
+        10.917914032025342,
+        15.44026209691376
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.546161901017007,
+      "before_percent": [
+        6.501927393059607,
+        2.693186507770432,
+        3.8087408852891755
+      ],
+      "after_percent": [
+        7.693184240252306,
+        10.879805490399768,
+        15.386368480504611
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5956220885261284,
+      "before_percent": [
+        7.090739149120577,
+        2.9370803228156026,
+        4.153658826304975
+      ],
+      "after_percent": [
+        8.389875705469043,
+        11.86507600929886,
+        16.779751410938086
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.5492333080693286,
+      "before_percent": [
+        6.538491762730104,
+        2.708331965587572,
+        3.8301597971425316
+      ],
+      "after_percent": [
+        7.736447785890185,
+        10.940989383397202,
+        15.47289557178037
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.4742637291795066,
+      "before_percent": [
+        5.645996775946507,
+        2.3386484377118117,
+        3.3073483382346955
+      ],
+      "after_percent": [
+        6.6804334763245485,
+        9.447559624749418,
+        13.360866952649097
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "CBRL",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.6142534562281321,
+      "before_percent": [
+        7.312541145573001,
+        3.0289537179076254,
+        4.283587427665376
+      ],
+      "after_percent": [
+        8.652315366881707,
+        12.236221737773253,
+        17.304630733763414
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.18482788622126453,
+      "before_percent": [
+        2.2003319788245777,
+        0.9114073473523701,
+        1.2889246314722076
+      ],
+      "after_percent": [
+        2.603467907206331,
+        3.681859623574292,
+        5.206935814412662
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.17381557807555414,
+      "before_percent": [
+        2.069233072328026,
+        0.8571044022692154,
+        1.2121286700588105
+      ],
+      "after_percent": [
+        2.448349589144187,
+        3.462489194398305,
+        4.896699178288374
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-10-20",
+      "last_bar": "2026-10-20",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.22468265489231426,
+      "before_percent": [
+        2.6747935106227887,
+        1.1079357486475025,
+        1.5668577619752861
+      ],
+      "after_percent": [
+        3.1648583624323052,
+        4.4757856191416705,
+        6.3297167248646105
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.23375146840445235,
+      "before_percent": [
+        2.782755576243481,
+        1.1526551004494068,
+        1.630100475794074
+      ],
+      "after_percent": [
+        3.2926008011843555,
+        4.656440708515434,
+        6.585201602368711
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2835032462064345,
+      "before_percent": [
+        3.375038645314697,
+        1.397986780422665,
+        1.977051864892032
+      ],
+      "after_percent": [
+        3.993399579345238,
+        5.647519845085049,
+        7.986799158690476
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-11-06",
+      "last_bar": "2026-11-06",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.3052903972340412,
+      "before_percent": [
+        3.6344094908814433,
+        1.505421702340589,
+        2.1289877885408544
+      ],
+      "after_percent": [
+        4.300291302501814,
+        6.081530282153128,
+        8.600582605003629
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 261,
+      "method": "HAR_RV",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.22331889434915597,
+      "before_percent": [
+        2.6585582660613807,
+        1.101210890161723,
+        1.5573473758996577
+      ],
+      "after_percent": [
+        3.1456485620076204,
+        4.448618858850601,
+        6.291297124015241
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 41,
+      "method": "EWMA_FALLBACK",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.25708406092208863,
+      "before_percent": [
+        3.0605245347867696,
+        1.2677107702842871,
+        1.7928137645024824
+      ],
+      "after_percent": [
+        3.6212614651864725,
+        5.121237076965776,
+        7.242522930372945
+      ],
+      "other_result_fields_unchanged": true
+    },
+    {
+      "ticker": "VICI",
+      "asof": "2026-11-12",
+      "last_bar": "2026-11-12",
+      "bars": 16,
+      "method": "ATR_PROXY",
+      "forecast_state": "FORECAST_OK",
+      "annual_vol": 0.2841354022048046,
+      "before_percent": [
+        3.3825643119619593,
+        1.4011040136138608,
+        1.9814602983480984
+      ],
+      "after_percent": [
+        4.002304068206482,
+        5.66011269399862,
+        8.004608136412964
+      ],
+      "other_result_fields_unchanged": true
+    }
+  ],
+  "limitations": [
+    "No live files republished; historical run left unchanged",
+    "Scaled existing annual forecast, not separately fitted horizon term structure",
+    "No forecast calibration, target-hit probability or option profitability claim"
+  ]
+}
