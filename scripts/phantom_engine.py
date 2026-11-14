@@ -5,7 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from datetime import date
+from datetime import date, datetime
+from time import perf_counter
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
@@ -212,11 +213,17 @@ def apply_payload(row: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any
 def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, repo_root: Path) -> Dict[str, Any]:
     db = PhantomDatabase(db_path=db_path, repo_root=repo_root)
     db.initialise()
-    df = pd.read_csv(input_csv, low_memory=False)
+    df = pd.read_csv(input_csv, low_memory=False, keep_default_na=False, na_values=[''])
     records = df.to_dict(orient="records")
 
     unique_tickers = list({str(r.get("ticker") or "").upper() for r in records if r.get("ticker")})
-    db.preload_tickers(unique_tickers)
+    started = perf_counter()
+    index_created = db.ensure_scoring_index()
+    index_seconds = perf_counter() - started
+    preload_started = perf_counter()
+    evidence_session = datetime.strptime(run_id[:8], '%Y%m%d').date().isoformat()
+    db.preload_tickers(unique_tickers, as_of=evidence_session)
+    preload_seconds = perf_counter() - preload_started
 
     rows_out: List[Dict[str, Any]] = []
     promoted = 0
@@ -248,6 +255,12 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
         "score_max": max(scores) if scores else 0,
         "score_mean": sum(scores) / len(scores) if scores else 0,
         "output_csv": str(output_csv),
+        "evidence_session": evidence_session,
+        "preload_seconds": round(preload_seconds, 3),
+        "elapsed_seconds": round(perf_counter() - started, 3),
+        "provider_calls": 0,
+        "scoring_index_created": index_created,
+        "scoring_index_seconds": round(index_seconds, 3),
     }
     db.write_run_audit(run_id, str(input_csv), str(output_csv), len(out_df), promoted, hard_vetoes, summary)
     summary_path = output_csv.parent / f"phantom_summary_{run_id}.json"

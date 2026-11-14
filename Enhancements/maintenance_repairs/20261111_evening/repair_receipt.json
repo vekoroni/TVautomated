@@ -1,0 +1,530 @@
+{
+  "run_id": "20261110_231648",
+  "provider_calls": 0,
+  "events": [
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:24:35.982885+00:00",
+      "phase": "index",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:25:04.814255+00:00",
+      "phase": "sources",
+      "provider_calls": 0
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:07.263139+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_intelligence_20261110_231648.csv",
+      "sha256": "cb4214f80183f4aba7908436e63f3e816d8728eeeee55c29177771a859aaa88e",
+      "bytes": 77263101
+    },
+    {
+      "stage": "MEASURED_HOLDS_RECOVERED",
+      "at_utc": "2026-11-11T10:25:27.665094+00:00",
+      "rows": 39,
+      "tickers": [
+        "HAIN",
+        "LAR",
+        "RC",
+        "CLX",
+        "IRWD",
+        "TMO",
+        "SLG",
+        "LYTS",
+        "TWI",
+        "MSBI",
+        "CTRE",
+        "SFNC",
+        "IIIN",
+        "KE",
+        "SFM",
+        "MVST",
+        "IEX",
+        "BKKT",
+        "FRST",
+        "DKS",
+        "MLI",
+        "NEOG",
+        "NAGE",
+        "SSYS",
+        "ALHC",
+        "SPXS",
+        "RGP",
+        "AKBA",
+        "LMNR",
+        "HAS",
+        "REFI",
+        "NNOX",
+        "FMC",
+        "ACNB",
+        "RLX",
+        "AES",
+        "VXX",
+        "STLA",
+        "VIXY"
+      ],
+      "remaining_selected_missing": 0
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:25:27.720183+00:00",
+      "phase": "sources",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:25:46.633143+00:00",
+      "phase": "ev3",
+      "provider_calls": 0
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.676570+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_authority_overlay.csv",
+      "sha256": "6301ac999929dc9a78dd41c60fdc63b78ea238246d4423e84813e17498d05a3f",
+      "bytes": 1254233
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.697620+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_calibration_readiness.json",
+      "sha256": "1d51be0b909d28d75c819b6de5cd1e6d14f543db773b250b92999e1931e4efd8",
+      "bytes": 979
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.730045+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_shadow_phase_status_20261110_231648.json",
+      "sha256": "c59549a3f657e61e72da4f75b92cf2fb0468341cc0163bff80d55194e6ddfe93",
+      "bytes": 8866
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.759638+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_stage1_contract_evaluations.parquet",
+      "sha256": "0fdcd62faf51add363bd45b8a16214f10e25c7f650737d947888549977009332",
+      "bytes": 179314
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.785805+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_stage1_shadow_audit.json",
+      "sha256": "1330bc87f980f1561c59473deca0b71c2bc298720b4aa7658f23a9034108c1a6",
+      "bytes": 4089
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.814998+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_stage1_shadow_ranked.csv",
+      "sha256": "596938970febf8aeb82f54b2fbc9fa1a367f27e2f88c364f68de044b8e91369e",
+      "bytes": 112362
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.843212+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_stage1_shadow_rejections.csv",
+      "sha256": "f8fd577f0b2686b6890544aa732529c49830388346556c1d87a35a005c9731df",
+      "bytes": 534770
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:25:46.861551+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\ev3_shadow\\ev3_stage1_shadow_results.parquet",
+      "sha256": "56921f9494c658ff8f304b776252d8d7a453091938764064d0d454f78e7ec8d9",
+      "bytes": 152851
+    },
+    {
+      "stage": "EV3_REFRESHED_ADVISORY_ONLY",
+      "at_utc": "2026-11-11T10:27:17.550105+00:00",
+      "health": "PRODUCTION_EVIDENCE_COMPLETE",
+      "defects": {},
+      "authority": false
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:27:17.551390+00:00",
+      "phase": "ev3",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:28:07.954902+00:00",
+      "phase": "empirical",
+      "provider_calls": 0
+    },
+    {
+      "stage": "HOLD_DEPENDENT_PAYOFFS_REFRESHED",
+      "at_utc": "2026-11-11T10:28:24.433416+00:00",
+      "rows": 39,
+      "path_quality": {
+        "PRICE_NOT_CALIBRATABLE": 4,
+        "OK": 35
+      },
+      "authority": "NO_AUTHORITY"
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:28:24.521175+00:00",
+      "phase": "empirical",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:33:24.241800+00:00",
+      "phase": "queue",
+      "provider_calls": 0
+    },
+    {
+      "stage": "IV_CACHE_PREIMAGE",
+      "at_utc": "2026-11-11T10:33:25.084379+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\Enhancements\\maintenance_repairs\\20261111_evening\\preimage\\iv_history_cache.db",
+      "sha256": "90884d2e6ac69bf003638749c8219df939fc7caecd57f9709848191c57c67467"
+    },
+    {
+      "stage": "QUEUE_DEFERRED_INDEX",
+      "at_utc": "2026-11-11T10:36:08.812865+00:00",
+      "reason": "Stopped only the local pre-write reader to serialize with index construction; IV preimage retained; no derivation or queue writes started"
+    },
+    {
+      "stage": "SCORING_INDEX_READY",
+      "at_utc": "2026-11-11T10:46:18.776810+00:00",
+      "created": true,
+      "seconds": 1302.7733849000651
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:46:18.779295+00:00",
+      "phase": "index",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:46:35.331696+00:00",
+      "phase": "queue",
+      "provider_calls": 0
+    },
+    {
+      "stage": "IV_RECONCILE_START",
+      "at_utc": "2026-11-11T10:47:33.135452+00:00",
+      "pairs": 2684,
+      "source": {
+        "rows": 751308,
+        "numeric_sha256": "9e8de2b0eab23284d3a1bc58eca46d06afedbb7f7cbd246c6c085b54789f34ff"
+      }
+    },
+    {
+      "stage": "IV_RECONCILED",
+      "at_utc": "2026-11-11T10:50:05.446071+00:00",
+      "pairs": 2684,
+      "states": {
+        "COMPLETE": 2682,
+        "IV_UNAVAILABLE": 2
+      },
+      "exclusions": [
+        {
+          "ticker": "BRK.B",
+          "session": "2026-11-10",
+          "status": "IV_UNAVAILABLE",
+          "reason": "NO_VALID_ATM_INPUT"
+        },
+        {
+          "ticker": "SMRT",
+          "session": "2026-11-10",
+          "status": "IV_UNAVAILABLE",
+          "reason": "NO_VALID_ATM_INPUT"
+        }
+      ],
+      "pending": 0,
+      "chain_numeric_unchanged": true,
+      "source": {
+        "rows": 751308,
+        "numeric_sha256": "9e8de2b0eab23284d3a1bc58eca46d06afedbb7f7cbd246c6c085b54789f34ff"
+      }
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:50:05.477285+00:00",
+      "phase": "queue",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:50:12.903125+00:00",
+      "phase": "score",
+      "provider_calls": 0
+    },
+    {
+      "stage": "PHANTOM_SCORING_COMPLETE",
+      "at_utc": "2026-11-11T10:53:05.516733+00:00",
+      "wall_seconds": 166.83896660013124,
+      "run_id": "20261110_231648",
+      "rows_processed": 2792,
+      "promoted_count": 3,
+      "hard_veto_respected_count": 1206,
+      "score_min": 21.23,
+      "score_max": 56.48,
+      "score_mean": 36.24166905444126,
+      "output_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_intelligence_phantom_20261110_231648.csv",
+      "evidence_session": "2026-11-10",
+      "preload_seconds": 139.94,
+      "elapsed_seconds": 159.685,
+      "provider_calls": 0,
+      "scoring_index_created": false,
+      "scoring_index_seconds": 0.011
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:53:05.558258+00:00",
+      "phase": "score",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:53:14.960270+00:00",
+      "phase": "downstream",
+      "provider_calls": 0
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:53:25.910826+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_intelligence_20261110_231648.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:53:26.190884+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_intelligence_latest.csv",
+      "sha256": "53cbb747b6b8781f799eaab724275becd842b62c0d95ef208f1f7f4b30aba39a",
+      "bytes": 70962636
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:53:33.344126+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_intelligence_latest.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:53:33.582602+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_candidates_ranked.csv",
+      "sha256": "5be2601610a95ee564085b2e34f1738d10deca8ae6040eb43367dbc596a283e1",
+      "bytes": 70962636
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:53:39.847861+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_candidates_ranked.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:53:39.937365+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_blocked_review.csv",
+      "sha256": "3b8bd8e7ee19e64566e6acf151aef43c8cdd0cff5e18261c1c738585fbdbd60e",
+      "bytes": 8274912
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:53:41.246113+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\options_blocked_review.csv",
+      "rows": 539
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:53:41.748088+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\vanguard_signals_enriched_20261110_231648.csv",
+      "sha256": "a53de10e3eeb4aac22f422048e889d4630099256e7042ed7be4d4ca5d1f7a2d5",
+      "bytes": 92648600
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:53:52.298112+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\vanguard_signals_enriched_20261110_231648.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:53:52.680269+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\superbrain\\superbrain_enriched_20261110_231648.csv",
+      "sha256": "60046e47dfa1ad805603ce34052954af5c96a084bb3355339b7638a5115e4e90",
+      "bytes": 78398340
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:54:02.057157+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\superbrain\\superbrain_enriched_20261110_231648.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:02.292600+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\superbrain\\eil_enriched_20261110_231648.csv",
+      "sha256": "e4fe9128a4d01a5b075df7b5a1423b650d17689c61e550bb2393031fe87a4dda",
+      "bytes": 84739886
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:54:10.814110+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\superbrain\\eil_enriched_20261110_231648.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:11.090206+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\execution\\execution_v3_5_20261110_231648.csv",
+      "sha256": "708a994611de7c86a93876dd928bf77be82b60aeba7b10236ffca92ce4a8d2e4",
+      "bytes": 86601210
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:54:20.291505+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\execution\\execution_v3_5_20261110_231648.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:20.467864+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\morning_validation\\morning_candidates_20261110_231648.csv",
+      "sha256": "c81f37aaa110b04ecc1adbce501dec498d98750d1f6f8707dcee689453f58c29",
+      "bytes": 53369019
+    },
+    {
+      "stage": "SAVED_HANDOFF_REFRESHED",
+      "at_utc": "2026-11-11T10:54:27.840973+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\morning_validation\\morning_candidates_20261110_231648.csv",
+      "rows": 2792
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:27.868765+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\options\\phantom_bypass_20261110_231648.json",
+      "sha256": "aff5d699a1af158497ec78fecc971d96eb2c8a8f204b91cccdef7df2d56e4360",
+      "bytes": 98
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T10:54:27.932881+00:00",
+      "phase": "downstream",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T10:54:38.176007+00:00",
+      "phase": "publish",
+      "provider_calls": 0
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:44.673237+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\intelligence_lab\\final_opportunity_book_20261110_231648.csv",
+      "sha256": "d561486e9820d168b35236a138f1be429bd9c1303e8516de912c57223e40d624",
+      "bytes": 330374554
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:47.528045+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\intelligence_lab\\final_opportunity_book_20261110_231648.json",
+      "sha256": "fdf119e5690f30fdd412029af6b32baf542818c7b99b8a468c405ccfdfdee317",
+      "bytes": 412868084
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:48.320363+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\intelligence_lab\\lab_triage_view_20261110_231648.csv",
+      "sha256": "1e25ec84077804eb3c1c88b9b9b2b2042c6f375620d6db82dc49c2e5acfc1b15",
+      "bytes": 182045159
+    },
+    {
+      "stage": "PREIMAGE",
+      "at_utc": "2026-11-11T10:54:48.396015+00:00",
+      "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\final_run_manifest.json",
+      "sha256": "952407dd6f7f6c814ffcc6ccbee1830b32c5d869d9c0c402c5277e96b17e9141",
+      "bytes": 6369
+    },
+    {
+      "stage": "LAB_REPUBLISHED",
+      "at_utc": "2026-11-11T11:00:25.331129+00:00",
+      "revision": "84300fcbbed747af9c7b8aab027be195",
+      "rows": 2792,
+      "health": 97,
+      "semantic": "PASS",
+      "missing_selected_handoff": {
+        "invalidation_spot": 0
+      },
+      "tradeable": false,
+      "audit_fail_count": 0,
+      "source_book_sha256": "fdf119e5690f30fdd412029af6b32baf542818c7b99b8a468c405ccfdfdee317"
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T11:00:28.689280+00:00",
+      "phase": "publish",
+      "provider_calls": 0
+    },
+    {
+      "stage": "START",
+      "at_utc": "2026-11-11T11:01:26.146475+00:00",
+      "phase": "verify",
+      "provider_calls": 0
+    },
+    {
+      "stage": "FINAL_REPORTS_REFRESHED",
+      "at_utc": "2026-11-11T11:02:10.198549+00:00",
+      "overall": "FAIL",
+      "sections": {
+        "data": "REVIEW",
+        "calculation": "FAIL",
+        "structure": "PASS",
+        "calibration": "REVIEW",
+        "trading_performance": "REVIEW"
+      },
+      "scorecard": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\output\\runs\\20261110_231648\\diagnostics\\scorecard_evening_20261110_231648.json",
+      "verifier_exit": 2
+    },
+    {
+      "stage": "PHASE_COMPLETE",
+      "at_utc": "2026-11-11T11:02:10.214633+00:00",
+      "phase": "verify",
+      "provider_calls": 0
+    },
+    {
+      "stage": "REPAIR_COMPLETE",
+      "at_utc": "2026-11-11T11:03:29.366839+00:00",
+      "provider_calls": 0,
+      "full_pipeline_rerun": false,
+      "offline_regression_tests_passed": 79,
+      "scoring_rows": 2792,
+      "scoring_wall_seconds": 166.839,
+      "pending_iv": 0,
+      "reconciled_pairs": 2684,
+      "iv_complete": 2682,
+      "iv_unavailable": [
+        "BRK.B/2026-11-10",
+        "SMRT/2026-11-10"
+      ],
+      "holding_periods_restored": 39,
+      "holding_periods_verified_via_lab_api": 39,
+      "semantic_defects": 0,
+      "technical_health": "PASS",
+      "semantic_health": "PASS",
+      "lab_rows": 2792,
+      "lab_revision": "84300fcbbed747af9c7b8aab027be195",
+      "source_book_sha256": "54a8037b1e5f72a8d23ecd3c9307f6fff3520169c970222e92f6e9c2677a32f5",
+      "correction_note": "LAB_REPUBLISHED event initially reported the retained original Interpreter snapshot hash; the API publication and this receipt bind to the repaired book hash above. The original immutable Interpreter snapshot was intentionally not overwritten.",
+      "original_interpreter_snapshot_sha256": "fdf119e5690f30fdd412029af6b32baf542818c7b99b8a468c405ccfdfdee317",
+      "source_chain_numeric_values_unchanged": true,
+      "source_chain_rows_verified": 751308,
+      "run_tradeable": false,
+      "remaining_verifier_flags": [
+        "R00_PIPELINE_SELF_REPORT: run_tradeable=False",
+        "R24_MANIFEST_RECONCILE: morning_validation=0 vs book=2792"
+      ],
+      "measured_score_model_and_execution_authority_unchanged": true,
+      "disk_free_gib": 64.03
+    }
+  ],
+  "last_stage": "REPAIR_COMPLETE"
+}

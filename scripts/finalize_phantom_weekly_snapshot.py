@@ -140,6 +140,30 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", surface_rows)
             conn.commit()
             _write_iv_cache(iv_cache_path, quote_date, atm, built_at, replace_tickers=derived)
+            # Acknowledge only after BOTH stores committed. A cache failure
+            # leaves durable work pending, so a later saved-data retry is safe.
+            has_queue = conn.execute("SELECT 1 FROM sqlite_master WHERE name='phantom_maintenance_pairs'").fetchone()
+            if has_queue:
+                valid_tickers = set(atm['ticker'])
+                expected_iv = dict(zip(atm['ticker'], atm['iv']))
+                verification = sqlite3.connect(Path(iv_cache_path).resolve().as_uri() + '?mode=ro', uri=True)
+                try:
+                    for t in derived:
+                        stored = verification.execute('SELECT atm_iv FROM iv_history WHERE ticker=? AND sample_date=?', (t, quote_date)).fetchone()
+                        expected = expected_iv.get(t)
+                        if (expected is None and stored is not None) or (expected is not None and (stored is None or stored[0] != float(expected))):
+                            raise RuntimeError(f'IV cache receipt mismatch for {t}/{quote_date}; work remains pending')
+                finally:
+                    verification.close()
+                with conn:
+                    conn.executemany('''UPDATE phantom_maintenance_pairs
+                        SET status=?,updated_at_utc=?,last_error=?,attempts=attempts+1
+                        WHERE ticker=? AND quote_date=? AND status='PENDING_IV' ''', [
+                        ('COMPLETE' if t in valid_tickers else 'IV_UNAVAILABLE', built_at,
+                         None if t in valid_tickers else 'NO_VALID_ATM_INPUT', t, quote_date)
+                        for t in derived])
+                report['queue_complete'] = len(valid_tickers)
+                report['queue_unavailable'] = len(set(derived) - valid_tickers)
         return report
     finally:
         conn.close()
