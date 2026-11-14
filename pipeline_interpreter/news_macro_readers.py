@@ -1,4 +1,4 @@
-﻿"""
+"""
 news_macro_readers.py
 Macro, enrichment delta, and news terminal reader functions â€” appended to engine.
 
@@ -140,8 +140,8 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
         no = data.get("narrative_overlay", {})
         if no.get("overlay_summary"):
             lines.append(f"session_narrative: {str(no['overlay_summary'])[:400]}")
-        if no.get("base_macro_alignment"):
-            alignment = no["base_macro_alignment"]
+        if no.get("base_macro_alignment") or no.get("relationship_to_base_macro"):
+            alignment = no.get("base_macro_alignment") or no.get("relationship_to_base_macro")
             if isinstance(alignment, list):
                 alignment = " | ".join(str(a)[:100] for a in alignment[:3])
             lines.append(f"base_macro_alignment: {str(alignment)[:300]}")
@@ -150,7 +150,7 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
         mb = data.get("macro_json_merge_block", {})
         merge_keys = [
             "asia_risk_tone", "global_us_equity_bias", "global_us_options_bias",
-            "usd_transmission", "rates_transmission", "commodity_transmission",
+            "usd_transmission", "rates_transmission", "commodity_transmission", "credit_transmission",
             "volatility_transmission", "sector_rotation_map", "index_bias_map",
         ]
         for k in merge_keys:
@@ -161,7 +161,13 @@ def read_enrichment_delta(path: str = None, ma_macro_dir: Path = None) -> str:
                 lines.append(f"{k}: {str(val)[:200]}")
 
         # Theme deltas â€” the active session themes
-        themes = data.get("theme_deltas", [])
+        for section in ("confirmation_dashboard", "manual_checks", "pathways"):
+            if no.get(section):
+                lines.append(f"{section}: {json.dumps(no[section], ensure_ascii=False)}")
+        themes = [t for t in data.get("theme_deltas", []) if not any(
+            word in str(t.get("directional_pressure", "")).upper() + str(t.get("lifecycle", "")).upper()
+            for word in ("HISTORICAL", "SUPERSEDED", "INVALIDATED"))]
+        lines.append(f"historical_theme_count: {len(data.get('theme_deltas', [])) - len(themes)}")
         if themes:
             lines.append(f"\nACTIVE SESSION THEMES ({len(themes)}):")
             for t in themes[:8]:

@@ -17,6 +17,8 @@ scenario is marked only where history measured a lean. Missing input is MISSING,
 from __future__ import annotations
 
 import math
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 from typing import Mapping, Sequence
 
 from macro_board.decision_points import LEVEL_LABELS
@@ -81,6 +83,77 @@ def _condition_labels(payload: Mapping) -> dict:
     return {m["key"]: m.get("label", m["key"]) for m in (payload.get("conditions") or {}).get("meta") or []}
 
 
+def current_market(payload: Mapping, focus: Sequence[str]) -> dict:
+    """Current quoted direction is distinct from completed-session acceptance.
+
+    No inferred acceptance, no close fallback for missing live evidence. Revalidate
+    quote clocks against the build rather than trusting a cached stale flag.
+    """
+    latest = payload.get("latest") or {}
+    session = (payload.get("review") or {}).get("session") or payload.get("as_of_session")
+    out = {"completed_session": session, "market_session": None,
+           "segment": latest.get("segment"), "acceptance": "UNCONFIRMED",
+           "status": "UNAVAILABLE", "direction": "UNKNOWN", "rows": {}, "missing": [],
+           "reversals": [], "as_of_utc": payload.get("built_at_utc"),
+           "stale_after_minutes": (payload.get("settings") or {}).get("latest_stale_after_minutes")}
+    if latest.get("status") == "NOT_APPLICABLE_AS_OF_BUILD":
+        out["status"] = "HISTORICAL"
+        return out
+    def instant(x):
+        try:
+            d = datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+            return d if d.tzinfo else None
+        except (ValueError, TypeError):
+            return None
+    now = instant(payload.get("built_at_utc"))
+    limit = _num(out["stale_after_minutes"])
+    market_day = now.astimezone(ZoneInfo("America/New_York")).date().isoformat() if now else None
+    out["market_session"] = market_day
+    out["segment_end_utc"] = None
+    if now:
+        from avshunter.shared.xnys_calendar import session_state, session_bounds
+        phase, active_session, _ = session_state(now)
+        if active_session and phase.value == latest.get("segment"):
+            opens, closes = session_bounds(active_session)
+            end = {"PREMARKET": opens, "REGULAR": closes,
+                   "AFTER_HOURS": datetime.combine(active_session, time(20), ZoneInfo("America/New_York"))}.get(phase.value)
+            out["segment_end_utc"] = end.isoformat() if end else None
+        else:
+            latest = {**latest, "segment": "INVALID_SESSION_CLOCK"}
+    for ticker in focus:
+        q = (latest.get("rows") or {}).get(ticker) or {}
+        when, price, close = instant(q.get("time_utc")), _num(q.get("price")), _num(q.get("close"))
+        age = (now - when).total_seconds() / 60 if now and when else None
+        valid = (price is not None and price > 0 and close is not None and close > 0
+                 and q.get("supersedes_close") is True and q.get("stale") is False
+                 and q.get("close_session") == session and age is not None
+                 and limit is not None and 0 <= age <= limit
+                 and when.astimezone(ZoneInfo("America/New_York")).date().isoformat() == market_day
+                 and q.get("segment") == latest.get("segment")
+                 and latest.get("segment") in ("PREMARKET", "REGULAR", "AFTER_HOURS"))
+        if not valid:
+            out["missing"].append(ticker)
+            continue
+        change = (price / close - 1) * 100
+        direction = "UP" if change > 0 else "DOWN" if change < 0 else "FLAT"
+        prev = (((payload.get("review") or {}).get("instruments") or {}).get(ticker) or {})
+        prior = CLOSED.get(prev.get("key"), "UNKNOWN")
+        reversal = prior in ("UP", "DOWN") and direction in ("UP", "DOWN") and prior != direction
+        prior_change = _num(prev.get("close_pct"))
+        cumulative = (1 + prior_change / 100) * (price / close) - 1 if prior_change is not None else None
+        erased = reversal and cumulative is not None and (cumulative <= 0 if prior == "UP" else cumulative >= 0)
+        out["rows"][ticker] = {"price": price, "close": close, "time_utc": q["time_utc"],
+                                "change_vs_close_pct": change, "direction": direction,
+                                "previous_direction": prior, "reversal": reversal,
+                                "erased_prior_move": bool(erased), "age_minutes": age}
+        if reversal:
+            out["reversals"].append(ticker)
+    dirs = {r["direction"] for r in out["rows"].values()}
+    out["status"] = "CURRENT" if len(out["rows"]) == len(focus) and focus else "PARTIAL" if out["rows"] else "UNAVAILABLE"
+    out["direction"] = next(iter(dirs)) if len(dirs) == 1 else "MIXED" if dirs else "UNKNOWN"
+    return out
+
+
 def market_call(payload: Mapping, tp: Mapping, instruments: Mapping, cfg: Mapping) -> dict:
     breadth = (((payload.get("opportunity") or {}).get("leadership") or {}).get("breadth") or {})
     state = breadth.get("state") or "UNKNOWN"
@@ -91,7 +164,7 @@ def market_call(payload: Mapping, tp: Mapping, instruments: Mapping, cfg: Mappin
     resp = (((spy.get("decision") or {}).get("response") or {}).get("20") or {})
     head = [labels.get(h, h) for h in resp.get("headwinds") or []]
     tail = [labels.get(h, h) for h in resp.get("tailwinds") or []]
-    sentences = [(payload.get("review") or {}).get("headline") or "No reaction reading."]
+    sentences = [f"Completed session {payload.get('as_of_session')}: " + ((payload.get("review") or {}).get("headline") or "No reaction reading.")]
     gap = _num(breadth.get("rsp_minus_spy_20d_pp"))
     if state == "CONCENTRATED":
         sentences.append(f"Participation is narrow: equal-weight RSP {'lagged' if (gap or 0) < 0 else 'trailed'} SPY by "
@@ -111,8 +184,22 @@ def market_call(payload: Mapping, tp: Mapping, instruments: Mapping, cfg: Mappin
         sentences.append(f"A normal day for SPY is ±{spy_s['daily_move_pct']:.2f}%"
                          + (f"; options price ±{implied:.2f}% for the next session ({spy_s['implied_source']})."
                             if implied is not None else "; no option pricing for the next session."))
-    return {"key": key, "tape": tp, "breadth": state, "headwinds": head, "tailwinds": tail,
-            "sentences": sentences, "approach": (cfg.get("approach") or {}).get(key), "conflict": None}
+    historical_key = key
+    current = current_market(payload, cfg.get("focus") or list((payload.get("review") or {}).get("instruments") or {}))
+    approach = (cfg.get("approach") or {}).get(key)
+    if current["status"] != "HISTORICAL":
+        key = "CURRENT_" + current["direction"] if current["status"] == "CURRENT" else "CURRENT_UNAVAILABLE"
+        readings = "; ".join(f"{t} {_pct(r['change_vs_close_pct'])} at {r['price']:.2f}" for t, r in current["rows"].items())
+        sentences.insert(1, f"Current {current['market_session']} {current['segment'] or 'market'}: {readings or 'no usable fresh quotes'}. Cash-session acceptance is unconfirmed.")
+        if current["reversals"]:
+            sentences.insert(2, "Reversal against the completed session: " + ", ".join(current["reversals"]) + ".")
+        approach = ("Current prices have " + current["direction"].lower() + " direction versus the prior close. "
+                    "Reassess the conditional up/down levels at current prices; require cash-session confirmation before treating the move as accepted.")
+        if current["status"] != "CURRENT":
+            approach = "Current guidance unavailable: missing, stale or invalid quotes for " + ", ".join(current["missing"]) + ". Refresh prices before using the plan."
+    return {"key": key, "historical_key": historical_key, "current_market": current,
+            "tape": tp, "breadth": state, "headwinds": head, "tailwinds": tail,
+            "sentences": sentences, "approach": approach, "conflict": None}
 
 
 # -- 2. scenarios -----------------------------------------------------------------------------------------
@@ -416,9 +503,10 @@ def jigsaw(payload: Mapping, tp: Mapping, instruments: Mapping, cfg: Mapping) ->
         pieces.append({"key": key, "piece": label, "group": group, "points": points, "says": says,
                        "freshness": freshness, "as_of": as_of, "tab": tab})
 
-    add("reaction", "Market reaction", "MEASURED", tp["direction"] if tp["direction"] in ("UP", "DOWN") else
-        ("NEUTRAL" if tp["direction"] == "MIXED" else "MISSING"),
-        f"Closed up: {', '.join(tp['up']) or 'none'}; down: {', '.join(tp['down']) or 'none'}; absorbed: {', '.join(tp['absorbed']) or 'none'}.")
+    prior = tape((payload.get("review") or {}).get("instruments") or {}, cfg["focus"], majority=int(cfg["tape_majority"]))
+    add("reaction", f"Completed-session reaction ({payload.get('as_of_session')})", "MEASURED", prior["direction"] if prior["direction"] in ("UP", "DOWN") else
+        ("NEUTRAL" if prior["direction"] == "MIXED" else "MISSING"),
+        f"Closed up: {', '.join(prior['up']) or 'none'}; down: {', '.join(prior['down']) or 'none'}; absorbed: {', '.join(prior['absorbed']) or 'none'}.")
     breadth = (((payload.get("opportunity") or {}).get("leadership") or {}).get("breadth") or {})
     b = breadth.get("state")
     add("breadth", "Breadth (RSP vs SPY)", "MEASURED",
@@ -743,19 +831,33 @@ def build(payload: Mapping, cfg: Mapping) -> dict:
     tp = tape(review.get("instruments") or {}, cfg["focus"], majority=int(cfg["tape_majority"]))
     room = ((payload.get("opportunity") or {}).get("room") or {})
     instruments = {}
+    current = current_market(payload, cfg["focus"])
     for t in cfg["focus"]:
+        if current["status"] != "HISTORICAL" and t not in current["rows"]:
+            continue
         etf = (payload.get("etfs") or {}).get(t)
         if not etf or t not in room:
             continue
-        s = scenarios(t, etf, room[t], ((review.get("scored") or {}).get(t) or {}), cfg, as_of=payload.get("as_of_session"))
+        current_room = room[t]
+        if t in current["rows"]:
+            current_room = {**room[t], "current": current["rows"][t]["price"],
+                            "current_basis": f"{current['segment']} {current['rows'][t]['time_utc']}"}
+        s = scenarios(t, etf, current_room, ((review.get("scored") or {}).get(t) or {}), cfg, as_of=payload.get("as_of_session"))
         if s:
             instruments[t] = s
     call = market_call(payload, tp, instruments, cfg)
+    historical_tape = tp
+    current = call["current_market"]
+    if current["status"] != "HISTORICAL":
+        tp = {**tp, "direction": current["direction"] if current["status"] == "CURRENT" else "UNKNOWN",
+              "basis": "CURRENT_QUOTES", "up": [t for t,r in current["rows"].items() if r["direction"] == "UP"],
+              "down": [t for t,r in current["rows"].items() if r["direction"] == "DOWN"]}
+        call["tape"] = tp
     jig = jigsaw(payload, tp, instruments, cfg)
     call["conflict"] = _conflict(jig, cfg)
     return {"as_of_session": payload.get("as_of_session"),
             "next_session": (payload.get("decision_points") or {}).get("next_session"),
-            "call": call, "instruments": instruments,
+            "call": call, "historical_tape": historical_tape, "instruments": instruments,
             "checklist": checklist(payload, instruments, tp, cfg),
             "opportunity": opportunity(payload, tp, cfg),
             "change_view": change_view(payload, instruments, tp, cfg),

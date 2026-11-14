@@ -1,0 +1,472 @@
+{
+  "status": "LATEST_PUBLIC_RELEASE_POLICY_VERIFIED",
+  "verified_at_utc": "2026-10-24T12:23:51.116042+00:00",
+  "macro_sha256": "91aa4218bc87d80314cd6f81f3e1915b0957d136a3cd7c2bf7d7ef477a7dee2a",
+  "board_sha256": "1baa4ed883fcf1045bfd110ae04241d5bc793dd703625fb8c5db80ebaf82e472",
+  "board_built_at_utc": "2026-10-24T12:22:16+00:00",
+  "market_session": "2026-10-23",
+  "policy": "Accept verified latest public releases; observation age and release cadence alone are not collection failures.",
+  "fred_series": 49,
+  "official_oecd_series": 1,
+  "active_fred_guidance_gaps": [],
+  "term_premium": {
+    "value_pct": 0.9857,
+    "observation_date": "2026-10-16",
+    "status": "LATEST_PUBLIC_RELEASE",
+    "guidance_effect": "Latest publicly available Kim-Wright term-premium estimate accepted as dated model context; it does not measure market moves after its observation date.",
+    "publisher_url": "https://www.federalreserve.gov/data/yield-curve-tables/feds200533_1.html"
+  },
+  "source_receipts": [
+    {
+      "series": "WALCL",
+      "latest_public_observation": "2026-10-21",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "51e67d7c3bf4aab2d81c9667d266b3bb53706854f7a124b901ea05fe6754b2d9",
+      "verified_at_utc": "2026-10-24T12:19:26.599799+00:00"
+    },
+    {
+      "series": "WRESBAL",
+      "latest_public_observation": "2026-10-21",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "648151ad1b850b61af29cafd63e367ef3e8516e56e49e723e9fc8935904f58cb",
+      "verified_at_utc": "2026-10-24T12:19:28.119155+00:00"
+    },
+    {
+      "series": "RRPONTSYD",
+      "latest_public_observation": "2026-10-23",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "48df202cda71773ae125dce8e9ffa6aa693230665437094ab541effd9bb5fe86",
+      "verified_at_utc": "2026-10-24T12:19:30.119580+00:00"
+    },
+    {
+      "series": "WTREGEN",
+      "latest_public_observation": "2026-10-21",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "96dcee3bbe0368671cf540a434d67d785bd8fc9dd7ba0d6a42a19a9002845d98",
+      "verified_at_utc": "2026-10-24T12:19:32.119022+00:00"
+    },
+    {
+      "series": "DGS1MO",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "0a75c687d9fc48a57ebe9709a2571b72dfb062e9bc254ed245877ff54bb340f3",
+      "verified_at_utc": "2026-10-24T12:19:34.097048+00:00"
+    },
+    {
+      "series": "DGS3MO",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "a53c92ed1e4a2e5f45d430a1ddac6005890ba3f70cbb3c20f776db8063891cc4",
+      "verified_at_utc": "2026-10-24T12:19:36.158147+00:00"
+    },
+    {
+      "series": "DGS6MO",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "62a01e9c3c21508105c030c596940a9f78b869fb6da37a86339cf1ad7371b1cd",
+      "verified_at_utc": "2026-10-24T12:19:38.161196+00:00"
+    },
+    {
+      "series": "DGS1",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "4ff52245a38ff97e66cf4fca24d1c2742a426799e0d36f8cc5ebde00363f5015",
+      "verified_at_utc": "2026-10-24T12:19:40.361503+00:00"
+    },
+    {
+      "series": "DGS2",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "3fb29b1c36b7638deff39027fe906bbd8b8b8be69d5d46432164024cfe69ca2d",
+      "verified_at_utc": "2026-10-24T12:19:42.425039+00:00"
+    },
+    {
+      "series": "DGS5",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "5be7421673550a41148e10468022c515f96f99850d05dfad23fafd72a6236da4",
+      "verified_at_utc": "2026-10-24T12:19:44.852368+00:00"
+    },
+    {
+      "series": "DGS10",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "09901e0c96349d6474426f68fff641ea922d8aa4c2906b149371e95e4c18a669",
+      "verified_at_utc": "2026-10-24T12:19:46.947881+00:00"
+    },
+    {
+      "series": "DGS30",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "c9ef94d75155289e0a175e68004ad01f60aa2a776ca30586e1dc4afd426e6bad",
+      "verified_at_utc": "2026-10-24T12:19:48.941940+00:00"
+    },
+    {
+      "series": "DFII10",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "d414a9fbab6a6390e7ad201a4aeaa26dd036feda4d2e4524f7aff5e68e342a67",
+      "verified_at_utc": "2026-10-24T12:19:50.924246+00:00"
+    },
+    {
+      "series": "T10YIE",
+      "latest_public_observation": "2026-10-23",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "bea164be6fefe9790e8ac4e78b3470ce50f3b46067d87cc1d51a0f86a3ae71c6",
+      "verified_at_utc": "2026-10-24T12:19:52.939703+00:00"
+    },
+    {
+      "series": "T5YIFR",
+      "latest_public_observation": "2026-10-23",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "821d6b7684041720166288bd72db33f6e256cc8db8c01f84929ad92b7f75058d",
+      "verified_at_utc": "2026-10-24T12:19:54.970655+00:00"
+    },
+    {
+      "series": "THREEFYTP10",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "0c10e8c18eecf74251d9bfe665f958d714caa6c45fb0aa2d7853b4cff571d66a",
+      "verified_at_utc": "2026-10-24T12:19:57.108783+00:00"
+    },
+    {
+      "series": "BAMLH0A0HYM2",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "51ba8221031517f655a1e2f239c80eec107395b811837811e3140600c78b52c0",
+      "verified_at_utc": "2026-10-24T12:20:00.419819+00:00"
+    },
+    {
+      "series": "BAMLC0A4CBBB",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "a515daccf87d791cb596b987e3f8f5750c71793de540c4c4084b7f2ebb3fc305",
+      "verified_at_utc": "2026-10-24T12:20:02.517969+00:00"
+    },
+    {
+      "series": "BAMLH0A2HYB",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "0ea1e561db0880e16c438bb8b9e28dafa2ebbcc7e984f4d6c019a192fbf7f031",
+      "verified_at_utc": "2026-10-24T12:20:04.620627+00:00"
+    },
+    {
+      "series": "SOFR",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "c7f20ac00d7f73668b8a46c920644bb8cb6797b0b96214bf75898e31d7d494d3",
+      "verified_at_utc": "2026-10-24T12:20:06.525198+00:00"
+    },
+    {
+      "series": "EFFR",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "78449df95c658c4bee324f13785c3967593ab0a8c2f495325a708b3f5b8d3618",
+      "verified_at_utc": "2026-10-24T12:20:08.921581+00:00"
+    },
+    {
+      "series": "FEDFUNDS",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "918c163e443f312c992c8bd855df4e5abe80411fed42c5d42759a186a94f932f",
+      "verified_at_utc": "2026-10-24T12:20:11.294920+00:00"
+    },
+    {
+      "series": "IORB",
+      "latest_public_observation": "2026-10-23",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "76ab0ebc4e91a4fbdfdd5f497426b0a81fd136c5dbb13461029daa230a885a54",
+      "verified_at_utc": "2026-10-24T12:20:13.573794+00:00"
+    },
+    {
+      "series": "NFCI",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "d1d164a966537a25e2dc7bc9b01fd539887b8ceee8c817324a2971dba7d1b0bc",
+      "verified_at_utc": "2026-10-24T12:20:15.438608+00:00"
+    },
+    {
+      "series": "WSHOMCB",
+      "latest_public_observation": "2026-10-21",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "f1723d117f99355dfe914e2917efaa432a04795089dcb205ec3912c9d9d5da88",
+      "verified_at_utc": "2026-10-24T12:20:17.711542+00:00"
+    },
+    {
+      "series": "FDHBFRBN",
+      "latest_public_observation": "2026-04-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "f5053160e9885831bd818a223922be6e5ecd7763370f13914b1a122e9a068b58",
+      "verified_at_utc": "2026-10-24T12:20:20.230572+00:00"
+    },
+    {
+      "series": "TOTLL",
+      "latest_public_observation": "2026-10-14",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "7e2f00327da5e1f20cf1ce29afe0a118d34a6766f0123a6d344aea9209b4cdeb",
+      "verified_at_utc": "2026-10-24T12:20:23.691395+00:00"
+    },
+    {
+      "series": "DPSACBW027SBOG",
+      "latest_public_observation": "2026-10-14",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "ff55b3eb09b27a18edc6a8f9219ffd7d756d6181f8448be0550520070f086ab6",
+      "verified_at_utc": "2026-10-24T12:20:25.868996+00:00"
+    },
+    {
+      "series": "M2SL",
+      "latest_public_observation": "2026-08-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "7c5708f829162469db2052e04326d7354a9dba21046d1c518558e610e962e2f4",
+      "verified_at_utc": "2026-10-24T12:20:28.076871+00:00"
+    },
+    {
+      "series": "M1SL",
+      "latest_public_observation": "2026-08-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "44a56ea2231133fa58929f45fcc28f43c9d934234c832af8470a3f637060861f",
+      "verified_at_utc": "2026-10-24T12:20:31.463424+00:00"
+    },
+    {
+      "series": "WM2NS",
+      "latest_public_observation": "2026-08-31",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "458ed09f03b115251b1953d1374ce10b1464e7f57765b8829951bf3be78522c7",
+      "verified_at_utc": "2026-10-24T12:20:33.590242+00:00"
+    },
+    {
+      "series": "INDPRO",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "1ef11674e3e43f731de1ca90e7c7e1c4f5d95563f80392ade1075d78eba4f60a",
+      "verified_at_utc": "2026-10-24T12:20:35.551716+00:00"
+    },
+    {
+      "series": "PAYEMS",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "265020c01b0c8f5464714b4d85fae245227a78c4787d4e89e7b402cc010f35d6",
+      "verified_at_utc": "2026-10-24T12:20:37.568179+00:00"
+    },
+    {
+      "series": "UNRATE",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "cc50d55ec01b961dbb1f9ad936792b12293bb16ed0a513d3f87c284ad7a9def4",
+      "verified_at_utc": "2026-10-24T12:20:39.589921+00:00"
+    },
+    {
+      "series": "ICSA",
+      "latest_public_observation": "2026-10-17",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "769f2674d6e93909af2338dac6b9db571839d8c7724ace3747f0b2063962a1d8",
+      "verified_at_utc": "2026-10-24T12:20:41.924798+00:00"
+    },
+    {
+      "series": "CPIAUCSL",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "6f4c96e5776c222c1c8e23641c6738affcffb8ba8f2864d8d6c2e9503e5b2665",
+      "verified_at_utc": "2026-10-24T12:20:43.868515+00:00"
+    },
+    {
+      "series": "CPILFESL",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "c08594c9772a7b58974e3571a4d83f87ab68078042cf07dcb357613c69283d4f",
+      "verified_at_utc": "2026-10-24T12:20:45.768465+00:00"
+    },
+    {
+      "series": "PCE",
+      "latest_public_observation": "2026-08-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "d495cd842809dba8bd82792eaeae06e31b0f64ca29e7e0f708fdef65d8d9e56f",
+      "verified_at_utc": "2026-10-24T12:20:48.145016+00:00"
+    },
+    {
+      "series": "GDPC1",
+      "latest_public_observation": "2026-04-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "692eef98ce49b80fdd97e506b45cdfbec282710e1eb36a82b8e8d68c68d59649",
+      "verified_at_utc": "2026-10-24T12:20:51.123650+00:00"
+    },
+    {
+      "series": "NEWORDER",
+      "latest_public_observation": "2026-08-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "99b992619a22ebacd35c0fab60b28cc2f94f934fee826ea7271c7c6a326e7288",
+      "verified_at_utc": "2026-10-24T12:20:54.455612+00:00"
+    },
+    {
+      "series": "USSLIND",
+      "latest_public_observation": "2020-02-01",
+      "accepted_status": "STALE",
+      "disposition": "HISTORICAL_ONLY_RELATED_COVERAGE",
+      "source_sha256": "a55ceedf029fa80069a310a7fa9b1bca99d85046556cd67df48708acd331701e",
+      "verified_at_utc": "2026-10-24T12:20:57.543138+00:00"
+    },
+    {
+      "series": "USALOLITONOSTSAM",
+      "latest_public_observation": "2024-01-01",
+      "accepted_status": "STALE",
+      "disposition": "REPLACED_SAME_MEASURE",
+      "source_sha256": "18deff9fe32b43e01cb9b993b6acae2a6474f7f2484543033e2fa94475cf0470",
+      "verified_at_utc": "2026-10-24T12:21:00.760784+00:00"
+    },
+    {
+      "series": "UMCSENT",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "d789517cfa2ec76fef786770a042fd6e727785f89f54a2d5257da441efad36e9",
+      "verified_at_utc": "2026-10-24T12:21:04.011669+00:00"
+    },
+    {
+      "series": "VIXCLS",
+      "latest_public_observation": "2026-10-22",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "15ad2b3ab0169a28b111186ffefcceca16455b479f2e543ab8c1ed5a31eb8309",
+      "verified_at_utc": "2026-10-24T12:21:05.885440+00:00"
+    },
+    {
+      "series": "DTWEXBGS",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "efc788632427fe108067146b4e830654115e29020165222bb60260d4cdbd5f96",
+      "verified_at_utc": "2026-10-24T12:21:08.099703+00:00"
+    },
+    {
+      "series": "DEXJPUS",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "25c249c4ae1f18baf7e257306806f33382998ac76878be3ec0b940fd383e034a",
+      "verified_at_utc": "2026-10-24T12:21:11.312249+00:00"
+    },
+    {
+      "series": "DEXUSEU",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "728c01b3aa2aa43f2d5a9be958998f30b0328da715af3113d6605b4d580f5b4e",
+      "verified_at_utc": "2026-10-24T12:21:13.480274+00:00"
+    },
+    {
+      "series": "DEXCHUS",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "21582ef5679456c3667b0e14ebac4c261194bfda30c5433b932539bbe4dd9302",
+      "verified_at_utc": "2026-10-24T12:21:15.475286+00:00"
+    },
+    {
+      "series": "DEXUSAL",
+      "latest_public_observation": "2026-10-16",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "bc02ba21573d90574ee61e9c0c70aace8081cd0b320873212adea638a5ffbf9d",
+      "verified_at_utc": "2026-10-24T12:21:17.688800+00:00"
+    },
+    {
+      "series": "OECD_CLI_US_NORMALIZED",
+      "latest_public_observation": "2026-09-01",
+      "accepted_status": "LATEST_PUBLIC_RELEASE",
+      "disposition": "NO_GAP",
+      "source_sha256": "2d2df6d44b0d22414d3405c3ef35d57327529e66d72991b5f9cfc597b625f060",
+      "verified_at_utc": "2026-10-24T12:21:20.640024+00:00"
+    }
+  ],
+  "all_three_research_feeds": {
+    "usmi": {
+      "accepted_raw_sha256": "4d861611b1b6d3faa614930cf488c7e330b8dbb381bf6401bfce9472688a27b9",
+      "macro_source_sha256": "4d861611b1b6d3faa614930cf488c7e330b8dbb381bf6401bfce9472688a27b9",
+      "board_snapshot_sha256_match": true,
+      "consumption": {
+        "status": "CONSUMED",
+        "mode": "BOUNDED_ADVISORY_CONTEXT",
+        "target": "US_MONEY_INDEX_CONSOLIDATED_ADVISORY",
+        "model_consumed": false,
+        "data_consumed": true
+      }
+    },
+    "news": {
+      "accepted_raw_sha256": "f235d6059d06360696618cc92cf2e0961752ba2ec698aa3426adfa5db1821e85",
+      "macro_source_sha256": "f235d6059d06360696618cc92cf2e0961752ba2ec698aa3426adfa5db1821e85",
+      "board_snapshot_sha256_match": true,
+      "consumption": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.news_research_advisory",
+        "model_consumed": false,
+        "data_consumed": true
+      }
+    },
+    "events": {
+      "accepted_raw_sha256": "97f6f3ce7d261dd4ee9e073acace681b5bd3a0d197bdb3fdf7d54a3667210277",
+      "macro_source_sha256": "2aea2a2080f127080c1a204ec6454c4d024b6a2c11e4a518a9227d3955c13611",
+      "board_snapshot_sha256_match": true,
+      "consumption": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.events_research_advisory",
+        "model_consumed": false,
+        "data_consumed": true
+      }
+    }
+  },
+  "model_called": false,
+  "projection_alignment": {
+    "contract_version": "macro_projection_alignment_v1",
+    "authority": "ADVISORY_ONLY",
+    "authoritative_path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\macro\\macro_intelligence_latest.json",
+    "sha256": "91aa4218bc87d80314cd6f81f3e1915b0957d136a3cd7c2bf7d7ef477a7dee2a",
+    "projection_hashes": {
+      "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\data\\macro\\macro_intelligence_latest.json": "91aa4218bc87d80314cd6f81f3e1915b0957d136a3cd7c2bf7d7ef477a7dee2a",
+      "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\pipeline_interpreter\\MA_Inputs\\macro\\macro_intelligence_latest.json": "91aa4218bc87d80314cd6f81f3e1915b0957d136a3cd7c2bf7d7ef477a7dee2a"
+    },
+    "stale_or_missing": [],
+    "aligned": true
+  }
+}

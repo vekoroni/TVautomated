@@ -361,7 +361,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                             for etf, block in holdings_payload.items()},
         "refresh_report": refresh_report,
         "external": {name: read.public() for name, read in external.items()},
-        "intel": build_intel(external, packet),
+        "intel": build_intel(external, packet, max_events=config.get("research_intelligence",{}).get("max_displayed_events")),
         "overnight": build_overnight(external),
         "latest": latest,
         "review": None,
@@ -404,6 +404,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     payload["scenario_watch"] = build_scenario_watch(config, opens=opens, closes=closes, states=states, mask=mask,
                                                      sessions=sessions, universe=universe,
                                                      record=kind in ("EVENING", "MORNING") and not as_of)
+    payload["settings"]["latest_stale_after_minutes"] = config["prices"]["latest_stale_after_minutes"]
     payload["session_plan"] = splan.build(payload, config["session_plan"])
     payload["day_story"] = build_day_story(payload, config, opens=opens, closes=closes, volumes=volumes, highs=highs,
                                            lows=lows, sessions=sessions, metrics=metrics, proposals=proposals["rows"],
@@ -868,6 +869,28 @@ def _dated(usmi: dict) -> list[dict]:
     """Observations inside the Money Index with their own dates (a packet date is not the
     date of every value it carries)."""
     cross = usmi.get("cross_asset") or {}
+    if usmi.get("contract_version") == "avshunter_us_money_index_v2_1":
+        rows = []
+        def add(label, value, observed):
+            if value is not None:
+                rows.append({"metric": label, "value": value,
+                             "observed": observed or "time UNKNOWN; task-reported, unsynchronised"})
+        eq = (cross.get("equities") or {}).get("current_global_session") or {}
+        for key, label in (("sp500", "S&P 500"), ("nasdaq_composite", "Nasdaq Composite"),
+                           ("dow", "Dow"), ("russell2000", "Russell 2000")):
+            reading = eq.get(key) or {}
+            add(label + " intraday level (not close)", reading.get("level"), eq.get("snapshot_at_utc"))
+            add(label + " intraday change %", reading.get("day_change_pct"), eq.get("snapshot_at_utc"))
+        for group, key, label in (("rates", "us_2y_pct", "2Y %"), ("rates", "us_10y_pct", "10Y %"),
+                                  ("usd_fx", "dxy", "DXY"), ("volatility", "vix_spot", "VIX spot"),
+                                  ("credit", "hy_oas_pct", "HY OAS %"),
+                                  ("liquidity", "reserve_balances_usd_trn", "Reserve balances $tn"),
+                                  ("liquidity", "tga_usd_bn", "TGA $bn")):
+            block = cross.get(group) or {}
+            observed = (block.get("observation_date") or block.get("rates_observation_date")
+                        or block.get("observation_week_ending"))
+            add(label, block.get(key), (str(observed) + "; task-reported / unsynchronised") if observed else None)
+        return rows
     eq, cr, vol, ff, rates = (cross.get(k) or {} for k in ("equities", "credit", "volatility", "fund_flows", "rates"))
     last_cash = eq.get("last_us_cash_session") or {}
     close_snaps = sorted(k for k in eq if k.startswith("cash_close_snapshot_"))
@@ -896,13 +919,17 @@ def _dated(usmi: dict) -> list[dict]:
     return [{"metric": m, "value": v, "observed": d or "not dated in packet"} for m, v, d in rows if v is not None]
 
 
-def build_intel(external: dict, packet: dict | None) -> dict:
+def build_intel(external: dict, packet: dict | None, *, max_events: int | None = None) -> dict:
     """Pick the human-relevant fields from each advisory source (display only)."""
     def data(name):
         read = external.get(name)
         return None if read is None or read.status in ("MISSING", "UNREADABLE") else read.data
 
     intel: dict = {}
+    if packet:
+        intel["macro_health"]=packet.get("macro_health") or {}
+        metadata=packet.get("_builder_metadata") or {}
+        intel["synthesis"]={key:metadata.get(key) for key in ("build_mode","analysis_built_at","data_refreshed_at_utc","synthesis_status","model_called")}
     if packet:
         keys = ("regime_label", "regime_state", "regime_probability", "macro_conviction", "risk_on_off_switch",
                 "dir_bias", "trend_energy", "vol_mode", "liquidity_pulse", "rates_impulse", "usd_state",
@@ -918,29 +945,51 @@ def build_intel(external: dict, packet: dict | None) -> dict:
         state = usmi.get("current_state") or {}
         components = score.get("components") or {}
         intel["usmi"] = {
-            "state": state.get("US_MONEY_INDEX_STATE"), "summary": state.get("summary"),
+            "baseline_lineage": usmi.get("baseline_lineage"),
+            "data_quality": usmi.get("data_quality"),
+            "state": state.get("US_MONEY_INDEX_STATE"), "summary": state.get("summary") or state.get("description"),
             "confidence": state.get("state_confidence"), "transmission_state": state.get("risk_off_transmission_state"),
             "score": score.get("current_score"), "previous_score": score.get("previous_score"),
             "components": [{"name": k, "weight": v.get("weight"), "score": v.get("score"), "status": v.get("status")}
                            for k, v in components.items() if isinstance(v, dict)],
             "forward_triggers": usmi.get("forward_triggers"),
             "revision": usmi.get("packet_revision"),
-            "execution_permission": usmi.get("execution_permission"),
+            "execution_permission": usmi.get("execution_permission") or state.get("execution_permission"),
             "method": score.get("method"), "ladder": score.get("ladder"),
             "dealer_gamma": (usmi.get("cross_asset") or {}).get("dealer_gamma_gex"),
             "dated": _dated(usmi),
         }
     events = data("event_payload")
     if isinstance(events, dict):
+        def event_clock(event):
+            # Native Event exports put the source cutoff in this observation
+            # window. Do not replace it with a receipt clock or an event-ID date.
+            perception = event.get("market_perception")
+            perception = perception if isinstance(perception, dict) else {}
+            window = perception.get("observation_window")
+            window = window if isinstance(window, dict) else {}
+            candidates = (event.get("information_cutoff_utc"),
+                          window.get("information_cutoff_utc"),
+                          event.get("original_report_release_time_utc"),
+                          event.get("release_time_utc"))
+            for value in candidates:
+                try:
+                    stamp=datetime.fromisoformat(str(value or '').replace('Z','+00:00'))
+                    if stamp.tzinfo is not None:return stamp.astimezone(timezone.utc)
+                except (ValueError,TypeError):pass
+            return datetime.min.replace(tzinfo=timezone.utc)
+        all_events=sorted(events.get("events") or [],key=event_clock,reverse=True)
+        displayed=all_events if max_events is None else all_events[:max(0,int(max_events))]
         intel["events"] = {
             "classification": (events.get("regime_summary") or {}).get("classification"),
             "narrative": (events.get("regime_summary") or {}).get("core_narrative"),
             "verdict": events.get("final_verdict"),
-            "events": [{k: e.get(k) for k in ("event_name", "country_or_institution", "release_time_utc", "status",
+            "events": [{k: e.get(k) for k in ("event_id", "information_cutoff_utc", "event_name", "country_or_institution", "release_time_utc", "status",
                                                 "actual", "forecast", "previous", "surprise_direction", "surprise_score",
                                                 "expected_magnitude", "why_it_matters_to_us_markets")}
-                       for e in events.get("events") or []][:8],
+                       for e in displayed],
             "counter_case": (events.get("counter_case") or {}).get("summary"),
+            "coverage": {"total_events":len(all_events),"displayed_events":len(displayed),"omitted_historical_events":len(all_events)-len(displayed),"ordering":"LATEST_SOURCE_OBSERVATION_FIRST"},
         }
     enrichment = data("enrichment")
     if isinstance(enrichment, dict):

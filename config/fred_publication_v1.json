@@ -1,0 +1,154 @@
+{
+  "version": "fred_publication_v2_latest_public",
+  "authority": "ADVISORY_ONLY",
+  "series": {
+    "DEXCHUS": {
+      "label": "Chinese Yuan Renminbi to U.S. Dollar Spot Exchange Rate",
+      "release_id": 17,
+      "source_url": "https://fred.stlouisfed.org/series/DEXCHUS",
+      "guidance_effect": "Published FX history supports lagged trend context only; current FX and DXY must come from the dated market snapshot.",
+      "release_cadence": "WEEKLY_H10",
+      "max_period_age_days": 12,
+      "reason": "Daily observations are published in a weekly batch on Monday 16:15 ET (next business day after a federal holiday)."
+    },
+    "DEXJPUS": {
+      "label": "Japanese Yen to U.S. Dollar Spot Exchange Rate",
+      "release_id": 17,
+      "source_url": "https://fred.stlouisfed.org/series/DEXJPUS",
+      "guidance_effect": "Published FX history supports lagged trend context only; current FX and DXY must come from the dated market snapshot.",
+      "release_cadence": "WEEKLY_H10",
+      "max_period_age_days": 12,
+      "reason": "Daily observations are published in a weekly batch on Monday 16:15 ET (next business day after a federal holiday)."
+    },
+    "DEXUSAL": {
+      "label": "U.S. Dollars to Australian Dollar Spot Exchange Rate",
+      "release_id": 17,
+      "source_url": "https://fred.stlouisfed.org/series/DEXUSAL",
+      "guidance_effect": "Published FX history supports lagged trend context only; current FX and DXY must come from the dated market snapshot.",
+      "release_cadence": "WEEKLY_H10",
+      "max_period_age_days": 12,
+      "reason": "Daily observations are published in a weekly batch on Monday 16:15 ET (next business day after a federal holiday)."
+    },
+    "DEXUSEU": {
+      "label": "U.S. Dollars to Euro Spot Exchange Rate",
+      "release_id": 17,
+      "source_url": "https://fred.stlouisfed.org/series/DEXUSEU",
+      "guidance_effect": "Published FX history supports lagged trend context only; current FX and DXY must come from the dated market snapshot.",
+      "release_cadence": "WEEKLY_H10",
+      "max_period_age_days": 12,
+      "reason": "Daily observations are published in a weekly batch on Monday 16:15 ET (next business day after a federal holiday)."
+    },
+    "DTWEXBGS": {
+      "label": "Nominal Broad U.S. Dollar Index",
+      "release_id": 17,
+      "source_url": "https://fred.stlouisfed.org/series/DTWEXBGS",
+      "guidance_effect": "Published FX history supports lagged trend context only; current FX and DXY must come from the dated market snapshot.",
+      "release_cadence": "WEEKLY_H10",
+      "max_period_age_days": 12,
+      "reason": "Daily observations are published in a weekly batch on Monday 16:15 ET (next business day after a federal holiday)."
+    },
+    "FDHBFRBN": {
+      "label": "Federal Debt Held by Federal Reserve Banks",
+      "release_id": 80,
+      "source_url": "https://fred.stlouisfed.org/series/FDHBFRBN",
+      "guidance_effect": "Quarterly Federal Reserve holdings context only; this is not foreign Treasury demand.",
+      "reason": "Period-start date was incorrectly used as age; assess elapsed time since period end without changing the native date."
+    },
+    "GDPC1": {
+      "label": "Real Gross Domestic Product",
+      "release_id": 53,
+      "source_url": "https://fred.stlouisfed.org/series/GDPC1",
+      "guidance_effect": "Latest released quarterly output; not a current-quarter nowcast.",
+      "reason": "Period-start date was incorrectly used as age; assess elapsed time since period end without changing the native date."
+    },
+    "M1SL": {
+      "label": "M1",
+      "release_id": 21,
+      "source_url": "https://fred.stlouisfed.org/series/M1SL",
+      "guidance_effect": "Latest released economic context; observation period is not a live-market timestamp.",
+      "reason": "H.6 is released monthly, including its weekly observations.",
+      "release_cadence": "MONTHLY_H6"
+    },
+    "M2SL": {
+      "label": "M2",
+      "release_id": 21,
+      "source_url": "https://fred.stlouisfed.org/series/M2SL",
+      "guidance_effect": "Latest released economic context; observation period is not a live-market timestamp.",
+      "reason": "H.6 is released monthly, including its weekly observations.",
+      "release_cadence": "MONTHLY_H6"
+    },
+    "NEWORDER": {
+      "label": "Manufacturers' New Orders: Nondefense Capital Goods Excluding Aircraft",
+      "release_id": 95,
+      "source_url": "https://fred.stlouisfed.org/series/NEWORDER",
+      "guidance_effect": "Latest released economic context; observation period is not a live-market timestamp.",
+      "reason": "Period-start date was incorrectly used as age; assess elapsed time since period end without changing the native date."
+    },
+    "PCE": {
+      "label": "Personal Consumption Expenditures",
+      "release_id": 54,
+      "source_url": "https://fred.stlouisfed.org/series/PCE",
+      "guidance_effect": "Nominal consumer spending context, not the PCE inflation index.",
+      "reason": "Period-start date was incorrectly used as age; assess elapsed time since period end without changing the native date."
+    },
+    "THREEFYTP10": {
+      "label": "Term Premium on a 10 Year Zero Coupon Bond",
+      "release_id": 354,
+      "source_url": "https://fred.stlouisfed.org/series/THREEFYTP10",
+      "guidance_effect": "Latest publicly available Kim-Wright term-premium estimate accepted as dated model context; it does not measure market moves after its observation date.",
+      "reason": "The Federal Reserve identifies this as a research product subject to publication delay, revision and methodological change without advance notice; no guaranteed daily release.",
+      "publisher_url": "https://www.federalreserve.gov/data/yield-curve-tables/feds200533_1.html"
+    },
+    "USALOLITONOSTSAM": {
+      "label": "Composite Leading Indicators: Composite Leading Indicator (CLI) Normalized for United States",
+      "release_id": 205,
+      "source_url": "https://fred.stlouisfed.org/series/USALOLITONOSTSAM",
+      "guidance_effect": "FRED OECD distribution has stopped updating; use separately identified official OECD normalized US CLI.",
+      "replacement": "OECD_CLI_US_NORMALIZED",
+      "equivalence": "SAME_OECD_DIMENSIONS",
+      "reason": "Legacy FRED distribution ends January 2024; official OECD dataset remains active."
+    },
+    "USSLIND": {
+      "label": "Leading Index for the United States",
+      "release_id": 208,
+      "source_url": "https://fred.stlouisfed.org/series/USSLIND",
+      "guidance_effect": "Philadelphia Fed leading index is historical only. OECD CLI supplies related leading-cycle evidence, not the same index.",
+      "historical_only": true,
+      "replacement": "OECD_CLI_US_NORMALIZED",
+      "equivalence": "RELATED_INDICATOR_NOT_EQUIVALENT",
+      "reason": "Philadelphia Fed historical series ends February 2020, not Conference Board LEI."
+    },
+    "WM2NS": {
+      "label": "M2",
+      "release_id": 21,
+      "source_url": "https://fred.stlouisfed.org/series/WM2NS",
+      "guidance_effect": "Latest released economic context; observation period is not a live-market timestamp.",
+      "release_cadence": "MONTHLY_H6_WEEKLY_OBSERVATIONS",
+      "reason": "H.6 is released monthly, including its weekly observations.",
+      "max_period_age_days": 75
+    },
+    "OECD_CLI_US_NORMALIZED": {
+      "label": "OECD US composite leading indicator, normalized (direct OECD)",
+      "guidance_effect": "Current published leading-cycle confirmation; qualitative turning-point evidence, not a GDP or return forecast."
+    }
+  },
+  "oecd": {
+    "url": "https://sdmx.oecd.org/public/rest/v1/data/OECD.SDD.STES,DSD_STES@DF_CLI,/USA.M.LI.IX._Z.NOR.IX._Z.H",
+    "dimensions": {
+      "REF_AREA": "USA",
+      "FREQ": "M",
+      "MEASURE": "LI",
+      "UNIT_MEASURE": "IX",
+      "ACTIVITY": "_Z",
+      "ADJUSTMENT": "NOR",
+      "TRANSFORMATION": "IX",
+      "TIME_HORIZ": "_Z",
+      "METHODOLOGY": "H"
+    },
+    "timeout_seconds": 30,
+    "max_response_bytes": 2000000,
+    "attribution": "OECD (2026), Composite Leading Indicators, OECD Data Explorer. Original observations retained; retrieval is not publication time."
+  },
+  "calendar_grace_days": 2,
+  "acceptance_policy": "Accept the latest successfully verified public observation; age and release cadence alone are informational. Flag a known newer public observation missing locally, invalid observations, unavailable/discontinued sources without replacement, or collection/verification failures."
+}

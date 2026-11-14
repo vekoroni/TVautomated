@@ -120,7 +120,9 @@ class PolygonDataFetcher:
         ticker: str,
         from_date: str,
         to_date: str,
-        adjusted: bool = True
+        adjusted: bool = True,
+        *,
+        persist_history: bool = True,
     ) -> Optional[pd.DataFrame]:
         """
         Fetch daily OHLCV bars for a ticker
@@ -130,6 +132,7 @@ class PolygonDataFetcher:
             from_date: Start date (YYYY-MM-DD)
             to_date: End date (YYYY-MM-DD)
             adjusted: Use adjusted prices (splits/dividends)
+            persist_history: False only when the caller owns the same governed commit.
         
         Returns:
             DataFrame with columns: date, open, high, low, close, volume
@@ -176,13 +179,14 @@ class PolygonDataFetcher:
             # is a no-op unless both canonical data and write-through flags
             # are explicitly enabled.
             from canonical_data.history_bridge import write_through_fetched_history
-            write_through_fetched_history(
-                ticker,
-                df,
-                provider="POLYGON",
-                source_kind="POLYGON_DATA_FETCHER",
-                source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
-            )
+            if persist_history:
+                write_through_fetched_history(
+                    ticker,
+                    df,
+                    provider="POLYGON",
+                    source_kind="POLYGON_DATA_FETCHER",
+                    source_run_id=os.getenv("AVSHUNTER_RUN_ID") or None,
+                )
             
             return df
             

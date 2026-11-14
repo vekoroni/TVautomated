@@ -819,7 +819,12 @@ def detect_theme_relationships(
         if not theme_id:
             continue
         theme_text = _upper_blob(theme_id, theme.get("theme_name"), theme.get("sectors_exposed"))
-        if tech_leadership and ("AI" in theme_text or "SEMICONDUCTOR" in theme_text):
+        lifecycle = _upper_blob(theme.get("lifecycle"), theme.get("status"), theme.get("directional_pressure"))
+        if any(word in lifecycle for word in ("HISTORICAL", "SUPERSEDED", "INVALIDATED")):
+            relationships[theme_id] = "HISTORICAL_CONTEXT_ONLY"
+        elif "CONTRADICTION" in _upper_blob(theme.get("delta_type")):
+            relationships[theme_id] = "CONTRADICTS_REQUIRES_REVIEW"
+        elif tech_leadership and ("AI" in theme_text or "SEMICONDUCTOR" in theme_text):
             relationships[theme_id] = "STRENGTHENS_EXISTING_TECH_LEADERSHIP"
         elif "CONTEXT_ONLY" in _upper_blob(theme.get("delta_type")):
             relationships[theme_id] = "CONTEXT_ONLY_UNTIL_CONFIRMED"

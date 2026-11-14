@@ -97,7 +97,6 @@ ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 AUTO_DOWNLOAD = True          # Colab only: download outputs after the run (v2.4 behaviour)
 HY_CALM_PCT, HY_STRESS_PCT = 4.0, 6.0     # HY OAS in PERCENT (4.0% = 400 bp)
 CURVE_STEEP_PCT = 1.0                      # 10Y-2Y in percentage points
-MAX_AGE_DAYS = {"D": 7, "W": 14, "BW": 21, "M": 75, "Q": 140, "A": 400}   # by FRED frequency
 print(f"📁 OUTPUT_DIR: {OUTPUT_DIR}  ({'local Windows' if RUNNING_LOCAL else 'Colab /content'})"
       + (f"   inputs: {INPUT_DIR}" if INPUT_DIR != OUTPUT_DIR else ""))
 # ════════════════════════════════════════════════════════════
@@ -108,6 +107,15 @@ if IN_COLAB:
 import json, datetime, time
 import pandas as pd
 import numpy as np
+
+# Shared transport for local runner execution (including direct script launches).
+import sys as _source_sys
+from pathlib import Path as _SourcePath
+_source_sys.path.insert(0, str(_SourcePath(__file__).resolve().parents[2]))
+from contracts.source_transport import get_fred_response
+from contracts.source_transport import CONFIG as _FRED_SOURCE_CONFIG
+MAX_AGE_DAYS = _FRED_SOURCE_CONFIG['max_observation_age_days']
+
 import requests
 if IN_COLAB:
     import matplotlib.pyplot as plt
@@ -146,28 +154,9 @@ FRED_TIMEOUT_S, FRED_ATTEMPTS = 60, 3
 
 
 def _fred_get(path, **params):
-    """One FRED REST call, retried on timeout / connection error / 429 / 5xx. fredapi waited
-    without a time limit; a bare 30 s timeout lost WTREGEN on 8 Oct when FRED was answering
-    in 8-11 s per request, so slowness is retried rather than turned into a MISSING series."""
-    last = None
-    for attempt in range(1, FRED_ATTEMPTS + 1):
-        try:
-            r = requests.get(f"{FRED_BASE}/{path}",
-                             params={**params, "api_key": FRED_API_KEY, "file_type": "json"},
-                             timeout=FRED_TIMEOUT_S)
-            if r.status_code == 429 or r.status_code >= 500:
-                raise requests.exceptions.HTTPError(f"HTTP {r.status_code}", response=r)
-            r.raise_for_status()
-            return r.json()
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError,
-                requests.exceptions.HTTPError) as e:
-            status = getattr(getattr(e, "response", None), "status_code", None)
-            if isinstance(e, requests.exceptions.HTTPError) and status is not None and status < 500 and status != 429:
-                raise                                   # 4xx (bad series id, bad key) is not transient
-            last = e
-            if attempt < FRED_ATTEMPTS:
-                time.sleep(2 * attempt)
-    raise last
+    return get_fred_response(f"{FRED_BASE}/{path}",
+        {**params, "api_key": FRED_API_KEY}, get=requests.get, sleep=time.sleep,
+        attempts=FRED_ATTEMPTS, timeout=FRED_TIMEOUT_S).json()
 
 
 today      = datetime.date.today()
@@ -191,13 +180,13 @@ FRED_SERIES = {
     "SOFR":"SOFR","EFFR":"Effective Fed Funds (daily)","FEDFUNDS":"Fed Funds (monthly avg)","IORB":"IORB",
     "NFCI":"Chicago Fed financial conditions",
     # balance sheets / money
-    "WSHOMCB":"Fed MBS holdings","FDHBFRBN":"Foreign holdings of Treasuries","TOTLL":"Total loans",
+    "WSHOMCB":"Fed MBS holdings","FDHBFRBN":"Federal debt held by Federal Reserve Banks","TOTLL":"Total loans",
     "DPSACBW027SBOG":"Bank deposits","M2SL":"M2","M1SL":"M1","WM2NS":"Weekly M2",
     # activity / prices
     "INDPRO":"Industrial production","PAYEMS":"Payrolls","UNRATE":"Unemployment","ICSA":"Initial claims",
-    "CPIAUCSL":"CPI","CPILFESL":"Core CPI","PCE":"PCE","GDPC1":"Real GDP",
+    "CPIAUCSL":"CPI","CPILFESL":"Core CPI","PCE":"Nominal personal consumption expenditures (spending)","GDPC1":"Real GDP",
     "NEWORDER":"Core capital goods new orders (nondefense ex aircraft)",
-    "USSLIND":"LEI (Conference Board) — discontinued on FRED, kept for staleness check",
+    "USSLIND":"Philadelphia Fed leading index — historical only",
     "USALOLITONOSTSAM":"OECD composite leading indicator, US",
     "UMCSENT":"UMich sentiment",
     # volatility / dollar
@@ -208,9 +197,22 @@ FRED_SERIES = {
 POLYGON_SECTORS = {t: t for t in ["XLF","XLE","XLK","XLV","XLI","XLY","XLP","XLU","XLB","XLRE","XLC"]}
 
 
+_publication_receipts={}
+
 def safe_fred_get(series_id, start):
     try:
-        obs = _fred_get("series/observations", series_id=series_id, observation_start=start).get("observations", [])
+        from contracts.source_transport import filter_observation_window
+        cutoff=session_cutoff()
+        requested_end=min(today,cutoff.date()) if cutoff is not None else today
+        obs = _fred_get("series/observations", series_id=series_id, observation_start=start,observation_end=requested_end.isoformat()).get("observations", [])
+        from contracts.fred_publication import publication_receipt
+        receipt=publication_receipt(obs,requested_end.isoformat(),datetime.datetime.now(datetime.timezone.utc))
+        import hashlib,json
+        raw=json.dumps(obs,sort_keys=True,separators=(',',':')).encode();raw_dir=ARCHIVE_DIR/'raw';raw_dir.mkdir(parents=True,exist_ok=True)
+        raw_path=raw_dir/(receipt['publication_evidence_sha256']+'.json')
+        if not raw_path.exists():raw_path.write_bytes(raw)
+        receipt['publication_evidence_archive']=str(raw_path);_publication_receipts[series_id]=receipt
+        obs=filter_observation_window(obs,requested_end.isoformat())
         s = pd.Series(pd.to_numeric([o["value"] for o in obs], errors="coerce"),     # "." = missing
                       index=pd.to_datetime([o["date"] for o in obs]), dtype="float64").dropna()
         s.index = pd.to_datetime(s.index)
@@ -220,12 +222,29 @@ def safe_fred_get(series_id, start):
         return pd.Series(dtype="float64")
 
 
+from contracts.fred_publication import CONFIG as PUBLICATION_CONFIG, assess_observation, parse_oecd_cli, current_summary_value, GOOD
+_release_cache={}
+def safe_release_info(series_id):
+    policy=PUBLICATION_CONFIG['series'].get(series_id,{})
+    rid=policy.get('release_id')
+    if not rid:return {}
+    try:
+        if rid not in _release_cache:
+            dates=_fred_get('release/dates',release_id=rid,sort_order='desc',limit=50,include_release_dates_with_no_data='true').get('release_dates',[])
+            _release_cache[rid]=dates
+        future=sorted(d['date'] for d in _release_cache[rid] if d.get('date','')>=today.isoformat())
+        past=sorted(d['date'] for d in _release_cache[rid] if d.get('date','')<today.isoformat())
+        return {'release_id':rid,'next_release_date':future[0] if future else None,'last_scheduled_release_date':past[-1] if past else None}
+    except Exception as e:
+        errors.append(f'{series_id} calendar: {type(e).__name__}: {redact(e)}')
+        return {'release_id':rid,'next_release_date':None}
+
 def safe_fred_info(series_id):
     try:
         info = (_fred_get("series", series_id=series_id).get("seriess") or [{}])[0]
         return {"units": info.get("units_short") or info.get("units"),
                 "frequency": info.get("frequency_short") or info.get("frequency"),
-                "last_updated": info.get("last_updated")}
+                "last_updated": info.get("last_updated"), **safe_release_info(series_id)}
     except Exception as e:
         errors.append(f"{series_id} info: {type(e).__name__}: {redact(e)}")
         return {"units": None, "frequency": None, "last_updated": None}
@@ -266,22 +285,45 @@ data, manifest = {}, []
 for code, label in FRED_SERIES.items():
     s = safe_fred_get(code, start_date)
     info = safe_fred_info(code)
-    freq = str(info.get("frequency") or "").upper().split(",")[0].strip()
+    freq = str(info.get("frequency_short") or info.get("frequency") or "").upper().split(",")[0].strip()
+    freq = {"DAILY":"D", "WEEKLY":"W", "BIWEEKLY":"BW", "MONTHLY":"M", "QUARTERLY":"Q", "ANNUAL":"A"}.get(freq, freq)
     if not s.empty:
         data[code] = s
         last_obs = s.index.max().date()
         age = (today - last_obs).days
         limit = MAX_AGE_DAYS.get(freq, 75)
-        status = "FRESH" if age <= limit else "STALE"
-        print(f"  {'✅' if status=='FRESH' else '⏳'} {code:18s} | {label} | last {last_obs} ({age}d, {status})")
+        assessed=assess_observation({'series':code,'frequency':freq,'last_observation':last_obs.isoformat(),'fred_last_updated':info.get('last_updated'),'last_scheduled_release_date':info.get('last_scheduled_release_date'),**_publication_receipts.get(code,{})},datetime.datetime.now(datetime.timezone.utc))
+        status=assessed['assessed_status']
+        print(f"  {'✅' if status in GOOD else '⏳'} {code:18s} | {label} | last {last_obs} ({age}d, {status})")
     else:
         last_obs, age, status = None, None, "MISSING"
         print(f"  ⚠  {code:18s} | FAILED")
     manifest.append({"series": code, "label": label, "units": info.get("units"), "frequency": freq or None,
                      "observations": int(len(s)), "first_observation": None if s.empty else str(s.index.min().date()),
                      "last_observation": None if last_obs is None else str(last_obs), "age_days": age,
-                     "status": status, "fred_last_updated": info.get("last_updated"), "fetched_utc":
+                     "status": status, **_publication_receipts.get(code,{}), "provider":"FRED", "release_id":info.get("release_id"), "next_release_date":info.get("next_release_date"), "last_scheduled_release_date":info.get("last_scheduled_release_date"), "fred_last_updated": info.get("last_updated"), "fetched_utc":
                      datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"})
+# Same normalized US CLI dimensions as the legacy FRED code; separate identity,
+# raw response archive and provenance. Never overwrite the FRED observation history.
+try:
+    import hashlib
+    policy=PUBLICATION_CONFIG['oecd']
+    response=requests.get(policy['url'],params={'startPeriod':start_date[:7],'format':'csvfile'},timeout=policy['timeout_seconds'])
+    response.raise_for_status()
+    if len(response.content)>policy['max_response_bytes']:raise ValueError('OECD response exceeds bound')
+    cutoff=session_cutoff();end=min(today,cutoff.date()) if cutoff is not None else today
+    points=parse_oecd_cli(response.content.decode('utf-8-sig'),end.isoformat())
+    digest=hashlib.sha256(response.content).hexdigest();raw_dir=ARCHIVE_DIR/'raw';raw_dir.mkdir(parents=True,exist_ok=True)
+    raw_path=raw_dir/(digest+'.csv')
+    if not raw_path.exists():raw_path.write_bytes(response.content)
+    code='OECD_CLI_US_NORMALIZED';data[code]=pd.Series([v for d,v in points],index=pd.to_datetime([d for d,v in points]),dtype='float64')
+    item={'series':code,'label':PUBLICATION_CONFIG['series'][code]['label'],'units':'Index (normalized)','frequency':'M','observations':len(points),'first_observation':points[0][0],'last_observation':points[-1][0],'age_days':(today-datetime.date.fromisoformat(points[-1][0])).days,'provider':'OECD','source_url':policy['url'],'source_sha256':digest,'raw_archive':str(raw_path),'fetched_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'attribution':policy['attribution']}
+    item.update(public_latest_observation=points[-1][0],publication_query_end=end.isoformat(),publication_verified_at_utc=item['fetched_utc'],publication_evidence_sha256=digest,publication_evidence_archive=str(raw_path))
+    item['status']=assess_observation(item,datetime.datetime.now(datetime.timezone.utc))['assessed_status'];manifest.append(item)
+    print(f"  OECD direct normalized US CLI: {points[-1][0]} ({item['status']}); raw SHA256 {digest}")
+except Exception as e:
+    errors.append(f'OECD_CLI_US_NORMALIZED: {type(e).__name__}: {redact(e)}')
+    print('  OECD direct CLI unavailable; legacy FRED series remains excluded')
 pd.DataFrame(manifest).to_csv(OUTPUT_DIR/"avshunter_fred_series_manifest.csv", index=False)
 print(f"📁 {OUTPUT_DIR/'avshunter_fred_series_manifest.csv'}")
 
@@ -291,7 +333,7 @@ for name, ticker in POLYGON_SECTORS.items():
     s = fetch_polygon_daily(ticker, start_date, end_date, POLYGON_API_KEY)
     if not s.empty: sector_data[name] = s; print(f"  ✅ {name}")
     else: print(f"  ⚠  {name}: MISSING")
-print(f"\nFetched {len(data)}/{len(FRED_SERIES)} FRED series. Errors so far: {len(errors)}")
+print(f"\nFetched {sum(c in data for c in FRED_SERIES)}/{len(FRED_SERIES)} FRED series plus {int("OECD_CLI_US_NORMALIZED" in data)} direct OECD series. Errors so far: {len(errors)}")
 
 
 # ── Leading-indicator anomaly / staleness check (FIX v2.5) ───────────────────
@@ -302,7 +344,8 @@ def lei_status(code, max_age_days=75):
         return "MISSING (excluded)", True, None
     lei = data[code].dropna()
     last_obs = lei.index.max().date()
-    if (today - last_obs).days > max_age_days:
+    evidence=next((r for r in manifest if r['series']==code),{})
+    if evidence.get('status') not in GOOD:
         return f"STALE (last observation {last_obs}; excluded)", True, None
     z = (lei - lei.rolling(24).mean()) / lei.rolling(24).std()
     z_latest = float(z.iloc[-1]) if pd.notna(z.iloc[-1]) else None
@@ -314,7 +357,8 @@ def lei_status(code, max_age_days=75):
     return f"NORMAL (z={z_latest:.2f}, latest={float(lei.iloc[-1]):.2f}, as of {last_obs})", False, float(lei.iloc[-1])
 
 usslind_status, usslind_quarantined, _ = lei_status("USSLIND")
-cli_status, cli_quarantined, cli_latest = lei_status("USALOLITONOSTSAM")
+cli_code='OECD_CLI_US_NORMALIZED' if 'OECD_CLI_US_NORMALIZED' in data else 'USALOLITONOSTSAM'
+cli_status, cli_quarantined, cli_latest = lei_status(cli_code)
 print(f"\n📊 USSLIND : {usslind_status}")
 print(f"📊 OECD CLI: {cli_status}")
 
@@ -420,11 +464,11 @@ master_row = {
     "USSLIND_Status": usslind_status, "USSLIND_Quarantined": usslind_quarantined,
     "Regime_FRED": regime_label, "XLC_30d": sector_1m.get("XLC", np.nan),
     # v2.5 additions
-    "DFII10": last_value(data,"DFII10"), "T10YIE": last_value(data,"T10YIE"), "TERM_PREMIUM_10Y": last_value(data,"THREEFYTP10"),
+    "DFII10": last_value(data,"DFII10"), "T10YIE": last_value(data,"T10YIE"), "TERM_PREMIUM_10Y": current_summary_value(last_value(data,"THREEFYTP10"),next((r for r in manifest if r["series"]=="THREEFYTP10"),{})), "TERM_PREMIUM_10Y_AS_OF":last_date(data,"THREEFYTP10"), "TERM_PREMIUM_10Y_STATUS":next((r["status"] for r in manifest if r["series"]=="THREEFYTP10"),"MISSING"),
     "SINGLE_B_OAS": b, "HY_OAS_AS_OF": last_date(data, "BAMLH0A0HYM2"),
     "SOFR_EFFR_SPREAD": last_value(derived,"SOFR_EFFR_SPREAD"),
     "VIXCLS": last_value(data,"VIXCLS"), "BROAD_USD": last_value(data,"DTWEXBGS"), "NFCI": last_value(data,"NFCI"),
-    "OECD_CLI_Status": cli_status, "OECD_CLI_Quarantined": cli_quarantined,
+    "OECD_CLI_Source":cli_code, "OECD_CLI_Observation":last_date(data,cli_code), "OECD_CLI_Status": cli_status, "OECD_CLI_Quarantined": cli_quarantined,
     "UNITS": "yields/spreads/OAS in percent (HY_OAS 3.10 = 310 bp); XLC_30d = 22-session % change",
 }
 merge_report = []
@@ -526,7 +570,10 @@ if AUTO_DOWNLOAD and not RUNNING_LOCAL:
         pass
 print(f"\n✅ v2.6 COMPLETE — outputs → {OUTPUT_DIR}")
 print("   • HY/BBB OAS handled in percent; regime STRESS reachable again")
-print("   • USSLIND staleness reported honestly; OECD CLI added as the live leading indicator")
+print("   • Philadelphia Fed historical series excluded; direct OECD normalized CLI reported with its native month")
 print("   • SOFR spread now daily (SOFR − EFFR)")
 print("   • Real yield, breakeven, term premium, single-B, VIX, broad dollar, NFCI, claims added")
 print("   • Series manifest + dated archive copy written; merge coverage reported in the master row")
+
+
+

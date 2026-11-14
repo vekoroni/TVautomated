@@ -1404,5 +1404,8 @@
       ]
     },
     "rationale": "ACK 14 Oct 2026: a Day story tab listing the day's possible scenarios, the news and an explicit trade analysis, with narratives of why money flows into or out of each sector and how it reaches tickers. Narrator = both, clearly labelled: MEASURED templates plus a Claude narrative fed only the measured facts (numbers not in the facts and flow calls that contradict the measurement are flagged). Flow = relative return vs SPY over 5 and 20 sessions using the opportunity bands (one owner); drivers = conditions in today's state with a measured response |t| >= 2 at 5 sessions, and assets the ETF's relative return has moved with (|corr| >= 0.3, 60 sessions); option footprints = stored MarketData chains (iv_surface_history) against each ticker's own 60 stored dates; published news = event payload items matched by keyword, not verified. The trade side follows the flow, but each flow label's own history (next 5 sessions, |t| >= 2) is shown as FOLLOWS / REVERSES / NO_CLEAR_RECORD and counted for or against: measured 14 Oct 2026, leaders that turn out (XLK, SMH, SOXX) have bounced back over the next 5 sessions and real estate turning in has faded, so following those reads is against the evidence. Each session's flow calls go to the ledger and are scored on the next 1 and 5 sessions; the historical record of each flow label is shown beside it. PROVISIONAL thresholds until the ledger validates them. Display only: never a gate, score or rank."
+  },
+  "research_intelligence": {
+    "max_displayed_events": 8
   }
 }

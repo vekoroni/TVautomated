@@ -182,6 +182,8 @@ def freshness(made, now: datetime, max_age_hours: float) -> tuple[str, str]:
     when = pd.Timestamp(made)
     when = when.tz_localize("UTC") if when.tzinfo is None else when.tz_convert("UTC")
     age = (pd.Timestamp(now) - when).total_seconds() / 3600.0
+    if age < 0:
+        return "FUTURE_TIMESTAMP", "source timestamp is in the future"
     if age <= max_age_hours:
         return "FRESH", ""
     missed = sessions_closed_between(when, now)
@@ -215,6 +217,16 @@ def read_json(name: str, path: Path | None, stamp_keys: Sequence[str], max_age_h
     as_of, age = _age_hours(stamp, now, path)
     status, why = freshness(as_of, now, max_age_hours) if as_of else ("STALE", "")
     note = "; ".join(x for x in ("" if stamp else "as-of taken from file time", why) if x)
+    if name.startswith("US Money Index"):
+        try:
+            from contracts.us_money_index_contract import normalise_us_money_index_sidecar
+            checked = normalise_us_money_index_sidecar(data)
+            if checked.get("quality_issues"):
+                note = "; ".join(filter(None, (note, "PARTIAL_UNVERIFIED: " + "; ".join(checked["quality_issues"])) ))
+        except ValueError as error:
+            status, note = "INVALID", str(error)
+    if isinstance(data, dict) and data.get("macro_health", {}).get("status") == "DEGRADED":
+        note = "; ".join(filter(None, (note, "DEGRADED: " + ",".join(data["macro_health"]["issues"]))))
     return SourceRead(name, str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path), status, as_of, age, data, note)
 
 
@@ -269,6 +281,14 @@ def load_external(config: Mapping, now: datetime) -> dict[str, SourceRead]:
         "overnight": read_json("Overnight capture (since the US close)", latest_glob(src["overnight_glob"]),
                                ["as_of_utc"], float(fresh["overnight_max_age_hours"]), now),
     }
+    event_view = resolve("dropbox/macro/economic_events_latest.json")
+    if event_view.is_file():
+        reads["event_payload"] = read_json("US economic event payload", event_view,
+            ["run_context.generated_utc", "generated_from_report_date"], 48.0, now)
+    overlay = resolve("dropbox/macro/macro_advisory_latest.json")
+    if overlay.is_file():
+        reads["research_delivery"] = read_json("Research feed delivery (observation clocks per feed)", overlay,
+            ["as_of_utc"], file_age, now)
     return reads
 
 

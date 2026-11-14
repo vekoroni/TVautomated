@@ -1,7 +1,10 @@
-# Build the standalone ETF macro board (read-only on AVSHUNTER data) and open it.
-# Usage:  .\Run-MacroBoard.ps1            build latest and open
-#         .\Run-MacroBoard.ps1 -NoOpen    build only
+# Build the macro board with the configured data-only/AI publication policy.
 param([switch]$NoOpen)
 Set-Location -Path $PSScriptRoot
-$python = Join-Path $PSScriptRoot "venv\Scripts\python.exe"
-if ($NoOpen) { & $python -m macro_board --refresh } else { & $python -m macro_board --refresh --open }
+$python = Join-Path $PSScriptRoot 'venv/Scripts/python.exe'
+$policy=Get-Content -Raw (Join-Path $PSScriptRoot 'config/macro_delivery_v1.json') | ConvertFrom-Json
+$boardArgs=@('-m','macro_board','--refresh')
+if($policy.publication_mode -eq 'DATA_ONLY'){$boardArgs+=@('--config',(Join-Path $PSScriptRoot 'data/macro/delivery/data_only_board_config.json'))}
+if(-not $NoOpen){$boardArgs+='--open'}
+& $python @boardArgs
+exit $LASTEXITCODE

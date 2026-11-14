@@ -89,7 +89,12 @@ def _money_index(payload: Mapping, lines: list) -> None:
 
 def _market(payload: Mapping, cfg: Mapping, lines: list) -> None:
     review = payload.get("review") or {}
-    lines += ["## 2. How markets reacted at the close", "", "| Instrument | Reaction | Gap | Close |", "|---|---|---|---|"]
+    cm = ((payload.get("session_plan") or {}).get("call") or {}).get("current_market") or {}
+    lines += [f"## Current market: {cm.get('market_session')} {cm.get('segment')} — {cm.get('status')}", "",
+              "Cash-session acceptance unconfirmed. This is a timestamped snapshot; refresh expired quotes."]
+    for t, q in (cm.get("rows") or {}).items():
+        lines.append(f"- {t}: {q['price']:.2f}, {_pct(q['change_vs_close_pct'])} versus {cm.get('completed_session')} close; quote {q['time_utc']}" + ("; REVERSAL against prior session" if q.get('reversal') else ""))
+    lines += ["", f"## 2. How markets reacted at the {payload.get('as_of_session')} close", "", "| Instrument | Reaction | Gap | Close |", "|---|---|---|---|"]
     for t, r in (review.get("instruments") or {}).items():
         lines.append(f"| {t} | {KEY_TXT.get(_reaction_key(r), _reaction_key(r).lower())} | {_pct(r.get('gap_pct'))} | {_pct(r.get('close_pct'))} |")
     lead = (payload.get("opportunity") or {}).get("leadership") or {}

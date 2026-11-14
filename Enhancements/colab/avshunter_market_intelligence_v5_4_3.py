@@ -143,6 +143,13 @@ from datetime import datetime, timedelta, date, timezone
 
 import numpy as np
 import pandas as pd
+
+# Shared transport for local runner execution (including direct script launches).
+import sys as _source_sys
+from pathlib import Path as _SourcePath
+_source_sys.path.insert(0, str(_SourcePath(__file__).resolve().parents[2]))
+from contracts.source_transport import get_fred_response
+
 import requests
 
 warnings.filterwarnings('ignore')
@@ -861,6 +868,13 @@ def measure_since_us_close(symbol, name, bars, us_close_utc, now_utc, reference=
     row['reference'] = float(reference)
     row['change_pct'] = round((row['last'] / row['reference'] - 1) * 100, 6) if row['reference'] else None
     row['state'] = 'OK' if last_ts >= close_ts else 'NO_TRADE_SINCE_CLOSE'
+    if age < 0:
+        row.update(state='FUTURE_QUOTE', stale=True, last=None, change_pct=None)
+    elif row['stale']:
+        row['state'] = 'STALE'
+    if symbol in {'ES=F', 'NQ=F', 'YM=F', 'RTY=F', 'ZN=F', 'CL=F', 'GC=F'} and age >= 0:
+        from contracts.futures_freshness import classify_futures_quote
+        row.update(classify_futures_quote(now_utc, last_ts.to_pydatetime(), stale_after_minutes))
     return row
 
 
@@ -943,8 +957,10 @@ def release_reading(release_id, name, series_id, time_et, observations, last_upd
 def summarise_group(rows):
     """Count of measured readings and how many moved up / down; the median move. A label of what
     was measured, not a score."""
-    moves = [r['change_pct'] for r in rows if r.get('change_pct') is not None]
-    return {'measured': len(moves), 'of': len(rows), 'up': sum(1 for x in moves if x > 0),
+    moves = [r['change_pct'] for r in rows if r.get('change_pct') is not None
+             and not r.get('stale') and r.get('state') not in ('REOPEN_PENDING', 'SESSION_BREAK', 'WEEKEND_CLOSED')]
+    # Historical values remain on each row; the live summary excludes stale evidence.
+    return {'measured': len(moves), 'of': len(rows), 'stale': sum(bool(r.get('stale')) for r in rows), 'missing': sum(r.get('last') is None for r in rows), 'up': sum(1 for x in moves if x > 0),
             'down': sum(1 for x in moves if x < 0),
             'median_change_pct': round(float(np.median(moves)), 4) if moves else None}
 
@@ -985,6 +1001,8 @@ class OvernightExtractor:
 
     def _json(self, url, params=None, headers=None, ok=(200,)):
         try:
+            if url.startswith(self.FRED + '/'):
+                return get_fred_response(url, params, get=self.get).json()
             r = self.get(url, params=params, headers=headers, timeout=30)
         except Exception as e:
             self._err(f"{url.split('?')[0]}: {safe_error(e)}")
@@ -1170,7 +1188,7 @@ class FREDExtractor:
         params = {'series_id': series_id, 'api_key': self.api_key,
                   'file_type': 'json', 'sort_order': 'desc', 'limit': limit}
         try:
-            r = requests.get(f"{self.base_url}/series/observations", params=params, timeout=15)
+            r = get_fred_response(f"{self.base_url}/series/observations", params, get=requests.get, sleep=time.sleep)
             r.raise_for_status()
             time.sleep(0.10)
             obs = [(o['date'], float(o['value'])) for o in r.json().get('observations', [])

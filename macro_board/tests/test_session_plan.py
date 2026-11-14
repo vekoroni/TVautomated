@@ -86,6 +86,7 @@ def _payload():
     etfs["XLK"] = _etf(verdict="STAND_DOWN")
     return {
         "as_of_session": "2026-10-09",
+        "latest": {"status": "NOT_APPLICABLE_AS_OF_BUILD", "rows": {}},
         "horizons": [1, 5, 20],
         "conditions": {"meta": [{"key": "yields", "label": "10Y yield"}, {"key": "market_breadth", "label": "Breadth"},
                                 {"key": "market_trend", "label": "SPY trend"}],

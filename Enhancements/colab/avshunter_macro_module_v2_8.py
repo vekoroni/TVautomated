@@ -181,6 +181,13 @@ RUN_ID = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 import json
 import pandas as pd
 import numpy as np
+
+# Shared transport for local runner execution (including direct script launches).
+import sys as _source_sys
+from pathlib import Path as _SourcePath
+_source_sys.path.insert(0, str(_SourcePath(__file__).resolve().parents[2]))
+from contracts.source_transport import get_fred_response
+
 import requests
 
 try:
@@ -405,22 +412,34 @@ def fetch_polygon_snapshot(ticker, api_key):
 FRED_TIMEOUT_S, FRED_ATTEMPTS = 60, 3
 
 
-def _get_retried(url, params):
-    """GET retried on timeout / connection error / 429 / 5xx; a 4xx is returned at once.
-    fredapi waited without a time limit; on 8 Oct 2026 FRED answered in 8-11 s per request and
-    a single 30 s attempt lost series, so slowness is retried, not turned into MISSING."""
-    last = None
-    for attempt in range(1, FRED_ATTEMPTS + 1):
+def fetch_dollar_index(history=None, proxy_loader=None):
+    """ICE index first. UUP remains an explicitly named proxy, never an index level."""
+    try:
+        if history is None:
+            import yfinance as yf
+            history = lambda symbol: yf.Ticker(symbol).history(period="2y", auto_adjust=False)
+        frame = history("DX-Y.NYB")
+        if frame is not None and not frame.empty and "Close" in frame.columns:
+            series = cut_to_session(_normalise(frame["Close"].astype("float64").dropna()), session_cutoff())
+            if not series.empty:
+                return series, "YFINANCE_DX_Y_NYB"
+    except Exception as error:
+        errors.append(f"yfinance DX-Y.NYB: {type(error).__name__}")
+    if proxy_loader is not None:
         try:
-            r = requests.get(url, params=params, timeout=FRED_TIMEOUT_S)
-            if r.status_code != 429 and r.status_code < 500:
-                return r
-            last = requests.exceptions.HTTPError(f"HTTP {r.status_code}", response=r)
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            last = e
-        if attempt < FRED_ATTEMPTS:
-            time.sleep(2 * attempt)
-    raise last
+            proxy = cut_to_session(_normalise(proxy_loader()), session_cutoff())
+            if not proxy.empty:
+                errors.append("DXY: DX-Y.NYB unavailable, substituted UUP ETF proxy; level not comparable")
+                return proxy, "POLYGON_UUP_PROXY"
+        except Exception as error:
+            errors.append(f"DXY proxy: {type(error).__name__}")
+    errors.append("DXY: index and proxy unavailable")
+    return pd.Series(dtype="float64"), "NONE"
+
+
+def _get_retried(url, params):
+    return get_fred_response(url, params, get=requests.get, sleep=time.sleep,
+                             attempts=FRED_ATTEMPTS, timeout=FRED_TIMEOUT_S)
 
 
 def fetch_fred_all(series_map, start, fred_key):
@@ -545,7 +564,7 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
     """
     out = {"state": "MISSING", "regime": None, "net_gex_bn": None, "gamma_flip": None,
            "spot": None, "as_of": None, "age_days": None, "data_mode": None,
-           "coverage_pct": None, "flip_vs_spot_pct": None, "note": ""}
+           "coverage_pct": None, "flip_vs_spot_pct": None, "quality_flags": "", "note": ""}
     try:
         if not path.exists():
             out["note"] = f"{path.name} not found — run avshunter_gex_proxy first"
@@ -570,6 +589,7 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
             "spot": float(r["Spot"]) if pd.notna(r.get("Spot")) else None,
             "as_of": str(as_of) if pd.notna(as_of) else None, "age_days": age,
             "data_mode": r.get("Data_Mode"), "coverage_pct": r.get("Coverage_Pct"),
+            "quality_flags": str(r.get("Quality_Flags") or ""),
         })
         if out["gamma_flip"] and out["spot"]:
             out["flip_vs_spot_pct"] = round((out["spot"] / out["gamma_flip"] - 1) * 100, 3)
@@ -581,6 +601,24 @@ def load_gex(path=GEX_FILE, ticker=GEX_PRIMARY_TICKER):
         out["note"] = f"{type(e).__name__} — {e}"
         errors.append(f"GEX read failed: {out['note']}")
     return out
+
+
+def format_gex_summary(gex, ticker=GEX_PRIMARY_TICKER):
+    """An absent crossing is valid GEX context, not a numeric zero or an error."""
+    import math
+    def number(value, spec):
+        try:
+            return format(float(value), spec) if math.isfinite(float(value)) else "N/A"
+        except (TypeError, ValueError):
+            return "N/A"
+    flip = number(gex.get("gamma_flip"), ".2f")
+    distance = number(gex.get("flip_vs_spot_pct"), "+.2f")
+    if flip == "N/A" and "NO_ZERO_GAMMA_CROSSING_IN_GRID" in str(gex.get("quality_flags", "")):
+        flip = "N/A (no zero-gamma crossing in grid)"
+    return (f"  OK   {ticker} {gex.get('regime')} net {number(gex.get('net_gex_bn'), '+.3f')}B  "
+            f"flip {flip} vs spot {number(gex.get('spot'), '.2f')} "
+            f"({distance}{'%' if distance != 'N/A' else ''})  as_of {gex.get('as_of')} "
+            f"[{gex.get('data_mode')}, cov {number(gex.get('coverage_pct'), '.1f')}%]")
 
 
 # ── EVENT CALENDAR (shared with bond_macro_intelligence B-01) ───────────────
@@ -961,35 +999,17 @@ if __name__ == "__main__":
     vol_data, vol_meta = fetch_vol_complex()
     vix_data = dict(vol_data)
 
-    # DXY: DX=F came back empty on 2026-08-04, silently disabling the
-    # dollar/credit conflict rule. UUP is a proxy — only the % change is
-    # comparable, not the level.
-    dxy_source = "YFINANCE_DXF"
-    try:
-        import yfinance as yf
-        h = yf.Ticker("DX=F").history(period="2y", auto_adjust=False)
-        if h is not None and not h.empty and "Close" in h.columns:
-            vix_data["DXY"] = cut_to_session(_normalise(h["Close"].astype("float64").dropna()), session_cutoff())
-    except Exception as e:
-        errors.append(f"yfinance DX=F: {type(e).__name__} — {e}")
-    if "DXY" not in vix_data or vix_data["DXY"].empty:
-        uup = fetch_polygon("UUP", START_DATE, END_DATE, POLYGON_API_KEY)
-        if not uup.empty:
-            vix_data["DXY"] = uup
-            dxy_source = "POLYGON_UUP_PROXY"
-            errors.append("DXY: DX=F unavailable, substituted UUP ETF proxy")
-            print("  FALLBACK DXY -> UUP (proxy; level not comparable to DXY index)")
-        else:
-            dxy_source = "NONE"
-            print("  WARN DXY unavailable from both sources — dollar rules disabled")
+    dollar, dxy_source = fetch_dollar_index(
+        proxy_loader=lambda: fetch_polygon("UUP", START_DATE, END_DATE, POLYGON_API_KEY))
+    if not dollar.empty:
+        vix_data["DXY"] = dollar
+    else:
+        print("  WARN DXY unavailable from both sources — dollar rules disabled")
 
     print("\nLoading GEX handoff...")
     gex = load_gex()
     if gex["state"] == "OK":
-        print(f"  OK   {GEX_PRIMARY_TICKER} {gex['regime']} net {gex['net_gex_bn']:+.3f}B  "
-              f"flip {gex['gamma_flip']} vs spot {gex['spot']} "
-              f"({gex['flip_vs_spot_pct']:+.2f}%)  as_of {gex['as_of']} "
-              f"[{gex['data_mode']}, cov {gex['coverage_pct']}%]")
+        print(format_gex_summary(gex))
     else:
         print(f"  {gex['state']}: {gex['note']}")
 
@@ -1365,6 +1385,8 @@ if __name__ == "__main__":
         "gex": gex,
         "event_window": event_window,
         "dxy_source": dxy_source,
+        "dxy_observation_date": (str(vix_data['DXY'].index[-1].date())
+                                 if 'DXY' in vix_data and not vix_data['DXY'].empty else None),
         "sizing": sizing,
         "escalated_5d": escalated,
         "regime_contested": contested,

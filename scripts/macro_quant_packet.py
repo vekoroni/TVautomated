@@ -752,6 +752,8 @@ def build_macro_quant_packet(
         "usd_jpy_evidence_status": usd_jpy_evidence_status,
         "credit_state": credit,
         "credit_risk_score": credit_risk_score,
+        "credit_risk_score_basis": "TEXT_STATE_PROXY_NOT_MEASURED_OAS",
+        "macro_health": macro.get("macro_health", {}),
         "gex_regime_score": gex_score,
         "dealer_gamma_state": dealer_gamma,
         "gamma_risk_flag": dealer_gamma == "NEGATIVE_GAMMA",

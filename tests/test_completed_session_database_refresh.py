@@ -253,7 +253,12 @@ def test_end_to_end_completed_session_refresh_updates_phantom_gex_and_macro(
     }
     if historical_null_greeks:
         with sqlite3.connect(tmp_path / "data" / "phantom" / "phantom_history.db") as connection:
-            assert connection.execute("SELECT COUNT(*) FROM chain_snapshots WHERE gamma IS NULL").fetchone()[0] == 60
+            # Phantom maintenance derives missing Greeks in its mutable projection.
+            # The immutable provider revision, which GEX explicitly reads, must
+            # still retain all 60 missing provider gamma observations.
+            raw_rows=connection.execute("SELECT row_json FROM canonical_option_chain_revisions").fetchall()
+            assert len(raw_rows)==60 and all(json.loads(row[0])["gamma"] is None for row in raw_rows)
+            assert connection.execute("SELECT COUNT(*) FROM chain_snapshots WHERE gamma IS NOT NULL").fetchone()[0] == 60
         import pandas as pd
         proxy = pd.read_csv(tmp_path / "dropbox" / "market_data" / "avshunter_gex_proxy.csv")
         assert set(proxy["Greek_Computed_Contracts"]) == {30}

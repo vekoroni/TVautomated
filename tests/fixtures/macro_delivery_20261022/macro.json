@@ -1,0 +1,1745 @@
+{
+  "contract_version": "macro_contract_v1_0",
+  "regime_state": "TRANSITIONAL_BEARISH",
+  "dir_bias": "MILDLY_BEARISH",
+  "trend_energy": "CONSOLIDATING",
+  "usd_state": "FIRM",
+  "rates_impulse": "RESTRICTIVE_HOLD",
+  "liquidity_pulse": "FLAT",
+  "regime_drift_status": "DRIFTING_RISK_OFF",
+  "macro_conviction": 0.52,
+  "vol_mode": "COMPRESSED_CONTANGO_LOW_VOL",
+  "risk_on_off_switch": "SELECTIVE_RISK_ON_REDUCED_SIZE",
+  "notes": "Session 2026-10-21. FRED API total blackout \u2014 31 series failed with JSONDecodeError; all rate, credit, inflation, and liquidity FRED fields are MISSING this session. Regime model scores Risk-Off at probability 0.536 versus threshold 0.55 \u2014 sub-threshold by 0.014, model accuracy 55.1%, confidence LOW. Fung-Hsieh NO-GO (accuracy 44.4%, week 2026-10-16) acts as size modifier only: effective_size = stated_multiplier * 0.7x; direction does not abstain and individual ticker verdicts are not blocked. VIX term structure is CONTANGO (VIX9D 15.49 < VIX 17.31 < VIX3M 18.72), contango ratio 1.0815. Realised vol 20d = 8.82%; IV-to-RV ratio elevated, vol_edge = SELL_VOL. SPY -0.05% MTD, QQQ -2.98% MTD, IWM -3.74% MTD. Equal-weight RSP outperforming cap-weight SPY on 5d and monthly bases \u2014 breadth Z 0.84, NEUTRAL. GEX negative on both SPY (-5.89 Bn) and QQQ (-3.52 Bn) as of T-2; SPY spot (773.09) is trading between put wall (750) and gamma flip (778.58), implying dealer short-gamma and amplified move potential. Energy (XLE +49.3% YTD, +10.3% MTD) and Healthcare (XLV +5.3% MTD) are leading. Technology (XLK -3.9% MTD) and Communication Services (XLC -5.0% MTD, -6.8% YTD) are lagging. Forward bias: 1-5D MILDLY_BEARISH (score -0.114), 6-10D NEUTRAL (score -0.084), 11-20D NEUTRAL (score -0.043). Conviction reduced by FRED blackout, GEX staleness, low regime model confidence, and FH NO-GO.",
+  "as_of_utc": "2026-10-21T22:02:14Z",
+  "report_date": "2026-10-21",
+  "source": "avshunter_macro_module_v2_7",
+  "net_liquidity_score": 0.45,
+  "vix_regime_score": 0.62,
+  "gex_regime_score": 0.25,
+  "macro_momentum_score": 0.44,
+  "regime_label": "TRANSITIONAL_BEARISH",
+  "regime_probability": 0.536,
+  "vix_spot": 16.68000030517578,
+  "macro_filter": "NO_GO",
+  "sector_lead": [
+    "XLE",
+    "XLV",
+    "XLP",
+    "XLB",
+    "XLY"
+  ],
+  "sector_avoid": [
+    "XLC",
+    "XLK",
+    "XLRE",
+    "IWM"
+  ],
+  "size_multiplier": 0.63,
+  "trigger_required": true,
+  "horizon_routing": {
+    "1_5d": {
+      "bias": "MILDLY_BEARISH",
+      "bullish_prob_pct": 44.3,
+      "engine_mode": "REDUCED_SIZE_TRIGGER_REQUIRED",
+      "action": "NO_NEW_AGGRESSIVE_LONGS \u2014 selective longs in Energy and Healthcare with confirmed trigger only; no chasing; short bias permitted on XLC and XLK with trigger",
+      "size_multiplier": 0.5,
+      "block_conditions": [
+        "FH_NO_GO applies 0.7x size haircut \u2014 effective max multiplier 0.63 x 0.7 = 0.441 until FH flips GO",
+        "GEX negative on SPY and QQQ \u2014 amplified move risk; avoid naked short gamma",
+        "SPY trading between put wall 750 and gamma flip 778.58 \u2014 dealer short gamma zone; elevated move risk in either direction",
+        "No FRED data \u2014 macro layer has zero inputs; conviction ceiling 0.55"
+      ],
+      "size_multiplier_cap": 0.5,
+      "bias_source": "NARRATIVE_UNVERIFIED"
+    },
+    "6_10d": {
+      "bias": "NEUTRAL",
+      "bullish_prob_pct": 45.8,
+      "engine_mode": "WAIT_FOR_CLARITY",
+      "action": "HOLD existing positions; await FRED data restoration and FH accuracy improvement before initiating medium-term directional exposure; commodity longs may be maintained",
+      "size_multiplier": 0.55,
+      "block_conditions": [
+        "FH_NO_GO 0.7x size haircut applies until weekly recalibration",
+        "FRED blackout unresolved \u2014 macro layer contributing zero inputs to forward score",
+        "Regime probability sub-threshold \u2014 no high-conviction medium-term call available"
+      ],
+      "size_multiplier_cap": 0.55,
+      "bias_source": "NARRATIVE_UNVERIFIED"
+    },
+    "11_20d": {
+      "bias": "NEUTRAL",
+      "bullish_prob_pct": 47.9,
+      "engine_mode": "MACRO_WATCH",
+      "action": "NO DIRECTIONAL COMMITMENT at this horizon \u2014 monitor FRED data restoration, Fung-Hsieh accuracy trend, and regime model confidence before extending duration",
+      "size_multiplier": 0.6,
+      "block_conditions": [
+        "All FRED macro inputs absent \u2014 inflation, growth, and policy sub-regimes are UNKNOWN",
+        "USSLIND and OECD CLI quarantined \u2014 LEI signal unavailable",
+        "Forward bias score only -0.043 \u2014 statistically indistinguishable from noise at this layer coverage"
+      ],
+      "size_multiplier_cap": 0.6,
+      "bias_source": "NARRATIVE_UNVERIFIED"
+    }
+  },
+  "sector_rotation": {
+    "strongest_sectors": [
+      "Energy",
+      "Health Care",
+      "Consumer Staples",
+      "Materials",
+      "Consumer Discretionary"
+    ],
+    "weakest_sectors": [
+      "Communication Services",
+      "Information Technology",
+      "Real Estate"
+    ],
+    "rotation_signal": "DEFENSIVE_ROTATION",
+    "sector_bias_map": {
+      "Energy": "TAILWIND",
+      "Health Care": "TAILWIND",
+      "Consumer Staples": "TAILWIND",
+      "Materials": "TAILWIND",
+      "Consumer Discretionary": "MIXED",
+      "Financials": "NEUTRAL",
+      "Industrials": "NEUTRAL",
+      "Utilities": "NEUTRAL",
+      "Information Technology": "HEADWIND",
+      "Communication Services": "HEADWIND",
+      "Real Estate": "HEADWIND"
+    }
+  },
+  "extras": {
+    "generated_by": "AVSHUNTER_MACRO_MODULE_V2_7",
+    "report_date": "2026-10-21",
+    "as_of_utc": "2026-10-21T22:02:14Z",
+    "conviction_score": 0.52,
+    "liquidity_status": "NEUTRAL_FLAT",
+    "volatility_mode": "COMPRESSED_CONTANGO_LOW_VOL",
+    "vix_contango": 3.23,
+    "vix_term_regime": "CONTANGO",
+    "vix_spot": 16.68000030517578,
+    "vix_5d_avg": 15.49,
+    "vvix": 94.55000305175781,
+    "sector_bias": "XLE_LEAD_LONG_XLV_LEAD_LONG_XLP_LONG_XLB_LONG_XLC_AVOID_XLK_AVOID_XLRE_AVOID",
+    "macro_notes": "TRANSITIONAL_BEARISH. FRED total blackout eliminates macro layer. Regime model marginal Risk-Off (0.536 vs threshold 0.55, accuracy 55%). FH NO-GO = 0.7x size haircut only. VIX shallow contango, realised vol 8.82%, vol edge SELL_VOL. GEX negative on SPY and QQQ (T-2). Defensive rotation underway: Energy and Healthcare leading, Tech and Comms lagging. Forward bias mildly bearish short-term, neutral medium-term.",
+    "predictability_score": 52,
+    "forward_bias_layers": {
+      "tech": {
+        "score": -0.1553,
+        "direction": "BEARISH",
+        "note": "2 inputs used \u2014 technical signals bearish; XLK -3.9% MTD, QQQ -3.0% MTD, XLC -5.0% MTD"
+      },
+      "vix_term": {
+        "score": -0.3,
+        "direction": "BEARISH",
+        "note": "3 inputs used \u2014 contango structure bearish for short-term equity bias; VVIX 97.15 elevated; VIX9D rising on weekly basis +6.2%"
+      },
+      "cross_asset": {
+        "score": 0.0,
+        "direction": "NEUTRAL",
+        "note": "4 inputs used \u2014 commodity strength (USO +10.9% MTD, XLE +10.3% MTD) offset by tech/comms weakness; no net cross-asset directional signal"
+      },
+      "vol_regime": {
+        "score": 0.0,
+        "direction": "NEUTRAL",
+        "note": "2 inputs used \u2014 vol regime CALM_CARRY; VVIX NORMAL; contango intact but VVIX elevated at 97.15"
+      },
+      "mean_rev": {
+        "score": 0.0,
+        "direction": "NEUTRAL",
+        "note": "2 inputs used \u2014 SPY -1.09% from 52w high, minimal mean-reversion signal; breadth Z 0.84 neutral"
+      },
+      "trend": {
+        "score": -0.05,
+        "direction": "CONSOLIDATING",
+        "note": "2 inputs used \u2014 SPY MTD flat (-0.04%), IWM -3.7% MTD; equal-weight outperforming cap-weight \u2014 market breadth slightly supportive but overall trend consolidating"
+      },
+      "macro": {
+        "score": 0.0,
+        "direction": "NEUTRAL",
+        "note": "0 inputs used \u2014 FRED total blackout; all FRED macro series failed JSONDecodeError; USSLIND quarantined; OECD CLI quarantined; macro layer contributing zero this session"
+      }
+    },
+    "conflict_flags": [
+      "VIX_PCT_RANK_CONFLICT: report_json data_quality reports vix_pct_rank_1y=54.4; vix_engine_csv reports VIX_Pct_Rank_1y=42.9. CSV is primary \u2014 42.9 used in vix_engine block. 54.4 may reflect a different lookback or observation date. Conflict ACTIVE.",
+      "FRED_TOTAL_BLACKOUT: All 31 FRED series returned JSONDecodeError. DGS2, DGS10, T10Y2Y, SOFR, FEDFUNDS, HY_OAS, IG_BBB_OAS, CPI, PCE, PPI, M2, WALCL, RRPONTSYD, WRESBAL, NFCI, UMCSENT, INDPRO all MISSING. Macro layer has zero inputs. Conviction ceiling imposed.",
+      "REGIME_MODEL_SUB_THRESHOLD: Regime model probability 0.536 is below threshold 0.55 \u2014 model does not formally classify Risk-Off at its own threshold. Yet Regime field outputs Risk-Off. This is an internal model boundary condition. Treated as TRANSITIONAL_BEARISH rather than confirmed RISK_OFF.",
+      "REGIME_MODEL_LOW_ACCURACY: Regime model accuracy 55.1% \u2014 marginally above random. Regime signal treated as weak.",
+      "FH_ACCURACY_BELOW_50: Fung-Hsieh model accuracy 44.4% \u2014 below random for the week of 2026-10-16. NO-GO signal is valid per system rules but the underlying model is underperforming. Size haircut applied conservatively.",
+      "LIQUIDITY_REGIME_NO_DATA: liquidity_csv Liquidity_Regime field = 'No Data'. All FRED-sourced liquidity fields (HY_OAS, IG_BBB_OAS, SOFR_Z, RRP_Z, WALCL) are N/A. Repo stress score 20 is the only liquidity numeric available \u2014 insufficient for a full liquidity regime classification.",
+      "FX_AGE: All FX spot pairs (EUR/USD, GBP/USD, USD/JPY, USD/CNH, AUD/USD) in fx_csv have age_days=1 (obs_date 2026-10-20). Overnight JSON provides fresher FX data (age_minutes 1-11) \u2014 overnight values used for directional confirmation only; fx_csv remains primary per Rule 5.",
+      "GLOBAL_INDICES_AGE: DAX, Nikkei, Hang Seng, CAC 40 have age_days=1 or 2. Hang Seng has break_days=4 in overnight JSON. Stale international data noted.",
+      "DXY_PROXY_MISMATCH: threshold_flags_csv reports DXY latest=28.92 \u2014 this is UUP (ETF proxy), not the ICE DXY index. Overnight JSON shows DX-Y.NYB=101.688. These are different instruments. UUP used as proxy per system configuration; ICE DXY disclosed for context.",
+      "OECD_CLI_QUARANTINED: OECD CLI excluded per system configuration. Global cycle signal absent.",
+      "MISSING_INPUT: us_indices_cash_*.csv listed in missing_inputs \u2014 cash index OHLCV data absent this session.",
+      "NOT_CONFIGURED: events, rates_volatility, correlation, dispersion domains not configured this session \u2014 economic calendar, MOVE index, correlation matrix, and dispersion data absent.",
+      "RESOLVED: 3 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied",
+      "ACTIVE: HY/IG credit spreads missing; credit risk carried neutral",
+      "RESOLVED: GEX proxy and by-strike files validated against the completed-session manifest",
+      "ACTIVE: USSLIND stale by source cadence and quarantined from calculations"
+    ],
+    "execution_rules": {
+      "global": "FH NO-GO active \u2014 apply 0.7x size haircut to ALL stated size_multipliers. Effective maximum size = size_multiplier * 0.7. Direction does NOT abstain. Individual ticker verdicts are NOT blocked. Trigger confirmation required on all new entries (trigger_required=true).",
+      "1_5d": "MILDLY_BEARISH bias. Selective longs permitted in Energy, Healthcare, Consumer Staples with hard trigger confirmation. Short bias on Communication Services and Technology with trigger. No aggressive long initiation. Effective size = 0.63 * 0.7 = 0.441.",
+      "6_10d": "NEUTRAL bias. Hold existing positions. No new medium-term directional commitment until FRED data restores and FH accuracy improves. Commodity positions (energy, materials) may be maintained. Effective size = 0.70 * 0.7 = 0.49.",
+      "11_20d": "NEUTRAL bias. No new long-duration directional trades. Monitor macro data restoration. Effective size = 0.75 * 0.7 = 0.525.",
+      "put_permissions": "VIX at 16.68-17.31 \u2014 below typical put-buying threshold (conventionally >20). Puts permitted as hedges on existing longs or as defined-risk expressions on HEADWIND sectors (XLC, XLK). Naked long puts not recommended at current IV levels given vol_edge=SELL_VOL and realised vol 8.82%.",
+      "vol_selling": "Vol edge = SELL_VOL. IV-to-RV spread wide (VIX 17.31 vs RV 8.82 = ~196% premium). Short vol strategies have structural tailwind but negative GEX regime implies amplified move risk \u2014 size any short vol exposure conservatively."
+    },
+    "rates": {
+      "fed_funds": "MISSING \u2014 FRED JSONDecodeError",
+      "sofr": "MISSING \u2014 FRED JSONDecodeError",
+      "t10y": "MISSING \u2014 FRED JSONDecodeError; TLT proxy: 80.24, YTD -7.80%, pct from 52w high -12.96%",
+      "t2y": "MISSING \u2014 FRED JSONDecodeError; SHY proxy: 81.29, YTD -1.90%",
+      "curve_2y10y": "MISSING \u2014 cannot compute; TLT-SHY relative performance suggests long end underperforming short end on YTD basis",
+      "spread_signal": "UNKNOWN \u2014 no FRED yield data available this session"
+    },
+    "volatility": {
+      "regime": "CONTANGO",
+      "signal": "DIRECT",
+      "vix_spot": 16.68000030517578,
+      "vix9d": 15.489999771118164,
+      "vix3m": 18.719999313354492,
+      "vvix": 94.55000305175781,
+      "spread": 3.23,
+      "realised_vol_20d": 8.82,
+      "iv_rv_premium_pct": 96.3,
+      "vol_edge": "SELL_VOL",
+      "fear_phase": "CALM_CARRY",
+      "contango_ratio": 1.0815,
+      "front_end_slope": -1.82,
+      "vix_pct_rank_1y_csv": 42.9,
+      "vix_pct_rank_1y_report": 54.4,
+      "pct_rank_conflict": "ACTIVE \u2014 CSV value 42.9 is primary per Rule 5",
+      "vvix_stress": "NORMAL"
+    },
+    "liquidity": {
+      "regime": "UNKNOWN \u2014 FRED blackout; liquidity_csv Liquidity_Regime = No Data",
+      "signal": "UNKNOWN",
+      "level": "MODERATE \u2014 report_json default; unverifiable without FRED data",
+      "trend": "STABLE \u2014 report_json default; unverifiable without FRED data",
+      "walcl_change": "MISSING \u2014 FRED JSONDecodeError",
+      "rrp_level": "MISSING \u2014 FRED JSONDecodeError",
+      "repo_stress_score": 20,
+      "credit_stress": "MISSING",
+      "vix_term_shape": "CONTANGO",
+      "sofr_z": "MISSING",
+      "spread_z": "MISSING"
+    },
+    "inflation": {
+      "regime": "UNKNOWN",
+      "cpi_mom": "MISSING \u2014 FRED JSONDecodeError",
+      "ppi_mom": "MISSING \u2014 FRED JSONDecodeError",
+      "pce_trend": "MISSING \u2014 FRED JSONDecodeError",
+      "headline_cpi_yoy": "MISSING",
+      "core_cpi_yoy": "MISSING",
+      "core_pce_yoy": "MISSING",
+      "real_fed_funds": "MISSING"
+    },
+    "growth": {
+      "regime": "UNKNOWN",
+      "industrial_production_change_pct": "MISSING \u2014 FRED JSONDecodeError",
+      "jobless_claims_change_pct": "MISSING \u2014 FRED JSONDecodeError",
+      "usslind_status": "QUARANTINED \u2014 excluded from model",
+      "oecd_cli_status": "QUARANTINED \u2014 excluded from model"
+    },
+    "yield_curve": {
+      "2y10y_value": "MISSING",
+      "state": "UNKNOWN \u2014 no FRED yield data available",
+      "inverted": false,
+      "inverted_note": "ASSUMPTION only \u2014 report_json default field; not computed from data",
+      "recession_probability": 0.0,
+      "recession_probability_note": "ASSUMPTION \u2014 report_json default; model cannot compute without yield data",
+      "curve_move_1d": "UNKNOWN",
+      "curve_move_5d": "UNKNOWN",
+      "tlt_weekly_pct": 1.711,
+      "ief_weekly_pct": 0.58,
+      "tlt_monthly_pct": -1.847,
+      "ief_monthly_pct": -1.02,
+      "proxy_signal": "Long end (TLT) underperforming on monthly basis; slight weekly recovery \u2014 no clear trend without yield levels"
+    },
+    "macro_regime": {
+      "regime_state": "TRANSITIONAL_BEARISH",
+      "growth": "UNKNOWN",
+      "inflation": "UNKNOWN",
+      "policy": "UNKNOWN",
+      "overall": "TRANSITIONAL",
+      "confidence": 0.52,
+      "regime_probability": 0.536,
+      "model_accuracy": 0.551,
+      "model_threshold": 0.55,
+      "sub_threshold_note": "Regime model probability 0.536 is below its own threshold of 0.55 \u2014 classified as TRANSITIONAL_BEARISH rather than confirmed RISK_OFF"
+    },
+    "risk_assessment": {
+      "market_risk": 0.6364,
+      "macro_risk": 0.5,
+      "curve_risk": "UNKNOWN \u2014 no yield data",
+      "signal_risk": 0.5,
+      "liquidity_risk": 0.6,
+      "combined_score": 0.6241,
+      "polarity_note": "higher = more favourable; not more risky",
+      "recommendation": "NEUTRAL",
+      "confidence": "MODERATE"
+    },
+    "risk_signals": {
+      "gold_signal": "NEUTRAL \u2014 GLD monthly -5.28% but weekly +0.79%; pct from 52w high -25.65%; no clear safe-haven bid or flight signal",
+      "credit_signal": "NEUTRAL \u2014 HYG weekly +0.22%, monthly -2.15%; LQD monthly -1.79%; no OAS data available; ETF price action mildly negative but not distressed",
+      "treasury_signal": "NEUTRAL \u2014 TLT weekly +1.71%, monthly -1.85%; mild weekly relief rally in long end",
+      "vix_signal": "COMPLACENCY \u2014 VIX 17.31 with realised vol 8.82%; IV-RV premium wide; VIX9D front end low; fear phase CALM_CARRY",
+      "dollar_signal": "NEUTRAL \u2014 UUP stable; 5d -0.39%, 20d +0.68%, 60d +1.64%; USD trend STABLE, strength FIRM; no clear directional break",
+      "copper_signal": "NEUTRAL \u2014 CPER monthly -4.56%, weekly -0.30%; pct from 52w high -4.77%; mild weakness but not alarming",
+      "crude_signal": "ELEVATED \u2014 USO monthly +10.9%, YTD +131.7%; XLE monthly +10.3%, YTD +49.3%; threshold flag YELLOW, counts_as_risk=true; oil strength is a stagflation risk factor",
+      "risk_off_count": 1,
+      "risk_on_count": 1,
+      "net_risk_signal": "NEUTRAL with CRUDE RISK FLAG"
+    },
+    "futures_bias": {
+      "ES_SPY": {
+        "overnight_change_pct": 0.016,
+        "premarket_change_pct": -0.021,
+        "bias": "NEUTRAL_TO_MILDLY_BEARISH",
+        "note": "SPY governed GEX NEGATIVE at -5.888596bn; source=LOCAL_GEX_20261021_220040",
+        "gex_regime": "NEGATIVE",
+        "net_gex_bn": -5.888596,
+        "gamma_flip": 778.5815,
+        "call_wall": 780.0,
+        "put_wall": 750.0,
+        "spot_as_of": 766.73,
+        "gex_as_of": "2026-10-19T20:00:00Z",
+        "gex_run_id": "LOCAL_GEX_20261021_220040",
+        "gex_dataset_id": "35ff09604ffeb000bca32cc7ea800d25ae89100b8e0cbdb1cd32dd7342510756",
+        "authority": "ADVISORY_ONLY"
+      },
+      "NQ_QQQ": {
+        "overnight_change_pct": 0.087,
+        "premarket_change_pct": -0.097,
+        "bias": "MILDLY_BEARISH",
+        "note": "QQQ governed GEX NEGATIVE at -3.521682bn; source=LOCAL_GEX_20261021_220040",
+        "gex_regime": "NEGATIVE",
+        "net_gex_bn": -3.521682,
+        "gamma_flip": 741.8379,
+        "call_wall": 760.0,
+        "put_wall": 700.0,
+        "spot_as_of": 718.71,
+        "gex_as_of": "2026-10-19T20:00:00Z",
+        "gex_run_id": "LOCAL_GEX_20261021_220040",
+        "gex_dataset_id": "04d7613e3653dde968afd1756303d2fc42e767fabb9d945304b72a37a05ad1b8",
+        "authority": "ADVISORY_ONLY"
+      },
+      "RTY_IWM": {
+        "overnight_change_pct": -0.064,
+        "premarket_change_pct": -0.163,
+        "bias": "MILDLY_BEARISH",
+        "note": "RTY futures -0.064% (stale); IWM premarket -0.163%; small-caps weakest premarket mover; IWM -9.4% from 52w high; KOSPI -3.73% overnight adds EM/small-cap pressure"
+      }
+    },
+    "put_gate": {
+      "current_permission": "HEDGES_AND_DEFINED_RISK_ONLY",
+      "vix_current": 17.31,
+      "vix_buy_threshold": 20.0,
+      "threshold_met": false,
+      "rationale": "VIX at 17.31 is below the 20.0 threshold for outright long put strategies. IV-to-RV premium is wide (vol_edge=SELL_VOL). Puts permitted as defined-risk expressions on HEADWIND sectors (XLC, XLK) or as portfolio hedges on existing longs. Naked speculative long puts not recommended at current IV levels.",
+      "unblock_conditions": [
+        "VIX sustained above 20.0",
+        "VIX front-end inversion (VIX9D > VIX) signalling near-term stress",
+        "GEX stress escalation from LOW to MODERATE or HIGH",
+        "Negative GEX amplification event with SPY break below put wall 750"
+      ],
+      "recommended_structure": "If hedging: use defined-risk spreads (put verticals) to reduce premium cost given elevated IV. If expressing directional short: prefer in-the-money structures or near-term bear call spreads on XLC/XLK to avoid paying excess premium."
+    },
+    "horizon_routing": {
+      "1_5d": {
+        "bias": "MILDLY_BEARISH",
+        "bullish_prob_pct": 44.3,
+        "engine_mode": "REDUCED_SIZE_TRIGGER_REQUIRED",
+        "action": "NO_NEW_AGGRESSIVE_LONGS \u2014 selective longs in Energy and Healthcare with confirmed trigger only; no chasing; short bias permitted on XLC and XLK with trigger",
+        "size_multiplier": 0.63,
+        "block_conditions": [
+          "FH_NO_GO applies 0.7x size haircut \u2014 effective max multiplier 0.441",
+          "GEX negative on SPY and QQQ \u2014 amplified move risk in either direction",
+          "SPY trading in dealer short-gamma zone between put wall 750 and gamma flip 778.58",
+          "No FRED data \u2014 macro layer has zero inputs; conviction ceiling 0.55"
+        ]
+      },
+      "6_10d": {
+        "bias": "NEUTRAL",
+        "bullish_prob_pct": 45.8,
+        "engine_mode": "WAIT_FOR_CLARITY",
+        "action": "HOLD existing positions; await FRED data restoration and FH accuracy improvement before initiating medium-term directional exposure; commodity longs may be maintained",
+        "size_multiplier": 0.7,
+        "block_conditions": [
+          "FH_NO_GO 0.7x haircut applies \u2014 effective max 0.49",
+          "FRED blackout unresolved \u2014 macro layer zero inputs",
+          "Regime probability sub-threshold \u2014 no high-conviction medium-term directional call"
+        ]
+      },
+      "11_20d": {
+        "bias": "NEUTRAL",
+        "bullish_prob_pct": 47.9,
+        "engine_mode": "MACRO_WATCH",
+        "action": "NO DIRECTIONAL COMMITMENT at this horizon \u2014 monitor FRED data restoration, Fung-Hsieh accuracy trend, and regime model confidence before extending duration",
+        "size_multiplier": 0.75,
+        "block_conditions": [
+          "All FRED macro inputs absent \u2014 inflation, growth, policy sub-regimes UNKNOWN",
+          "USSLIND and OECD CLI quarantined \u2014 LEI signal unavailable",
+          "Forward bias score -0.043 statistically indistinguishable from noise at 0.857 layer coverage"
+        ]
+      }
+    },
+    "fx": {
+      "usd_jpy": 158.282,
+      "usd_jpy_change_1d_pct": -0.151,
+      "usd_jpy_change_5d_pct": 0.188,
+      "as_of": "2026-10-20",
+      "source": "fx_spot_20261021_230055.csv",
+      "source_field": "C:USDJPY.current_price",
+      "evidence_status": "OBSERVED_CAPTURE",
+      "authority": "ADVISORY_ONLY"
+    },
+    "gex": {
+      "regime": "NEGATIVE",
+      "net_gex_bn": -5.888596,
+      "gamma_flip": 778.5815,
+      "stress": "LOW",
+      "contracts_used": 3770.0,
+      "score": 0.25,
+      "data_mode": "HISTORICAL",
+      "data_status": "OK",
+      "run_id": "LOCAL_GEX_20261021_220040",
+      "as_of": "2026-10-19T20:00:00Z",
+      "source": "avshunter_gex_proxy.csv"
+    },
+    "lei_usslind": {
+      "status": "MISSING (excluded)",
+      "quarantined": true,
+      "source_date": null,
+      "age_days": null,
+      "stale": false,
+      "source": "avshunter_fred_master.csv|avsh_macro_master.csv"
+    },
+    "sector_etf_coverage": {
+      "xlc_present": true,
+      "xlc_30d": -5.04,
+      "source": "sectors_csv|avsh_macro_master.csv"
+    },
+    "macro_market_data_quality": {
+      "vix_term_structure": "CONFIRMED",
+      "vvix": "CONFIRMED",
+      "credit_spreads": "MISSING",
+      "gex": "CONFIRMED",
+      "lei_usslind": "QUARANTINED",
+      "xlc_sector": "CONFIRMED",
+      "yield_curve": "MISSING",
+      "usd_jpy": "OBSERVED_CAPTURE"
+    },
+    "overnight": {
+      "state": "OBSERVED",
+      "source": "overnight_20261021_230055.json",
+      "authority": "DISPLAY_ONLY",
+      "document": {
+        "contract": "avshunter_overnight_v1",
+        "version": "5.4.3",
+        "authority": "DISPLAY_ONLY",
+        "as_of_utc": "2026-10-21T22:01:43Z",
+        "run_session": "PreOpen",
+        "us_reference_session": "2026-10-21",
+        "us_reference_close_utc": "2026-10-21T20:00:00Z",
+        "us_reference_source": "runner",
+        "stale_after_minutes": 60,
+        "groups": {
+          "us_futures": [
+            {
+              "symbol": "ES=F",
+              "name": "S&P 500 e-mini",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 7800.25,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 7799.0,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": 0.016028
+            },
+            {
+              "symbol": "NQ=F",
+              "name": "Nasdaq 100 e-mini",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 30023.75,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 29997.75,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": 0.086673
+            },
+            {
+              "symbol": "YM=F",
+              "name": "Dow e-mini",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 53106.0,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 53061.0,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": 0.084808
+            },
+            {
+              "symbol": "RTY=F",
+              "name": "Russell 2000 e-mini",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 2792.300048828125,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 2794.10009765625,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.064423
+            }
+          ],
+          "rates_commodities": [
+            {
+              "symbol": "ZN=F",
+              "name": "10Y T-note future",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 105.25,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 105.265625,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.014843
+            },
+            {
+              "symbol": "CL=F",
+              "name": "WTI crude future",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 97.70999908447266,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 97.69999694824219,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": 0.010238
+            },
+            {
+              "symbol": "GC=F",
+              "name": "Gold future",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 4159.5,
+              "last_bar_utc": "2026-10-21T20:55:00Z",
+              "age_minutes": 66,
+              "stale": true,
+              "reference": 4152.5,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": 0.168573
+            }
+          ],
+          "fx": [
+            {
+              "symbol": "EURUSD=X",
+              "name": "EUR/USD",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 1.1235954761505127,
+              "last_bar_utc": "2026-10-21T22:00:00Z",
+              "age_minutes": 1,
+              "stale": false,
+              "reference": 1.123721718788147,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.011234
+            },
+            {
+              "symbol": "USDJPY=X",
+              "name": "USD/JPY",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 158.10400390625,
+              "last_bar_utc": "2026-10-21T22:00:00Z",
+              "age_minutes": 1,
+              "stale": false,
+              "reference": 158.19500732421875,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.057526
+            },
+            {
+              "symbol": "GBPUSD=X",
+              "name": "GBP/USD",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 1.3392258882522583,
+              "last_bar_utc": "2026-10-21T22:00:00Z",
+              "age_minutes": 1,
+              "stale": false,
+              "reference": 1.3394770622253418,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.018752
+            },
+            {
+              "symbol": "AUDUSD=X",
+              "name": "AUD/USD",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 0.7027900815010071,
+              "last_bar_utc": "2026-10-21T22:00:00Z",
+              "age_minutes": 1,
+              "stale": false,
+              "reference": 0.7034327387809753,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.09136
+            },
+            {
+              "symbol": "CNH=X",
+              "name": "USD/CNH",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 6.673150062561035,
+              "last_bar_utc": "2026-10-21T22:00:00Z",
+              "age_minutes": 1,
+              "stale": false,
+              "reference": 6.673739910125732,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.008838
+            },
+            {
+              "symbol": "DX-Y.NYB",
+              "name": "US Dollar Index (ICE)",
+              "source": "YFINANCE",
+              "state": "OK",
+              "last": 101.68800354003906,
+              "last_bar_utc": "2026-10-21T21:50:00Z",
+              "age_minutes": 11,
+              "stale": false,
+              "reference": 101.69599914550781,
+              "reference_label": "last 5-minute bar before the US close",
+              "reference_bar_utc": "2026-10-21T19:55:00Z",
+              "change_pct": -0.007862
+            }
+          ],
+          "volatility": [
+            {
+              "symbol": "VIX",
+              "name": "VIX (overnight, Cboe delayed)",
+              "source": "CBOE_DELAYED",
+              "state": "OK",
+              "last": 16.68,
+              "last_bar_utc": "2026-10-21T20:10:00Z",
+              "age_minutes": 111,
+              "stale": true,
+              "reference": 17.31,
+              "reference_label": "Cboe previous close",
+              "reference_bar_utc": null,
+              "change_pct": -3.639515,
+              "note": "timing from the yfinance ^VIX 5-minute bars"
+            }
+          ],
+          "us_premarket": [
+            {
+              "symbol": "SPY",
+              "name": "S&P 500 ETF",
+              "source": "MARKETDATA",
+              "state": "OK",
+              "last": 772.93,
+              "last_bar_utc": "2026-10-21T21:45:00Z",
+              "age_minutes": 16,
+              "stale": false,
+              "reference": 773.09,
+              "reference_label": "official close 2026-10-21 (Polygon)",
+              "reference_bar_utc": null,
+              "change_pct": -0.020696,
+              "volume_since_close": 3872599.0
+            },
+            {
+              "symbol": "QQQ",
+              "name": "Nasdaq 100 ETF",
+              "source": "MARKETDATA",
+              "state": "OK",
+              "last": 724.5,
+              "last_bar_utc": "2026-10-21T21:45:00Z",
+              "age_minutes": 16,
+              "stale": false,
+              "reference": 725.2,
+              "reference_label": "official close 2026-10-21 (Polygon)",
+              "reference_bar_utc": null,
+              "change_pct": -0.096525,
+              "volume_since_close": 2004802.0
+            },
+            {
+              "symbol": "IWM",
+              "name": "Russell 2000 ETF",
+              "source": "MARKETDATA",
+              "state": "OK",
+              "last": 276.03,
+              "last_bar_utc": "2026-10-21T21:40:00Z",
+              "age_minutes": 21,
+              "stale": false,
+              "reference": 276.48,
+              "reference_label": "official close 2026-10-21 (Polygon)",
+              "reference_bar_utc": null,
+              "change_pct": -0.16276,
+              "volume_since_close": 710268.0
+            },
+            {
+              "symbol": "DIA",
+              "name": "Dow ETF",
+              "source": "MARKETDATA",
+              "state": "OK",
+              "last": 527.72,
+              "last_bar_utc": "2026-10-21T21:10:00Z",
+              "age_minutes": 51,
+              "stale": false,
+              "reference": 527.7,
+              "reference_label": "official close 2026-10-21 (Polygon)",
+              "reference_bar_utc": null,
+              "change_pct": 0.00379,
+              "volume_since_close": 9907.0
+            }
+          ],
+          "asia": [
+            {
+              "symbol": "^N225",
+              "name": "Nikkei 225",
+              "source": "YFINANCE",
+              "exchange_tz": "Asia/Tokyo",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 64075.421875,
+              "prev_session_date": "2026-10-19",
+              "prev_close": 64916.69921875,
+              "change_pct": -1.295934,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T06:25:00Z",
+              "age_minutes": 936,
+              "stale": false
+            },
+            {
+              "symbol": "^HSI",
+              "name": "Hang Seng",
+              "source": "YFINANCE",
+              "exchange_tz": "Asia/Hong_Kong",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 23867.740234375,
+              "prev_session_date": "2026-10-16",
+              "prev_close": 24186.830078125,
+              "change_pct": -1.319271,
+              "break_days": 4,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T08:05:00Z",
+              "age_minutes": 836,
+              "stale": false
+            },
+            {
+              "symbol": "000001.SS",
+              "name": "Shanghai Composite",
+              "source": "YFINANCE",
+              "exchange_tz": "Asia/Shanghai",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 3735.3701171875,
+              "prev_session_date": "2026-10-19",
+              "prev_close": 3730.919921875,
+              "change_pct": 0.119279,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T06:55:00Z",
+              "age_minutes": 906,
+              "stale": false
+            },
+            {
+              "symbol": "^AXJO",
+              "name": "ASX 200",
+              "source": "YFINANCE",
+              "exchange_tz": "Australia/Sydney",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-21",
+              "last": 8831.2998046875,
+              "prev_session_date": "2026-10-20",
+              "prev_close": 8816.900390625,
+              "change_pct": 0.163316,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": null,
+              "age_minutes": null,
+              "stale": null
+            },
+            {
+              "symbol": "^KS11",
+              "name": "KOSPI",
+              "source": "YFINANCE",
+              "exchange_tz": "Asia/Seoul",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 5552.740234375,
+              "prev_session_date": "2026-10-19",
+              "prev_close": 5768.009765625,
+              "change_pct": -3.732128,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T06:30:00Z",
+              "age_minutes": 931,
+              "stale": false
+            }
+          ],
+          "europe": [
+            {
+              "symbol": "^STOXX50E",
+              "name": "Euro Stoxx 50",
+              "source": "YFINANCE",
+              "exchange_tz": "Europe/Berlin",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 6121.66015625,
+              "prev_session_date": "2026-10-19",
+              "prev_close": 6144.81005859375,
+              "change_pct": -0.376739,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T15:25:00Z",
+              "age_minutes": 396,
+              "stale": false
+            },
+            {
+              "symbol": "^GDAXI",
+              "name": "DAX",
+              "source": "YFINANCE",
+              "exchange_tz": "Europe/Berlin",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 25304.419921875,
+              "prev_session_date": "2026-10-19",
+              "prev_close": 25319.76953125,
+              "change_pct": -0.060623,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T16:00:00Z",
+              "age_minutes": 361,
+              "stale": false
+            },
+            {
+              "symbol": "^FTSE",
+              "name": "FTSE 100",
+              "source": "YFINANCE",
+              "exchange_tz": "Europe/London",
+              "state": "CLOSED",
+              "session_date": "2026-10-21",
+              "last": 10752.8798828125,
+              "prev_session_date": "2026-10-20",
+              "prev_close": 10733.0,
+              "change_pct": 0.185222,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T15:35:00Z",
+              "age_minutes": 386,
+              "stale": false
+            },
+            {
+              "symbol": "^FCHI",
+              "name": "CAC 40",
+              "source": "YFINANCE",
+              "exchange_tz": "Europe/Paris",
+              "state": "NOT_YET_OPEN",
+              "session_date": "2026-10-20",
+              "last": 7838.490234375,
+              "prev_session_date": "2026-10-19",
+              "prev_close": 7868.0498046875,
+              "change_pct": -0.375691,
+              "break_days": 1,
+              "after_break": false,
+              "note": "",
+              "last_bar_utc": "2026-10-21T15:25:00Z",
+              "age_minutes": 396,
+              "stale": false
+            }
+          ]
+        },
+        "summary": {
+          "us_futures": {
+            "measured": 4,
+            "of": 4,
+            "up": 3,
+            "down": 1,
+            "median_change_pct": 0.0504
+          },
+          "rates_commodities": {
+            "measured": 3,
+            "of": 3,
+            "up": 2,
+            "down": 1,
+            "median_change_pct": 0.0102
+          },
+          "fx": {
+            "measured": 6,
+            "of": 6,
+            "up": 0,
+            "down": 6,
+            "median_change_pct": -0.015
+          },
+          "volatility": {
+            "measured": 1,
+            "of": 1,
+            "up": 0,
+            "down": 1,
+            "median_change_pct": -3.6395
+          },
+          "us_premarket": {
+            "measured": 4,
+            "of": 4,
+            "up": 1,
+            "down": 3,
+            "median_change_pct": -0.0586
+          },
+          "asia": {
+            "measured": 5,
+            "of": 5,
+            "up": 2,
+            "down": 3,
+            "median_change_pct": -1.2959
+          },
+          "europe": {
+            "measured": 4,
+            "of": 4,
+            "up": 1,
+            "down": 3,
+            "median_change_pct": -0.2182
+          }
+        },
+        "releases_today": [],
+        "releases_ahead": [],
+        "notes": [
+          "VIX9D, VIX3M and VVIX are not quoted overnight; see vol_complex for their closes.",
+          "Quotes are delayed (yfinance ~10 min, MarketData 15 min); age is shown, never gated."
+        ],
+        "errors": [
+          "https://api.stlouisfed.org/fred/releases/dates: non-JSON response",
+          "https://api.stlouisfed.org/fred/releases/dates: non-JSON response"
+        ]
+      }
+    },
+    "macro_input_coverage": {
+      "rates": "OBSERVED",
+      "credit": "OBSERVED",
+      "liquidity": "OBSERVED",
+      "volatility": "OBSERVED",
+      "breadth": "OBSERVED",
+      "fx": "OBSERVED",
+      "commodities": "OBSERVED",
+      "sectors": "OBSERVED",
+      "global_risk": "OBSERVED",
+      "overnight": "OBSERVED",
+      "gex": "OBSERVED",
+      "events": "NOT_CONFIGURED",
+      "rates_volatility": "NOT_CONFIGURED",
+      "correlation": "NOT_CONFIGURED",
+      "dispersion": "NOT_CONFIGURED"
+    },
+    "macro_input_lineage": {
+      "manifest_id": "MACRO_INPUT:41d6a2fb99ce07059ac3",
+      "manifest_sha256": "41d6a2fb99ce07059ac3e888151d48392bd54366bb65174fc6431fa9222d68e5",
+      "gex_validation": {
+        "status": "VALIDATED",
+        "authority": "ADVISORY_ONLY",
+        "session_date": "2026-10-19",
+        "run_id": "LOCAL_GEX_20261021_220040",
+        "dataset_ids": [
+          "35ff09604ffeb000bca32cc7ea800d25ae89100b8e0cbdb1cd32dd7342510756",
+          "04d7613e3653dde968afd1756303d2fc42e767fabb9d945304b72a37a05ad1b8"
+        ],
+        "proxy_sha256": "0d56798bebb4651424913967f401fdd83cffe95dabdf6019b4b98180060ed1f2",
+        "by_strike_sha256": "d4fcf38c67c26424062585f46d11c60d9f3cfc0ed49123e90d7416a69ad28049"
+      },
+      "authority": "ADVISORY_ONLY"
+    },
+    "data_reconciliation": {
+      "contract_version": "macro_data_reconciliation_v1",
+      "authority": "ADVISORY_ONLY",
+      "vix_source": "vix_engine_csv",
+      "gex_source": "validated_gex_manifest",
+      "usslind_state": "QUARANTINED",
+      "output_coherent": true
+    },
+    "us_money_index_status": {
+      "status": "INVALID_UNAVAILABLE",
+      "error": "current_state.risk_off_transition must be boolean or producer text starting CONFIRMED/UNCONFIRMED/NOT_CONFIRMED/NONE/TRUE/FALSE/YES/NO; got 'ELEVATED_MACRO_RISK_OFF_82_OF100_WITH_BROAD_POSITIVE_CASH_RO'"
+    }
+  },
+  "usd_jpy": 158.282,
+  "usd_jpy_change_1d_pct": -0.151,
+  "usd_jpy_change_5d_pct": 0.188,
+  "usd_jpy_as_of": "2026-10-20",
+  "usd_jpy_source": "fx_spot_20261021_230055.csv",
+  "usd_jpy_evidence_status": "OBSERVED_CAPTURE",
+  "gex_available": true,
+  "macro_authority": "ADVISORY_ONLY",
+  "macro_candidate_authority": "NONE",
+  "macro_direction_authority": "NONE",
+  "macro_contract_authority": "NONE",
+  "macro_capital_authority": "NONE",
+  "macro_input_manifest_id": "MACRO_INPUT:41d6a2fb99ce07059ac3",
+  "macro_input_manifest_sha256": "41d6a2fb99ce07059ac3e888151d48392bd54366bb65174fc6431fa9222d68e5",
+  "conflict_flags": [
+    "VIX_PCT_RANK_CONFLICT: report_json data_quality reports vix_pct_rank_1y=54.4; vix_engine_csv reports VIX_Pct_Rank_1y=42.9. CSV is primary \u2014 42.9 used in vix_engine block. 54.4 may reflect a different lookback or observation date. Conflict ACTIVE.",
+    "FRED_TOTAL_BLACKOUT: All 31 FRED series returned JSONDecodeError. DGS2, DGS10, T10Y2Y, SOFR, FEDFUNDS, HY_OAS, IG_BBB_OAS, CPI, PCE, PPI, M2, WALCL, RRPONTSYD, WRESBAL, NFCI, UMCSENT, INDPRO all MISSING. Macro layer has zero inputs. Conviction ceiling imposed.",
+    "REGIME_MODEL_SUB_THRESHOLD: Regime model probability 0.536 is below threshold 0.55 \u2014 model does not formally classify Risk-Off at its own threshold. Yet Regime field outputs Risk-Off. This is an internal model boundary condition. Treated as TRANSITIONAL_BEARISH rather than confirmed RISK_OFF.",
+    "REGIME_MODEL_LOW_ACCURACY: Regime model accuracy 55.1% \u2014 marginally above random. Regime signal treated as weak.",
+    "FH_ACCURACY_BELOW_50: Fung-Hsieh model accuracy 44.4% \u2014 below random for the week of 2026-10-16. NO-GO signal is valid per system rules but the underlying model is underperforming. Size haircut applied conservatively.",
+    "LIQUIDITY_REGIME_NO_DATA: liquidity_csv Liquidity_Regime field = 'No Data'. All FRED-sourced liquidity fields (HY_OAS, IG_BBB_OAS, SOFR_Z, RRP_Z, WALCL) are N/A. Repo stress score 20 is the only liquidity numeric available \u2014 insufficient for a full liquidity regime classification.",
+    "FX_AGE: All FX spot pairs (EUR/USD, GBP/USD, USD/JPY, USD/CNH, AUD/USD) in fx_csv have age_days=1 (obs_date 2026-10-20). Overnight JSON provides fresher FX data (age_minutes 1-11) \u2014 overnight values used for directional confirmation only; fx_csv remains primary per Rule 5.",
+    "GLOBAL_INDICES_AGE: DAX, Nikkei, Hang Seng, CAC 40 have age_days=1 or 2. Hang Seng has break_days=4 in overnight JSON. Stale international data noted.",
+    "DXY_PROXY_MISMATCH: threshold_flags_csv reports DXY latest=28.92 \u2014 this is UUP (ETF proxy), not the ICE DXY index. Overnight JSON shows DX-Y.NYB=101.688. These are different instruments. UUP used as proxy per system configuration; ICE DXY disclosed for context.",
+    "OECD_CLI_QUARANTINED: OECD CLI excluded per system configuration. Global cycle signal absent.",
+    "MISSING_INPUT: us_indices_cash_*.csv listed in missing_inputs \u2014 cash index OHLCV data absent this session.",
+    "NOT_CONFIGURED: events, rates_volatility, correlation, dispersion domains not configured this session \u2014 economic calendar, MOVE index, correlation matrix, and dispersion data absent.",
+    "RESOLVED: 3 stale macro data gap flag(s) cleared by confirmed market_data overrides; CSV primary applied",
+    "ACTIVE: HY/IG credit spreads missing; credit risk carried neutral",
+    "RESOLVED: GEX proxy and by-strike files validated against the completed-session manifest",
+    "ACTIVE: USSLIND stale by source cadence and quarantined from calculations"
+  ],
+  "us_money_index_available": false,
+  "us_money_index_authority": "ADVISORY_ONLY",
+  "horizon_routing_enforcement": [
+    "1_5d: size_multiplier 0.63 -> 0.5 (cap 0.5)",
+    "6_10d: size_multiplier 0.7 -> 0.55 (cap 0.55)",
+    "11_20d: size_multiplier 0.75 -> 0.6 (cap 0.6)"
+  ],
+  "horizon_routing_complete": true,
+  "horizon_routing_required_buckets": [
+    "1_5d",
+    "6_10d",
+    "11_20d"
+  ],
+  "_builder_metadata": {
+    "built_at": "2026-10-21T22:07:29.724728+00:00",
+    "built_by": "build_macro_json.py",
+    "model": "claude-sonnet-4-6",
+    "files_used": [
+      "report_20261021_230055.json",
+      "macro_20261021_230055.csv",
+      "forward_bias_20261021_230055.csv",
+      "avshunter_liquidity_monitor.csv",
+      "avshunter_macro_filter_summary.csv",
+      "avshunter_daily_macro_regime.csv",
+      "avshunter_vix_engine_v3.csv",
+      "avsh_macro_master.csv",
+      "avshunter_fred_master.csv",
+      "avshunter_gex_proxy.csv",
+      "avshunter_gex_by_strike.csv",
+      "avshunter_gex_run_manifest.json",
+      "macro_series_threshold_flags.csv",
+      "avshunter_regime.json",
+      "global_indices_20261021_230055.csv",
+      "sectors_20261021_230055.csv",
+      "vol_dollar_20261021_230055.csv",
+      "fx_spot_20261021_230055.csv",
+      "bonds_etf_20261021_230055.csv",
+      "metals_etf_20261021_230055.csv",
+      "energy_etf_20261021_230055.csv",
+      "equity_etf_20261021_230055.csv",
+      "agriculture_etf_20261021_230055.csv",
+      "breadth_rsp_spy.csv",
+      "collection_validation_20261021_230055.csv",
+      "vix_term_dxy_snapshot.csv",
+      "vol_complex_20261021_230055.csv",
+      "overnight_20261021_230055.json"
+    ],
+    "files_used_by_key": {
+      "report_json": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\report_20261021_230055.json",
+      "macro_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\macro_20261021_230055.csv",
+      "forward_bias_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\forward_bias_20261021_230055.csv",
+      "liquidity_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_liquidity_monitor.csv",
+      "fung_hsieh_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_macro_filter_summary.csv",
+      "regime_model_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_daily_macro_regime.csv",
+      "vix_engine_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_vix_engine_v3.csv",
+      "macro_master_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avsh_macro_master.csv",
+      "fred_master_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_fred_master.csv",
+      "gex_proxy_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_gex_proxy.csv",
+      "gex_by_strike_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_gex_by_strike.csv",
+      "gex_manifest_json": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_gex_run_manifest.json",
+      "threshold_flags_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\macro_series_threshold_flags.csv",
+      "regime_json": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_regime.json",
+      "global_indices_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\global_indices_20261021_230055.csv",
+      "sectors_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\sectors_20261021_230055.csv",
+      "vol_dollar_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\vol_dollar_20261021_230055.csv",
+      "fx_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\fx_spot_20261021_230055.csv",
+      "bonds_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\bonds_etf_20261021_230055.csv",
+      "metals_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\metals_etf_20261021_230055.csv",
+      "energy_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\energy_etf_20261021_230055.csv",
+      "equity_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\equity_etf_20261021_230055.csv",
+      "agriculture_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\agriculture_etf_20261021_230055.csv",
+      "breadth_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\breadth_rsp_spy.csv",
+      "collection_validation_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\collection_validation_20261021_230055.csv",
+      "vix_term_dxy_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\vix_term_dxy_snapshot.csv",
+      "vol_complex_csv": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\vol_complex_20261021_230055.csv",
+      "overnight_json": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\overnight_20261021_230055.json"
+    },
+    "files_missing": [
+      "us_indices_cash_*.csv"
+    ],
+    "update_mode": "FULL",
+    "update_keys": [],
+    "input_manifest_id": "MACRO_INPUT:41d6a2fb99ce07059ac3",
+    "input_manifest_sha256": "41d6a2fb99ce07059ac3e888151d48392bd54366bb65174fc6431fa9222d68e5",
+    "input_manifest": {
+      "contract_version": "macro_input_manifest_v2",
+      "authority": "ADVISORY_ONLY",
+      "entries": [
+        {
+          "key": "agriculture_csv",
+          "filename": "agriculture_etf_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\agriculture_etf_20261021_230055.csv",
+          "sha256": "3a3b1d57cfd6102483167c766fca1d98ef651cddc65cc06b1790126e48bdbbed",
+          "bytes": 677,
+          "modified_utc": "2026-10-21T22:02:14.477009Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "bonds_csv",
+          "filename": "bonds_etf_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\bonds_etf_20261021_230055.csv",
+          "sha256": "a367e8c202f317ad1593fd1deb04e759b5c538c39ee9bde3a96cfef30669136b",
+          "bytes": 794,
+          "modified_utc": "2026-10-21T22:02:14.475009Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "breadth_csv",
+          "filename": "breadth_rsp_spy.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\breadth_rsp_spy.csv",
+          "sha256": "4794f2b7a911b9b5b3a6ce153ef7fdc48b1cd8a69d5cf55f2a118ae4f3a3b069",
+          "bytes": 210,
+          "modified_utc": "2026-10-21T22:01:28.271051Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "collection_validation_csv",
+          "filename": "collection_validation_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\collection_validation_20261021_230055.csv",
+          "sha256": "9140d53a1165ef8518eb9176f9fbc90e26b3999f133174ae9e6ccfd5a61e6801",
+          "bytes": 304,
+          "modified_utc": "2026-10-21T22:02:14.466010Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [],
+          "latest_observation": ""
+        },
+        {
+          "key": "energy_csv",
+          "filename": "energy_etf_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\energy_etf_20261021_230055.csv",
+          "sha256": "c7cb670067be5b46e5274316369efd73cacf3d775a290a4904325b573d44a9e4",
+          "bytes": 783,
+          "modified_utc": "2026-10-21T22:02:14.474009Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "equity_csv",
+          "filename": "equity_etf_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\equity_etf_20261021_230055.csv",
+          "sha256": "2a19b154c083d8ede8725bfd8bb77e119172b3d874b33b1924cc10f6ec8b632a",
+          "bytes": 932,
+          "modified_utc": "2026-10-21T22:02:14.469009Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "forward_bias_csv",
+          "filename": "forward_bias_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\forward_bias_20261021_230055.csv",
+          "sha256": "eab7ee57aa8c2e9f73403a70b45beae6c4ef9a3e902ff12181f25cefdf089811",
+          "bytes": 239,
+          "modified_utc": "2026-10-21T22:02:14.464009Z",
+          "required": true,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [],
+          "latest_observation": ""
+        },
+        {
+          "key": "fred_master_csv",
+          "filename": "avshunter_fred_master.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_fred_master.csv",
+          "sha256": "91a4e2f100227487a802ac040b85700f03520b347fbfe4c23b7bf2d97b43d9fa",
+          "bytes": 4,
+          "modified_utc": "2026-10-21T22:03:41.600588Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [],
+          "latest_observation": ""
+        },
+        {
+          "key": "fung_hsieh_csv",
+          "filename": "avshunter_macro_filter_summary.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_macro_filter_summary.csv",
+          "sha256": "cbcc163548b4bccff493c38637f70b97c802e6d92a58c9d5d1b7f76b041ec89a",
+          "bytes": 155,
+          "modified_utc": "2026-10-21T22:01:10.662869Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [],
+          "latest_observation": ""
+        },
+        {
+          "key": "fx_csv",
+          "filename": "fx_spot_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\fx_spot_20261021_230055.csv",
+          "sha256": "8b74f31a1846947c2ada802eeacf0ac8b1258c9ec86bfec280ad6bb2df9da501",
+          "bytes": 781,
+          "modified_utc": "2026-10-21T22:02:14.481008Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-20"
+          ],
+          "latest_observation": "2026-10-20"
+        },
+        {
+          "key": "gex_by_strike_csv",
+          "filename": "avshunter_gex_by_strike.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_gex_by_strike.csv",
+          "sha256": "d4fcf38c67c26424062585f46d11c60d9f3cfc0ed49123e90d7416a69ad28049",
+          "bytes": 127311,
+          "modified_utc": "2026-10-21T22:00:53.675021Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-19"
+          ],
+          "latest_observation": "2026-10-19"
+        },
+        {
+          "key": "gex_manifest_json",
+          "filename": "avshunter_gex_run_manifest.json",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_gex_run_manifest.json",
+          "sha256": "3824c833372facb0c179fc26a49c49af61806f2989ca5a6f3950d6b11ac5bdab",
+          "bytes": 1117,
+          "modified_utc": "2026-10-21T22:00:53.699031Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-19"
+          ],
+          "latest_observation": "2026-10-19"
+        },
+        {
+          "key": "gex_proxy_csv",
+          "filename": "avshunter_gex_proxy.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_gex_proxy.csv",
+          "sha256": "0d56798bebb4651424913967f401fdd83cffe95dabdf6019b4b98180060ed1f2",
+          "bytes": 1064,
+          "modified_utc": "2026-10-21T22:00:53.666044Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-19"
+          ],
+          "latest_observation": "2026-10-19"
+        },
+        {
+          "key": "global_indices_csv",
+          "filename": "global_indices_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\global_indices_20261021_230055.csv",
+          "sha256": "dca3c9994090407181256c8c264e5e9b050fa4e490bf552c73a6d7b0f9d0292b",
+          "bytes": 784,
+          "modified_utc": "2026-10-21T22:02:14.485009Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-19",
+            "2026-10-20"
+          ],
+          "latest_observation": "2026-10-20"
+        },
+        {
+          "key": "liquidity_csv",
+          "filename": "avshunter_liquidity_monitor.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_liquidity_monitor.csv",
+          "sha256": "449bfc589bc0132958aaddc0912a8c1caf28eb17bb49a8d3efbe1c6013bcfc19",
+          "bytes": 383,
+          "modified_utc": "2026-10-21T22:01:14.913988Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "macro_csv",
+          "filename": "macro_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\macro_20261021_230055.csv",
+          "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+          "bytes": 2,
+          "modified_utc": "2026-10-21T22:02:14.462010Z",
+          "required": true,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [],
+          "latest_observation": ""
+        },
+        {
+          "key": "macro_master_csv",
+          "filename": "avsh_macro_master.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avsh_macro_master.csv",
+          "sha256": "c327d8da89ac82d2b781a25eeb03e91409ea49c6677b3c080bcbb0d3b3ebb956",
+          "bytes": 4871,
+          "modified_utc": "2026-10-21T22:03:41.685341Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "metals_csv",
+          "filename": "metals_etf_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\metals_etf_20261021_230055.csv",
+          "sha256": "bbc20cc7967b9d1426880b29b63d370b11a316577f08a9b4c37ff51f31c40908",
+          "bytes": 935,
+          "modified_utc": "2026-10-21T22:02:14.472009Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "overnight_json",
+          "filename": "overnight_20261021_230055.json",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\overnight_20261021_230055.json",
+          "sha256": "180c0f5e138a6f9347c029088299e6d5a8372648a6f0c898733b4dd645878a5a",
+          "bytes": 15241,
+          "modified_utc": "2026-10-21T22:01:52.058934Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "regime_json",
+          "filename": "avshunter_regime.json",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_regime.json",
+          "sha256": "2f6634aeef6cbf54022d37b33f1755aa9e6db7950b6c8a62d734e5975b3b5672",
+          "bytes": 579,
+          "modified_utc": "2026-10-21T22:03:41.598318Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "regime_model_csv",
+          "filename": "avshunter_daily_macro_regime.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_daily_macro_regime.csv",
+          "sha256": "12cb8b59d7cbb8545db53aaf20f8628402b7b42e08bf29cf415934e930407d63",
+          "bytes": 1869,
+          "modified_utc": "2026-10-21T22:01:17.453881Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-07",
+            "2026-10-08",
+            "2026-10-09",
+            "2026-10-12",
+            "2026-10-13",
+            "2026-10-14",
+            "2026-10-15",
+            "2026-10-16",
+            "2026-10-19",
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "report_json",
+          "filename": "report_20261021_230055.json",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\report_20261021_230055.json",
+          "sha256": "09db4585be19fd6b034aae97af3349114609455db2a957ae6cb7ff929803cdc2",
+          "bytes": 9702,
+          "modified_utc": "2026-10-21T22:02:14.459013Z",
+          "required": true,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "sectors_csv",
+          "filename": "sectors_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\sectors_20261021_230055.csv",
+          "sha256": "76c173a6385a9a0524ac336901126125fadc35643e59d03300cb55b71d0641a3",
+          "bytes": 1401,
+          "modified_utc": "2026-10-21T22:02:14.470010Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "threshold_flags_csv",
+          "filename": "macro_series_threshold_flags.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\macro_series_threshold_flags.csv",
+          "sha256": "e98a375fed811e9241cee75faba55df937db94d08340879c7ab0f58509914d1c",
+          "bytes": 1788,
+          "modified_utc": "2026-10-21T22:01:28.266695Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-20",
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "vix_engine_csv",
+          "filename": "avshunter_vix_engine_v3.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\avshunter_vix_engine_v3.csv",
+          "sha256": "e46e92ec7977e4bdb8265715d71be65c03349cf745649ccf3054dfa9bff4ae9f",
+          "bytes": 968,
+          "modified_utc": "2026-10-21T22:01:22.263622Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "vix_term_dxy_csv",
+          "filename": "vix_term_dxy_snapshot.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\vix_term_dxy_snapshot.csv",
+          "sha256": "ebd92e20002cbc6c1a7800c789362d40dc21898785876742150e53927142debd",
+          "bytes": 402,
+          "modified_utc": "2026-10-21T22:01:28.269012Z",
+          "required": false,
+          "capture_batch": "",
+          "capture_time": "",
+          "observation_dates": [
+            "2026-10-20",
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "vol_complex_csv",
+          "filename": "vol_complex_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\vol_complex_20261021_230055.csv",
+          "sha256": "ce6ec08d29be6ac8790234bc207d1ff5faa1f460cb70b4d809faac5b14501ebe",
+          "bytes": 585,
+          "modified_utc": "2026-10-21T22:02:14.483036Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-20",
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        },
+        {
+          "key": "vol_dollar_csv",
+          "filename": "vol_dollar_20261021_230055.csv",
+          "path": "C:\\Users\\ACKVerissimo\\AVSHUNTER-Intelligence\\dropbox\\market_data\\vol_dollar_20261021_230055.csv",
+          "sha256": "4e1d84fceb72cfe5ee7e2e5ebd28bda056320a786a936f885b5b328d5d82fc84",
+          "bytes": 637,
+          "modified_utc": "2026-10-21T22:02:14.479008Z",
+          "required": false,
+          "capture_batch": "20261021_230055",
+          "capture_time": "20261021_230055",
+          "observation_dates": [
+            "2026-10-21"
+          ],
+          "latest_observation": "2026-10-21"
+        }
+      ],
+      "missing": [
+        "us_indices_cash_*.csv"
+      ],
+      "capture_coherence": {
+        "status": "COHERENT_SINGLE_CAPTURE",
+        "max_span_seconds": 900,
+        "span_seconds": 0,
+        "earliest_batch": "20261021_230055",
+        "latest_batch": "20261021_230055",
+        "required_batches": {
+          "forward_bias_csv": "20261021_230055",
+          "macro_csv": "20261021_230055",
+          "report_json": "20261021_230055"
+        },
+        "unbatched_required_keys": [],
+        "capture_dates": [
+          "2026-10-21"
+        ],
+        "coherence_basis": "FILENAME_CAPTURE_TIME_WINDOW",
+        "runtime_identity_policy": "IGNORED_NON_EVIDENTIARY"
+      },
+      "gex_validation": {
+        "status": "VALIDATED",
+        "authority": "ADVISORY_ONLY",
+        "session_date": "2026-10-19",
+        "run_id": "LOCAL_GEX_20261021_220040",
+        "dataset_ids": [
+          "35ff09604ffeb000bca32cc7ea800d25ae89100b8e0cbdb1cd32dd7342510756",
+          "04d7613e3653dde968afd1756303d2fc42e767fabb9d945304b72a37a05ad1b8"
+        ],
+        "proxy_sha256": "0d56798bebb4651424913967f401fdd83cffe95dabdf6019b4b98180060ed1f2",
+        "by_strike_sha256": "d4fcf38c67c26424062585f46d11c60d9f3cfc0ed49123e90d7416a69ad28049"
+      },
+      "manifest_sha256": "41d6a2fb99ce07059ac3e888151d48392bd54366bb65174fc6431fa9222d68e5",
+      "manifest_id": "MACRO_INPUT:41d6a2fb99ce07059ac3"
+    },
+    "input_consumption_status": "COMPLETE",
+    "input_consumption_ledger": {
+      "agriculture_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.agriculture_csv"
+      },
+      "bonds_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.bonds_csv"
+      },
+      "breadth_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.breadth_csv"
+      },
+      "collection_validation_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.collection_validation_csv"
+      },
+      "energy_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.energy_csv"
+      },
+      "equity_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.equity_csv"
+      },
+      "forward_bias_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.forward_bias_csv"
+      },
+      "fred_master_csv": {
+        "status": "CONSUMED",
+        "mode": "LATEST_OBSERVATION_PER_SERIES",
+        "target": "fred_latest_observations"
+      },
+      "fung_hsieh_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.fung_hsieh_csv"
+      },
+      "fx_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.fx_csv"
+      },
+      "gex_by_strike_csv": {
+        "status": "CONSUMED",
+        "mode": "VALIDATED_SEMANTIC_GEX",
+        "target": "gex"
+      },
+      "gex_manifest_json": {
+        "status": "CONSUMED",
+        "mode": "VALIDATED_SEMANTIC_GEX",
+        "target": "gex"
+      },
+      "gex_proxy_csv": {
+        "status": "CONSUMED",
+        "mode": "VALIDATED_SEMANTIC_GEX",
+        "target": "gex"
+      },
+      "global_indices_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.global_indices_csv"
+      },
+      "liquidity_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.liquidity_csv"
+      },
+      "macro_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.macro_csv"
+      },
+      "macro_master_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.macro_master_csv"
+      },
+      "metals_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.metals_csv"
+      },
+      "overnight_json": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.overnight_json"
+      },
+      "regime_json": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.regime_json"
+      },
+      "regime_model_csv": {
+        "status": "CONSUMED",
+        "mode": "SEMANTIC_SUMMARY",
+        "target": "sources.regime_model_csv"
+      },
+      "report_json": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.report_json"
+      },
+      "sectors_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.sectors_csv"
+      },
+      "threshold_flags_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.threshold_flags_csv"
+      },
+      "vix_engine_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.vix_engine_csv"
+      },
+      "vix_term_dxy_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.vix_term_dxy_csv"
+      },
+      "vol_complex_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.vol_complex_csv"
+      },
+      "vol_dollar_csv": {
+        "status": "CONSUMED",
+        "mode": "FULL_RECORDS_OR_DOCUMENT",
+        "target": "sources.vol_dollar_csv"
+      }
+    },
+    "validation": "PASS"
+  },
+  "rotation_override": "NORMAL",
+  "rotation_flag_as_of_utc": "2026-10-21T22:08:03.166128+00:00",
+  "rotation_detail": {
+    "rotation_override": "NORMAL",
+    "summary": "No rotation signal detected.",
+    "commodity_spikes": [],
+    "paper_drops": [],
+    "paper_mixed": [
+      {
+        "ticker": "SPY",
+        "pct": -0.021
+      },
+      {
+        "ticker": "QQQ",
+        "pct": -0.097
+      },
+      {
+        "ticker": "NVDA",
+        "pct": 0.227
+      }
+    ],
+    "commodities_assessed": 5,
+    "paper_assessed": 3
+  }
+}

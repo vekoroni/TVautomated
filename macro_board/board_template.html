@@ -156,6 +156,8 @@ table.corr th,table.corr td{text-align:center;padding:4px 6px;font-variant-numer
 <div class="wrap">
   <div class="authority" id="authority"></div>
   <div class="fresh-strip" id="fresh"></div>
+  <div id="current-market-status"></div>
+  <div id="macro-health-status"></div>
   <section class="page" id="p-review"></section>
   <section class="page" id="p-story"></section>
   <section class="page" id="p-overview"></section>
@@ -423,6 +425,16 @@ const KEY_TXT = {ACCEPTED_UP:"accepted up", ACCEPTED_DOWN:"accepted down", REJEC
 function readChip(r){ const l = r?.label || "UNKNOWN";
   const k = l === "ACCEPTED" ? (r.direction === "UP" ? "up" : "down") : l === "REJECTED" ? "flat" : "na";
   return `<span class="chip ${k}">${esc(READ_TXT[l]||l)}${l === "ACCEPTED" ? " " + (r.direction === "UP" ? "▲" : "▼") : l === "REJECTED" ? " gap " + (r.direction === "UP" ? "▲" : "▼") : ""}</span>`; }
+function currentMarketView(){
+  const M = B.session_plan?.call?.current_market;
+  if (!M || M.status === "HISTORICAL") return {html:"", usable:false};
+  const now = Date.now(), limit = Number(M.stale_after_minutes);
+  const expired = (M.segment_end_utc && now >= Date.parse(M.segment_end_utc)) || Object.values(M.rows||{}).some(r => !Number.isFinite(Date.parse(r.time_utc)) || (now-Date.parse(r.time_utc))/60000 > limit || now < Date.parse(r.time_utc));
+  const usable = M.status === "CURRENT" && !expired;
+  const rows = Object.entries(M.rows||{}).map(([t,r]) => `<div><b>${esc(t)}</b> ${fmt(r.price)} · ${pct(r.change_vs_close_pct)} vs ${esc(M.completed_session)} close · quote ${esc(r.time_utc)}${r.reversal ? ` <b style="color:var(--serious)">REVERSAL${r.erased_prior_move ? " · prior move erased" : ""}</b>` : ""}</div>`).join("");
+  return {usable, html:`<div class="card" style="border:2px solid var(--serious)"><h3>Current market · ${esc(M.market_session||"unknown date")} · ${esc(M.segment||"unknown segment")}</h3><b>${usable ? esc(M.direction)+" versus prior close · cash-session acceptance unconfirmed" : "CURRENT GUIDANCE UNAVAILABLE — refresh market prices"}</b>${rows}<div class="note">${expired ? "Snapshot expired. " : ""}Missing/invalid: ${esc((M.missing||[]).join(", ")||"none at build")}. Built ${esc(M.as_of_utc)}. This page is a snapshot; quotes do not stream. Freshness limit ${esc(M.stale_after_minutes)} minutes.</div></div>`};
+}
+
 function renderInformationReview(){
   const R = B.review;
   if (!R) return `<h2>The day's information and the market's reaction</h2><div class="card muted">Not in this build.</div>`;
@@ -438,8 +450,8 @@ function renderInformationReview(){
   const irows = (I.items||[]).map(e => `<tr><td class="l"><b>${esc(e.name)}</b><div class="sub">${esc(e.institution||"")}</div></td><td class="l">${esc(e.what_changed||"")}</td><td class="l ${String(e.expected).startsWith("MISSING")?"muted":""}">${esc(e.expected||"")}</td><td class="l muted">${esc(e.previous||"")}${e.revised_previous ? "<br>revised: " + esc(e.revised_previous) : ""}</td><td class="l">${words(e.surprise||"")}</td><td class="l muted">${esc(e.source||"")}</td></tr>`).join("")
     || `<tr><td class="l muted" colspan="6">No new information in the inputs for this session.</td></tr>`;
   const drows = (D.measured||[]).map(d => `<li><b>${esc(d.ticker)}</b> <span class="${cls(d.close_pct)}">${pct(d.close_pct)}</span> ${esc(READ_TXT[d.label]||d.label)} · against ${esc(d.versus)}</li>`).join("") || `<li class="muted">No instrument moved beyond its threshold against SPY.</li>`;
-  return `<h2>The day's information and the market's reaction <span class="sub">session ${esc(R.session)} · did the market accept the new information, reject it, or absorb it?</span></h2>
-    <div class="card"><div class="state">${esc(R.headline || "")}</div>
+  return currentMarketView().html + `<h2>Completed-session review <span class="sub">session ${esc(R.session)} · did the market accept the new information, reject it, or absorb it?</span></h2>
+    <div class="card"><div class="state">Completed ${esc(R.session)}: ${esc(R.headline || "")}</div>
       <div class="note">Measured on daily bars: the opening gap is the immediate response, the close against the previous close is the closing position, both in the instrument's own daily move (20 sessions before the day). Absorbed = the close moved less than ${esc(R.settings?.threshold_daily_moves)} of a daily move; rejected = a gap reversed through the previous close; accepted = otherwise. Provisional.</div></div>
     <div class="grid g-2" style="margin-top:10px">
       <div class="card"><h3>How did markets react? ${csvBtn("reaction")}</h3>
@@ -909,6 +921,7 @@ function renderIntel(){
       ${(p.conflict_flags||[]).length ? `<details><summary>Conflict flags (${p.conflict_flags.length})</summary><ul class="list">${p.conflict_flags.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
       ${srcLine("macro_packet")}</div>
     <div class="card"><h3>US Money Index · risk-off transmission</h3>
+      ${u.baseline_lineage ? `<div class="note"><b>New baseline — historical continuity incomplete.</b> Revision ${esc(u.revision)} is a delivery sequence, not recovered revision 73. Score and confidence are UNKNOWN / unassessed; task-reported observations are not synchronised or independently verified. Execution remains disabled.</div>` : ""}
       <div class="big">${fmt(u.score,0)}<span class="sub"> / 100 · previous ${fmt(u.previous_score,0)}</span> ${uncal}</div>
       <div class="note">${esc(u.method||"")} Ladder: ${esc(Object.entries(u.ladder||{}).map(([k,v])=>k+" "+v.replace(/_/g," ").toLowerCase()).join(" · "))}. Its record is on the Scorecards tab.</div>
       <div class="sub" style="margin:4px 0 8px;overflow-wrap:anywhere">${words(u.transmission_state || u.state)}</div>
@@ -1366,8 +1379,8 @@ function renderPlan(){
   const P = B.session_plan;
   if (!P) { $("#p-plan").innerHTML = `<h2>Next session plan</h2><div class="card muted">Not in this build.</div>`; return; }
   const C = P.call || {}, J = P.jigsaw || {pieces:[], agreement:{}}, O = P.opportunity || {};
-  const keyTxt = {UP_BROAD:"Up, broad", UP_NARROW:"Up, narrow", UP_UNKNOWN:"Up", DOWN_BROAD:"Down, broad", DOWN_NARROW:"Down, narrow", DOWN_UNKNOWN:"Down", MIXED:"Mixed", UNKNOWN:"Unknown"};
-  const kk = String(C.key||"").startsWith("UP") ? "up" : String(C.key||"").startsWith("DOWN") ? "down" : "flat";
+  const keyTxt = {CURRENT_UP:"Current quotes up", CURRENT_DOWN:"Current quotes down", CURRENT_MIXED:"Current quotes mixed", CURRENT_FLAT:"Current quotes flat", CURRENT_UNAVAILABLE:"Current guidance unavailable", UP_BROAD:"Up, broad", UP_NARROW:"Up, narrow", UP_UNKNOWN:"Up", DOWN_BROAD:"Down, broad", DOWN_NARROW:"Down, narrow", DOWN_UNKNOWN:"Down", MIXED:"Mixed", UNKNOWN:"Unknown"};
+  const kk = String(C.key||"").includes("UP") ? "up" : String(C.key||"").includes("DOWN") ? "down" : "flat";
   const agg = g => { const a = (J.agreement||{})[g] || {}; return `<span class="chip up">${a.SUPPORTS||0} support</span> <span class="chip down">${a.OPPOSES||0} oppose</span> <span class="chip flat">${a.NEUTRAL||0} neutral</span> <span class="chip na">${a.MISSING||0} missing</span>`; };
   const scen = Object.entries(P.instruments||{}).map(([t, s]) => planScenario(t, s)).join("");
   const crow = (P.checklist||[]).map(i => `<tr><td class="l">${esc(PHASE_TXT[i.phase]||i.phase)}</td><td class="l t">${esc(i.time_et||"")}</td><td class="l">${esc(i.item)}</td><td class="l muted">${esc(i.source||"")}</td></tr>`).join("");
@@ -1379,13 +1392,13 @@ function renderPlan(){
     return `<tr><td class="l"><b>${esc(x.piece)}</b></td><td class="l muted">${esc({MEASURED:"measured", MODEL:"model", LLM:"LLM"}[x.group]||x.group)}</td><td class="l">${words(x.says)}</td><td class="l">${esc(String(x.points||"").toLowerCase())}</td><td class="l"><span class="chip ${sc[0]}">${sc[1]}</span></td><td class="l ${x.freshness==="FRESH"?"muted":""}">${esc(x.freshness)}${x.as_of?" · "+esc(x.as_of):""}</td><td class="l muted">${esc(x.tab||"")}</td></tr>`; }).join("");
   const U = P.unresolved || {};
   $("#p-plan").innerHTML = `<h2>Next session plan <button class="btn" data-sheet="copy" title="Copy the measured sheet (facts + instructions) to paste into ChatGPT" style="float:right;padding:2px 8px;font-size:12px;margin-left:6px">Copy sheet for ChatGPT</button><button class="btn" data-sheet="download" title="Download the measured sheet as Markdown" style="float:right;padding:2px 8px;font-size:12px">sheet .md</button> <span class="sub">${esc(P.as_of_session)} close → ${esc(P.next_session||"next session")} · research for the human, never a score or a gate</span></h2>
-    <div class="card"><h3>The call <span class="chip ${kk}">${esc(keyTxt[C.key]||C.key)}</span></h3>
-      <ul style="padding-left:16px;margin:6px 0">${(C.sentences||[]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
-      <div style="margin-top:6px"><b>Approach.</b> ${esc(C.approach||"")}</div>
+    ${currentMarketView().html}<div class="card"><h3>The call <span class="chip ${kk}">${esc(currentMarketView().usable || C.current_market?.status === "HISTORICAL" ? (keyTxt[C.key]||C.key) : "Current guidance unavailable")}</span></h3>
+      <ul style="padding-left:16px;margin:6px 0">${(C.sentences||[]).filter((x,i) => i === 0 || currentMarketView().usable || C.current_market?.status === "HISTORICAL").map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <div style="margin-top:6px"><b>Approach.</b> ${esc(currentMarketView().usable || C.current_market?.status === "HISTORICAL" ? (C.approach||"") : "Refresh market prices before using current guidance or scenario levels.")}</div>
       ${C.conflict ? `<div class="note" style="color:var(--serious);margin-top:6px">${esc(C.conflict)}</div>` : ""}
       ${U.verdict || U.counter_case ? `<div class="note">Unresolved (published): ${words(U.verdict||"")}${U.counter_case?" · "+esc(U.counter_case):""}</div>` : ""}</div>
     <h2 style="margin-top:22px">Scenarios <span class="sub">triggers are the board's own levels around the current price · a scenario is marked only where history measured a lean</span> ${csvBtn("plan_scenarios")}</h2>
-    <div class="grid g-focus">${scen || `<div class="card muted">No scenarios (no levels or prices).</div>`}</div>
+    <div class="grid g-focus">${currentMarketView().usable || C.current_market?.status === "HISTORICAL" ? (scen || `<div class="card muted">No scenarios (no levels or prices).</div>`) : `<div class="card muted">Current scenarios unavailable until quotes refresh.</div>`}</div>
     <h2 style="margin-top:22px">Checklist for ${esc(P.next_session||"the next session")} <span class="sub">in time order</span> ${csvBtn("plan_checklist")}</h2>
     <div class="card"><table class="mini" style="width:100%"><thead><tr><th class="l">When</th><th class="l">ET</th><th class="l">What to check</th><th class="l">Source</th></tr></thead><tbody>${crow}</tbody></table></div>
     <div class="grid g-2" style="margin-top:22px">
@@ -1588,10 +1601,10 @@ function renderStory(){
   const LR = S.live_record || {};
   const rec = Object.entries(LR).map(([h, r]) => `<li>Next ${esc(h)} session${h === "1" ? "" : "s"}: ${r.scored} call${r.scored === 1 ? "" : "s"} scored, ${r.pending} pending${r.scored ? ` · on the flow's side ${pct(r.mean_flow_side_pp)} pts on average, right ${Math.round(100 * r.flow_side_rate)}%` : ""}</li>`).join("");
   const ic = S.impact_counts || {};
-  el.innerHTML = `<h2>Day story <span class="sub">where money is going, the measured reasons that fit, and the trade analysis for ${esc(D.next_session || "the next session")}</span></h2>
+  el.innerHTML = `<h2>Day story <span class="sub">completed-session measurements through ${esc(B.as_of_session)}; current-market status above · where money is going, the measured reasons that fit, and the trade analysis for ${esc(D.next_session || "the next session")}</span></h2>
     <div class="authority">Three voices, each labelled. ${voice("MEASURED")} sentences are built only from the board's own numbers. ${voice("PUBLISHED")} items come from the event payload, made by another LLM, and are not verified here. ${voice("AI")} text is written by Claude from the measured facts on this tab only; numbers it uses that the facts do not contain are flagged. A reason is a measured association with a sector's return, not a proven cause. Display only: nothing here is a gate, score or rank.</div>
     <h2>The day ahead <span class="sub">market call ${esc(String(D.call || "").replace(/_/g, " ").toLowerCase())}</span></h2>
-    <div class="card soft">${(D.sentences || []).map(x => `<div>${esc(x)}</div>`).join("")}${D.approach ? `<p><b>Approach:</b> ${esc(D.approach)}</p>` : ""}
+    <div class="card soft">${(D.sentences || []).map(x => `<div>${esc(x)}</div>`).join("")}${currentMarketView().usable && D.approach ? `<p><b>Approach:</b> ${esc(D.approach)}</p>` : ""}
       ${events ? `<h3>Scheduled before the next close</h3><ul class="story-list">${events}</ul>` : `<div class="muted">No scheduled release before the next close.</div>`}
       ${D.published_narrative ? `<h3>Published narrative ${voice("PUBLISHED")}</h3><div class="sub"><b>${esc(D.published_narrative.classification || "")}</b> ${esc(D.published_narrative.text || "")}</div>` : ""}</div>
     <h2 style="margin-top:18px">Possible paths for the index ETFs <span class="sub">from the Next session plan's levels · option footprint from the stored chain</span></h2>
@@ -1611,10 +1624,29 @@ function renderStory(){
   if ($("#story-close")) $("#story-close").onclick = () => { state.storySel = null; renderStory(); };
 }
 
+function renderMacroHealth(){
+  const H=B.intel?.macro_health||{}, S=B.intel?.synthesis||{};
+  if(!H.status && !S.build_mode) return "";
+  const partial=S.build_mode==="DATA_ONLY";
+  const F=H.source_health?.fred||{}, gaps=F.guidance_gaps||[];
+  const reviewed=(F.series||[]).filter(r=>r.reason || r.provider==="OECD");
+  const issues=(H.issues||[]).map(x=>String(x).replaceAll("_"," ").toLowerCase());
+  return `<div class="authority" style="border-color:var(--warn)"><b>${partial ? "DATA-ONLY REFRESH — AI synthesis not regenerated" : "Macro source health: "+esc(H.status||"unassessed")}</b>
+    ${partial ? `<div>Latest validated source data and research are attached. AI analysis remains dated ${esc(S.analysis_built_at||"unknown")} and has not been regenerated.</div>` : ""}
+    <div>${esc(issues.join(" · "))}</div>
+    <div><b>Economic evidence affecting guidance:</b> ${gaps.length ? gaps.map(r=>esc(r.series)+": "+esc(r.guidance_effect)).join("<br>") : "Latest verified public releases accepted; no missed public update or collection failure detected."}</div>
+    <div>Release frequency is accepted: a delayed publisher update is not a pipeline failure. Daily observations can be published weekly; monthly and quarterly dates identify reporting periods. Latest released does not mean live. Current FX uses the separately dated market snapshot. Prior AI guidance has not been reassessed by a data-only refresh.</div>
+    ${reviewed.length ? `<details><summary>Publication audit: ${reviewed.length} series — dates, replacements and guidance effects</summary><table><thead><tr><th>Series / measure</th><th>Native observation / period end</th><th>Assessment</th><th>Next release / fetched</th><th>Reason and guidance effect</th></tr></thead><tbody>${reviewed.map(r=>`<tr><td>${esc(r.series)}<br>${esc(r.label||"")}</td><td>${esc(r.last_observation||"missing")}<br>${esc(r.observation_period_end||"")}</td><td>${esc(r.assessed_status)}<br>${esc(r.release_status||"")}<br>${esc(r.gap_disposition||"")}</td><td>${esc(r.next_release_date||"not supplied")}<br>${esc(r.fetched_utc||"unknown")}</td><td>${esc(r.reason||"")}<br>${esc(r.guidance_effect||"")}${r.replacement ? `<br>Replacement: ${esc(r.replacement)} (${esc(r.equivalence||"")})` : ""}</td></tr>`).join("")}</tbody></table></details>` : ""}
+  </div>`;
+}
+
 function renderAll(){
+  $("#current-market-status").innerHTML = currentMarketView().html;
+  $("#macro-health-status").innerHTML = renderMacroHealth();
   renderReview(); renderStory(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderScenario(); renderIntel(); renderScore(); renderMethod(); renderPlan();
 }
 renderAll();
+setInterval(() => { $("#current-market-status").innerHTML = currentMarketView().html; renderReview(); renderStory(); renderPlan(); }, 30000);
 let start = "review"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
 show(PAGES.some(p => p[0]===start) ? start : "review");
 })();

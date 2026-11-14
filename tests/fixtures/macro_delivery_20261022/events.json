@@ -1,0 +1,286 @@
+{
+  "schema_version": "avshunter_us_economic_event_impact_v1_0",
+  "generated_from_report_date": "2026-10-21",
+  "run_context": {
+    "report_type": "AVSHUNTER US Economic Event Impact Report",
+    "coverage": "New material developments since the previous completed run",
+    "route": "MACRO_EVENT_WATCHLIST",
+    "manual_review_required": true,
+    "automatic_execution_enabled": false
+  },
+  "regime_summary": {
+    "classification": "MATERIAL_SCOPE_CLARIFICATION_WITH_EQUITY_RESILIENCE",
+    "core_narrative": "The State Department spokesperson confirmed an issued Saudi-only departure order for non-emergency staff and families. Reuters still reports possible family departures elsewhere from unnamed officials. The prior alert must not be read as confirmation of a Gulf-wide staff evacuation. US equity closes remained positive.",
+    "dominant_drivers": [
+      "Saudi departure order now confirmed through a named spokesperson reported by Reuters and Anadolu",
+      "Scope of other Gulf preparations unresolved",
+      "Positive US equity close"
+    ],
+    "primary_risk": "Saudi security risks escalate into energy or shipping disruption",
+    "primary_counterforce": "Narrower confirmed official scope and resilient US equities"
+  },
+  "events": [
+    {
+      "event_id": "us_state_department_gulf_departure_preparations_2026-10-21_1858z_report",
+      "event_name": "Saudi ordered-departure confirmation and Gulf-scope clarification",
+      "country_or_institution": "United States State Department",
+      "reference_period": "21 October 2026 security policy update",
+      "status": "MATERIAL_CLARIFICATION_OF_PREVIOUSLY_ALERTED_EVENT",
+      "revision_status": "Named spokesperson confirms Saudi order; official scope narrowed",
+      "release_time_utc": null,
+      "release_time_london": null,
+      "release_time_us_eastern": null,
+      "original_report_release_time_utc": "2026-10-21T18:58:00Z",
+      "original_report_release_time_london": "2026-10-21T19:58:00+01:00",
+      "original_report_release_time_us_eastern": "2026-10-21T14:58:00-04:00",
+      "timing_limitation": "Exact publication time of spokesperson statement and Reuters update unavailable. Original article timestamp is not the clarification time.",
+      "actual": "Named State Department spokesperson confirms departure order for non-emergency US government employees and family members in Saudi Arabia only. Reuters separately attributes possible family departures from other Gulf missions to four unnamed officials.",
+      "forecast": null,
+      "previous": "Prior alert described preparations across Gulf embassies and lacked confirmation of any issued order.",
+      "surprise_direction": "Saudi action confirmed; wider official scope narrower than the earlier regional scenario",
+      "surprise_score": 65,
+      "score_method": "Uncalibrated heuristic significance of clarification, not a probability",
+      "expected_event_importance": "HIGH",
+      "result_us_materiality": "POTENTIALLY_MATERIAL",
+      "market_response": "MIXED",
+      "evidence_quality": "Medium-high: named official statement reproduced by Reuters and Anadolu; original X post not directly retrieved",
+      "definition": "Ordered departure is a compulsory staffing-security measure for designated personnel. The confirmed order covers non-emergency personnel and their families in Saudi Arabia.",
+      "why_it_matters_to_us_markets": "Correcting the geographic scope limits the broad regional escalation scenario used in assessing energy, inflation and volatility risk, while the Saudi order still signals material security concerns.",
+      "confirmed_facts": [
+        "Reuters and Anadolu reproduce the Saudi-only description from spokesperson Tommy Pigott.",
+        "The prior unconfirmed preparations status has changed to a confirmed Saudi order."
+      ],
+      "unresolved": [
+        "Preparations affecting family members at other Gulf missions",
+        "Exact statement and update times",
+        "Whether any incremental physical energy supply disruption follows"
+      ],
+      "market_observations": [
+        {
+          "asset": "S&P 500",
+          "value": 7757.17,
+          "change_points": 44.6,
+          "change_percent": 0.6,
+          "observation_time_utc": "2026-10-21T20:00:00Z"
+        },
+        {
+          "asset": "Dow",
+          "value": 52856.09,
+          "change_points": 360.21,
+          "change_percent": 0.7,
+          "observation_time_utc": "2026-10-21T20:00:00Z"
+        },
+        {
+          "asset": "Nasdaq Composite",
+          "value": 26702.86,
+          "change_points": 278.04,
+          "change_percent": 1.1,
+          "observation_time_utc": "2026-10-21T20:00:00Z"
+        },
+        {
+          "asset": "Russell 2000",
+          "value": 2781.02,
+          "change_points": 7.6,
+          "change_percent": 0.3,
+          "observation_time_utc": "2026-10-21T20:00:00Z"
+        },
+        {
+          "asset": "VIX",
+          "value": 16.68,
+          "change_points": -0.63,
+          "change_percent": -3.64,
+          "observation_time_utc": null,
+          "displayed_timestamp": "8:15 PM 10/21/2026; timezone not stated"
+        }
+      ],
+      "attribution_limitation": "Closing values are session outcomes, not measured reactions to the clarification. Earnings and other drivers overlapped.",
+      "sources": [
+        {
+          "url": "https://www.reuters.com/world/middle-east/us-preparing-issue-ordered-departure-some-personnel-gulf-embassies-us-officials-2026-10-21/",
+          "role": "Updated original reporting and named official confirmation"
+        },
+        {
+          "url": "https://www.aa.com.tr/en/americas/us-state-department-denies-gulf-wide-evacuation-plan-says-ordered-departure-applies-only-to-saudi-arabia/4096492",
+          "role": "Spokesperson scope clarification"
+        },
+        {
+          "url": "https://apnews.com/article/wall-street-stocks-dow-nasdaq-3ec2d8c93a390023ef8104973dea275f",
+          "role": "Final US equity closes"
+        },
+        {
+          "url": "https://www.cboe.com/tradable-products/vix/",
+          "role": "Primary volatility observation"
+        }
+      ],
+      "information_cutoff_utc": "2026-10-21T20:54:57Z"
+    }
+  ],
+  "cross_asset_transmission": {
+    "usd": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "Regional risk can support defensive USD flows; scope clarification may reduce them.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "us_2y_yield": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "No verified Fed-path change; inflation risk competes with defensive demand.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "us_10y_yield": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "Narrower confirmed scope reduces incremental risk, but no clarification-aligned yield observation.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "yield_curve_2s10s": {
+      "expected_direction": "UNAVAILABLE",
+      "expected_magnitude": "LOW",
+      "mechanism": "Matched yield observations unavailable.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "sp500": {
+      "expected_direction": "CONDITIONAL_SUPPORT",
+      "expected_magnitude": "LOW",
+      "mechanism": "Confirmed scope is narrower than the earlier regional scenario; equities recovered into the close.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "nasdaq100": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "Direct index data unavailable; technology earnings and yields compete with geopolitical risk.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "russell2000": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "Fuel and financing risks remain; index closed positive.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "dow": {
+      "expected_direction": "CONDITIONAL_SUPPORT",
+      "expected_magnitude": "LOW",
+      "mechanism": "Regional clarification limits the broad risk-off interpretation; earnings support remained.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "credit_spreads": {
+      "expected_direction": "UNAVAILABLE",
+      "expected_magnitude": "LOW",
+      "mechanism": "No event-aligned spread observations.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "vix_volatility": {
+      "expected_direction": "POTENTIALLY_LOWER_RISK_PREMIUM",
+      "expected_magnitude": "LOW",
+      "mechanism": "Cboe displayed 16.68, down 0.63; quote timezone unclear, so not attributed to the clarification.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "oil": {
+      "expected_direction": "TWO_WAY",
+      "expected_magnitude": "MODERATE",
+      "mechanism": "Saudi infrastructure risk persists; a confirmed Gulf-wide personnel departure order has not been established.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "gold": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "Reduced broad escalation concern competes with continuing regional risk and real yields.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    },
+    "industrial_metals": {
+      "expected_direction": "MIXED",
+      "expected_magnitude": "LOW",
+      "mechanism": "Energy costs and global growth remain opposing forces.",
+      "expected_duration": "Intraday; 1-3 days only if reinforced",
+      "event_aligned_observed_change": null
+    }
+  },
+  "sector_impacts": {
+    "favoured_or_resilient": [
+      "Fuel-sensitive companies if the narrower scope helps keep oil contained",
+      "Technology leaders with strong earnings and stable yields"
+    ],
+    "adverse": [
+      "Saudi and Gulf energy or transport exposures if disruption escalates"
+    ],
+    "high_dispersion": [
+      "Energy producers versus fuel users",
+      "Defence shares dependent on further policy or conflict changes",
+      "Refiners dependent on product margins"
+    ]
+  },
+  "options_conditions": {
+    "long_calls": {
+      "state": "WAIT_FOR_NEXT_SESSION_CONFIRMATION",
+      "best_fit": [
+        "Liquid shares sustaining relative strength with contained oil and yields"
+      ],
+      "required_confirmation": [
+        "Equity strength survives next-session opening",
+        "Oil and long yields do not restore the prior shock",
+        "Executable option price and spread justify the expected path"
+      ]
+    },
+    "long_puts": {
+      "state": "REQUIRE_NEW_WEAKNESS_CONFIRMATION",
+      "best_fit": [
+        "Fuel-sensitive or rate-sensitive shares only after renewed weakness"
+      ],
+      "required_confirmation": [
+        "New verified escalation or persistent oil/yield repricing",
+        "Failed underlying recovery and deteriorating breadth",
+        "Adequate liquidity and intrahold resale value"
+      ]
+    }
+  },
+  "counter_case": {
+    "summary": "A Saudi-only order still concerns a major energy exporter. Anonymous officials continue to describe preparations affecting other Gulf missions; narrower public language does not establish de-escalation.",
+    "reversal_or_neutralisation_conditions": [
+      "Verified expansion of departure orders or military action",
+      "New energy infrastructure or shipping disruption",
+      "Oil, yields and volatility rise together with deteriorating US breadth"
+    ]
+  },
+  "cross_asset_contradictions": [
+    "US equities finished higher despite confirmed Saudi security concerns",
+    "VIX displayed lower despite ongoing regional uncertainty",
+    "Named spokesperson scope and anonymous reports about other missions remain unresolved"
+  ],
+  "market_pricing": {
+    "already_priced": [
+      "Earlier Gulf-departure report and initial market reaction",
+      "Existing Saudi and shipping risks",
+      "Strong company earnings supporting equity indices"
+    ],
+    "incremental_hawkish_information": [
+      "Saudi departure order confirmed; no verified new Fed-path implication"
+    ]
+  },
+  "final_verdict": {
+    "verdict": "TWO_WAY_RISK",
+    "scope": "Correction to Gulf security risk assessment for US equities and long options",
+    "confidence": 77,
+    "expected_magnitude": "MODERATE",
+    "expected_duration": "Intraday risk reassessment; 1-3 days only with follow-through",
+    "manual_review_required": true,
+    "automatic_trade_execution": false,
+    "best_expressions": [
+      "WAIT for next-session confirmation",
+      "Reduce reliance on a broad Gulf-evacuation thesis",
+      "Conditional calls or puts require current underlying, oil, yield and option-price confirmation"
+    ]
+  }
+}

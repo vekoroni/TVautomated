@@ -11,6 +11,7 @@ the worklist is the run manifest's tickers and ATR14 comes from canonical daily 
 from __future__ import annotations
 
 import argparse
+from functools import lru_cache
 from datetime import date, datetime, timezone
 import json
 import os
@@ -100,7 +101,7 @@ def _atr14_from_canonical(ticker: str, session_date: date) -> float:
     frame = HistoricalPriceDatabase(db_path).read(ticker, end_date=session_date)
     if frame.empty:
         return 0.0
-    return _atr14({"daily_df": frame.to_dict(orient="records")})
+    return _atr14({"daily_df": frame})
 
 
 def _stamp(run_dir: Path, run_id: str, ticker: str, path: Path | None, payload: dict[str, Any]) -> None:
@@ -113,11 +114,16 @@ def _stamp(run_dir: Path, run_id: str, ticker: str, path: Path | None, payload: 
 
 
 def _atr14(package: dict[str, Any]) -> float:
-    rows = package.get("daily_df") or package.get("ohlcv_daily") or (package.get("timeseries") or {}).get("ohlcv_daily") or []
-    if isinstance(rows, dict) and all(key in rows for key in ("h", "l", "c")):
-        frame = pd.DataFrame({"high": rows["h"], "low": rows["l"], "close": rows["c"]})
+    if isinstance(package.get("daily_df"), pd.DataFrame):
+        # Canonical history is already a frame. Preserve the identical rolling
+        # calculation, avoiding frame -> Python records -> frame per ticker.
+        frame = package["daily_df"].copy()
     else:
-        frame = pd.DataFrame(rows) if isinstance(rows, list) else pd.DataFrame()
+        rows = package.get("daily_df") or package.get("ohlcv_daily") or (package.get("timeseries") or {}).get("ohlcv_daily") or []
+        if isinstance(rows, dict) and all(key in rows for key in ("h", "l", "c")):
+            frame = pd.DataFrame({"high": rows["h"], "low": rows["l"], "close": rows["c"]})
+        else:
+            frame = pd.DataFrame(rows) if isinstance(rows, list) else pd.DataFrame()
     frame.columns = [str(column).lower() for column in frame.columns]
     if frame.empty or not {"high", "low", "close"} <= set(frame.columns):
         return 0.0
@@ -136,6 +142,16 @@ def _atomic_patch(path: Path, updates: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+@lru_cache(maxsize=32)
+def _session_grid(session_date: date, open_utc: datetime, close_utc: datetime, interval_minutes: int):
+    """Immutable calendar grid, shared only for the exact session and interval."""
+    expected = tuple(expected_intraday_timestamps(
+        session_date=session_date, start_utc=open_utc, end_utc=close_utc,
+        interval_minutes=interval_minutes, session_segment="REGULAR",
+    ))
+    return expected, frozenset(expected)
+
+
 def _quality_diagnostics(
     frame: pd.DataFrame,
     *,
@@ -145,20 +161,13 @@ def _quality_diagnostics(
     interval_minutes: int,
 ) -> tuple[bool, dict[str, Any]]:
     """Evaluate the completed-session profile publication contract."""
-    expected = expected_intraday_timestamps(
-        session_date=session_date,
-        start_utc=open_utc,
-        end_utc=close_utc,
-        interval_minutes=interval_minutes,
-        session_segment="REGULAR",
-    )
+    expected, expected_set = _session_grid(session_date, open_utc, close_utc, interval_minutes)
     timestamps = pd.to_datetime(frame.get("timestamp_utc"), utc=True, errors="coerce")
     regular = frame.copy()
     if "session_segment" in regular:
         regular = regular[regular["session_segment"].astype(str).str.upper().eq("REGULAR")]
         timestamps = pd.to_datetime(regular.get("timestamp_utc"), utc=True, errors="coerce")
     observed = pd.DatetimeIndex(timestamps.dropna().drop_duplicates().sort_values())
-    expected_set = set(expected)
     observed_set = set(observed)
     observed_expected = observed_set & expected_set
     coverage = len(observed_expected) / len(expected) if len(expected) else 0.0

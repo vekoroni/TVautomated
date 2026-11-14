@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AVSHUNTER research delivery manifest",
+  "type": "object",
+  "required": ["contract_version", "packets"],
+  "properties": {
+    "contract_version": {"const": "macro_delivery_manifest_v1"},
+    "packets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["feed", "revision", "generated_at_utc", "sha256"],
+        "properties": {
+          "feed": {"enum": ["usmi", "news", "events"]},
+          "revision": {"type": "integer", "minimum": 0},
+          "generated_at_utc": {"type": "string", "format": "date-time"},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "source": {"type": "string", "minLength": 1},
+          "material_change": {"type": "boolean"},
+          "no_material_change": {"type": "boolean"}
+        },
+        "if": {"properties": {"no_material_change": {"const": true}}, "required": ["no_material_change"]},
+        "then": {},
+        "else": {"required": ["source", "material_change"]}
+      }
+    }
+  }
+}

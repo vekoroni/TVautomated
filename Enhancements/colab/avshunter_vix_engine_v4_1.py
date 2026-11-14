@@ -68,6 +68,13 @@ import os
 import time
 import argparse
 import pathlib
+
+# Shared transport for local runner execution (including direct script launches).
+import sys as _source_sys
+from pathlib import Path as _SourcePath
+_source_sys.path.insert(0, str(_SourcePath(__file__).resolve().parents[2]))
+from contracts.source_transport import get_fred_response
+
 import requests
 import numpy as np
 import pandas as pd
@@ -330,32 +337,11 @@ def fetch_fred_vix():
         print("\n⚠️  No FRED key — VIX reconciliation skipped")
         return None
     try:
-        try:
-            from fredapi import Fred
-            s = Fred(api_key=FRED_API_KEY).get_series("VIXCLS").dropna()
-        except ImportError:
-            # Same series through the FRED REST API (fredapi is a wrapper around it).
-            # Retried on timeout / connection error / 429 / 5xx (fredapi waited without a limit;
-            # FRED answered in 8-11 s per request on 8 Oct 2026). A 4xx is not retried.
-            resp, last = None, None
-            for attempt in range(1, 4):
-                try:
-                    resp = requests.get("https://api.stlouisfed.org/fred/series/observations",
-                                        params={"series_id": "VIXCLS", "api_key": FRED_API_KEY,
-                                                "file_type": "json"}, timeout=60)
-                    if resp.status_code != 429 and resp.status_code < 500:
-                        break
-                    last, resp = requests.exceptions.HTTPError(f"HTTP {resp.status_code}", response=resp), None
-                except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-                    last = e
-                if attempt < 3:
-                    time.sleep(2 * attempt)
-            if resp is None:
-                raise last
-            resp.raise_for_status()
-            obs = resp.json()["observations"]
-            s = pd.Series(pd.to_numeric([o["value"] for o in obs], errors="coerce"),
-                          index=pd.to_datetime([o["date"] for o in obs])).dropna()
+        resp = get_fred_response("https://api.stlouisfed.org/fred/series/observations",
+            {"series_id": "VIXCLS", "api_key": FRED_API_KEY}, get=requests.get, sleep=time.sleep)
+        obs = resp.json()["observations"]
+        s = pd.Series(pd.to_numeric([o["value"] for o in obs], errors="coerce"),
+                      index=pd.to_datetime([o["date"] for o in obs])).dropna()
         s = _normalise_index(pd.Series(s.values, index=pd.to_datetime(s.index), dtype="float64"))
         s = cut_to_session(s, session_cutoff())
         val, obs = _clean_last(s)

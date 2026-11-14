@@ -228,6 +228,9 @@ def _embedded(core: Mapping[str, Any], name: str) -> Any:
         auction = bond.get("auction") if isinstance(bond.get("auction"), Mapping) else {}
         rows = auction.get("calendar_rows")
         return rows if isinstance(rows, list) else []
+    if name == "economic_events":
+        value = extras.get("economic_events")
+        return value if isinstance(value, Mapping) else {}
     if name == "us_money_index":
         value = extras.get("us_money_index")
         return value if isinstance(value, Mapping) else {}
@@ -277,6 +280,10 @@ def materialize_interpreter_macro_context(
     source_root = Path(macro_dir).resolve()
     if type(prefer_run_snapshot) is not bool:
         raise TypeError("prefer_run_snapshot must be boolean")
+    sources = dict(CANONICAL_SOURCES)
+    frozen, _ = _run_snapshot(root)
+    if (source_root / "economic_events_latest.json").is_file() or _embedded(frozen, "economic_events"):
+        sources["economic_events"] = ("economic_events_latest.json", "json")
     loaded: dict[str, Any] = {}
     manifest: dict[str, dict[str, Any]] = {}
     if prefer_run_snapshot:
@@ -290,8 +297,8 @@ def materialize_interpreter_macro_context(
             "sha256": snapshot_hash,
             "as_of_utc": _text(core.get("as_of_utc")) if core else "",
         }
-        for name in ("bond_macro", "auction_calendar", "enrichment_delta", "us_money_index"):
-            filename, _kind = CANONICAL_SOURCES[name]
+        for name in (name for name in sources if name != "core_macro"):
+            filename, _kind = sources[name]
             embedded = _embedded(core, name) if core else {}
             loaded[name] = embedded
             manifest[name] = {
@@ -303,7 +310,7 @@ def materialize_interpreter_macro_context(
                 "as_of_utc": _text(core.get("as_of_utc")) if core else "",
             }
     else:
-        for name, (filename, kind) in CANONICAL_SOURCES.items():
+        for name, (filename, kind) in sources.items():
             loaded[name], manifest[name] = _load(source_root / filename, kind)
 
         core = _mapping(loaded["core_macro"])
@@ -316,7 +323,7 @@ def materialize_interpreter_macro_context(
                     "sha256": _sha256(fallback_path),
                 })
 
-        for name in ("bond_macro", "auction_calendar", "enrichment_delta", "us_money_index"):
+        for name in (name for name in sources if name != "core_macro"):
             if loaded[name]:
                 continue
             fallback = _embedded(core, name)
@@ -377,6 +384,9 @@ def materialize_interpreter_macro_context(
         if conflicts
         else "NEUTRAL"
     )
+    if core.get("macro_health", {}).get("status") == "DEGRADED":
+        context_state = "DEGRADED_CONTEXT"
+        quality = "PARTIAL"
     extras = core.get("extras") if isinstance(core.get("extras"), Mapping) else {}
     narrative = _mapping(enrichment.get("narrative_overlay"))
     plain_language = _text(narrative.get("overlay_summary"))
@@ -404,6 +414,8 @@ def materialize_interpreter_macro_context(
             "rows": auction_rows,
         },
         "enrichment": enrichment,
+        "economic_events": _mapping(loaded.get("economic_events")),
+        "macro_health": core.get("macro_health", {}),
         "us_money_index": usmi,
         "us_money_index_scenario": usmi_scenario,
         "ticker_advisories": _ticker_advisory_index(enrichment),

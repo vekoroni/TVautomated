@@ -553,7 +553,11 @@ def get_yield_curve_state(verbose: bool = False) -> dict:
                         "disinverting":       _disinv,
                         "russell_tailwind":   _rtw,
                         "regime_implication": _impl,
-                        "as_of_date":         _macro.get("report_date", "unknown"),
+                        "as_of_date":         None,
+                        "fallback_report_date": _macro.get("report_date"),
+                        "stale_flag":         True,
+                        "staleness_sessions": None,
+                        "data_quality":       "FALLBACK_OBSERVATION_DATE_UNVERIFIED",
                         "data_source":        "MACRO_JSON_FALLBACK",
                         "fetch_error":        True,
                     }

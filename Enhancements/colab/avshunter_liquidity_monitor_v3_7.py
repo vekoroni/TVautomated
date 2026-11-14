@@ -40,6 +40,13 @@ from datetime import datetime, UTC
 
 import numpy as np
 import pandas as pd
+
+# Shared transport for local runner execution (including direct script launches).
+import sys as _source_sys
+from pathlib import Path as _SourcePath
+_source_sys.path.insert(0, str(_SourcePath(__file__).resolve().parents[2]))
+from contracts.source_transport import get_fred_response
+
 import requests
 
 try:
@@ -216,21 +223,8 @@ FRED_TIMEOUT_S, FRED_ATTEMPTS = 60, 3
 
 
 def _get_retried(url, params):
-    """GET retried on timeout / connection error / 429 / 5xx; a 4xx is returned at once.
-    fredapi waited without a time limit; on 8 Oct 2026 FRED answered in 8-11 s per request and
-    a single 30 s attempt lost series, so slowness is retried, not turned into MISSING."""
-    last = None
-    for attempt in range(1, FRED_ATTEMPTS + 1):
-        try:
-            r = requests.get(url, params=params, timeout=FRED_TIMEOUT_S)
-            if r.status_code != 429 and r.status_code < 500:
-                return r
-            last = requests.exceptions.HTTPError(f"HTTP {r.status_code}", response=r)
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            last = e
-        if attempt < FRED_ATTEMPTS:
-            time.sleep(2 * attempt)
-    raise last
+    return get_fred_response(url, params, get=requests.get, sleep=time.sleep,
+                             attempts=FRED_ATTEMPTS, timeout=FRED_TIMEOUT_S)
 
 
 def _fred_series(series: str, start: str) -> pd.Series:

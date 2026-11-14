@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "USMI v2 producer contract; narrative fields stay separate from typed flags",
+  "type": "object",
+  "required": ["contract_version", "packet_type", "merge_mode", "analysis_window", "current_state", "cross_asset", "risk_off_transmission_score", "execution_permission"],
+  "properties": {
+    "contract_version": {"const": "avshunter_us_money_index_v2_0"},
+    "packet_type": {"const": "US_MONEY_INDEX_CONSOLIDATED"},
+    "merge_mode": {"const": "AUGMENT_ONLY_DO_NOT_REPLACE"},
+    "execution_permission": {"const": "NONE_INTELLIGENCE_ONLY"},
+    "analysis_window": {"type": "object", "required": ["start", "end", "as_of_utc", "as_of_local", "market_context"]},
+    "current_state": {
+      "type": "object",
+      "required": ["US_MONEY_INDEX_STATE", "state_confidence", "regime_change_since_monday", "monetisation_change_since_monday", "risk_off_transition", "risk_off_transmission_score"],
+      "properties": {
+        "state_confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "regime_change_since_monday": {"$ref": "#/$defs/flag"},
+        "monetisation_change_since_monday": {"$ref": "#/$defs/flag"},
+        "risk_off_transition": {"$ref": "#/$defs/flag"},
+        "risk_off_transmission_score": {"type": "number", "minimum": 0, "maximum": 100}
+      }
+    },
+    "cross_asset": {
+      "type": "object",
+      "properties": {
+        "equities": {"type": "object", "properties": {"current_global_session": {"type": "object"}}}
+      }
+    },
+    "risk_off_transmission_score": {"type": "object", "required": ["current_score", "components"]}
+  },
+  "$defs": {
+    "flag": {
+      "oneOf": [
+        {"type": "boolean"},
+        {"type": "object", "required": ["status", "detail"], "properties": {"status": {"const": "UNRESOLVED"}, "detail": {"type": "string", "minLength": 1}}, "additionalProperties": false}
+      ]
+    }
+  }
+}
