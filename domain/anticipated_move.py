@@ -76,7 +76,7 @@ def _constants() -> Dict[str, Any]:
     return json.loads(CONSTANTS_PATH.read_text(encoding="utf-8-sig"))
 
 
-def anticipated_move_fields(
+def _anticipated_move_core(
     *,
     direction: Any,
     spot: Any,
@@ -266,6 +266,58 @@ def anticipated_move_fields(
     elif q50_multiple is not None:
         out["anticipated_pays_state"] = "PAYS" if q50_multiple >= 1.0 else "DOES_NOT_PAY_AT_ANTICIPATED_TIME"
     return out
+
+
+def thesis_active_state(value: Any) -> Optional[bool]:
+    """True for an ACTIVE thesis, False for any other recorded state, None when no state is recorded.
+    An unknown status is never assumed active (crossing scenario, design v4 section 5)."""
+    text = str(value or "").strip().upper()
+    if not text or text in {"NAN", "NONE", "NULL"}:
+        return None
+    return text == "ACTIVE"
+
+
+def anticipated_move_fields(*, crossing: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> Dict[str, Any]:
+    """The anticipated move for one row (unchanged), plus, when the caller supplies the crossing anchors, the
+    crossing scenario for the same contract (AVS-TRADE-001 design v4; ACK 14 Nov 2026).
+
+    A caller that passes no `crossing` gets exactly what it got before: no crossing field is added. With anchors
+    the crossing fields are added beside the existing ones; no existing field is written. Anchors: mode, thesis_id,
+    contract_symbol, thesis_origin_date, origin_spot, assessment_instant_utc, quote_timestamp_utc, thesis_active,
+    and (Morning) frozen_target_level and the frozen arrival sessions from the Evening row.
+    """
+    out = _anticipated_move_core(**kwargs)
+    if crossing is None:
+        return out
+    from domain.crossing_scenario import blank_fields, scenario_crossing
+    anchors = dict(crossing)
+    state = str(out.get("anticipated_move_state") or "")
+    if state in {"NOT_APPLICABLE_NON_DIRECTIONAL", "NO_TRADE_SIDE_EVENT"}:
+        fields = blank_fields(f"NOT_ASSESSED_{state}", mode=anchors.get("mode"))
+        return {**out, **fields}
+    contract = kwargs.get("contract") or {}
+
+    def frozen(key: str, live: Any) -> Any:
+        value = anchors.get(key)
+        return live if value in (None, "") else value
+
+    fields = scenario_crossing(
+        side=kwargs.get("direction"), mode=anchors.get("mode"), thesis_id=anchors.get("thesis_id"),
+        contract_symbol=anchors.get("contract_symbol"), thesis_origin_date=anchors.get("thesis_origin_date"),
+        origin_spot=frozen("origin_spot", kwargs.get("spot")),
+        frozen_target_level=frozen("frozen_target_level", out.get("anticipated_level_q50")),
+        arrival_sessions_median=frozen("frozen_sessions_q50", out.get("anticipated_sessions_q50")),
+        arrival_sessions_slow=frozen("frozen_sessions_q80", out.get("anticipated_sessions_q80")),
+        assessment_instant_utc=anchors.get("assessment_instant_utc"),
+        quote_timestamp_utc=anchors.get("quote_timestamp_utc"), quote_spot=kwargs.get("spot"),
+        strike=contract.get("strike"), expiry=contract.get("expiry"), bid=contract.get("bid"),
+        ask=contract.get("ask"), iv=contract.get("iv"), underlying=contract.get("underlying"),
+        thesis_active=anchors.get("thesis_active"), rate=kwargs.get("rate"), rate_basis=kwargs.get("rate_basis"),
+        dividend_yield=kwargs.get("dividend_yield"), dividend_basis=kwargs.get("dividend_basis"))
+    clash = set(fields) & set(out)
+    if clash:                                               # never overwrite an existing field
+        raise AssertionError(f"crossing fields collide with anticipated-move fields: {sorted(clash)}")
+    return {**out, **fields}
 
 
 def evidence_runway(*, timeframe: Any, alignment: Any, status: Any, q50_bars: Any, q80_bars: Any,

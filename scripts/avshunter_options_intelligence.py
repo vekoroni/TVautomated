@@ -5632,6 +5632,9 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
 
     def _score_leg(leg_df: pd.DataFrame, right: str) -> Optional[Dict]:
         if leg_df.empty: return None
+        # Crossing shadow (design v4 section 7): how many contracts each selection filter removes, in order, each
+        # counted from the survivors of the step before. Additive record only; the selector's behaviour is unchanged.
+        _pool = ctx['_crossing_pool_counts'] = {'side_rows': int(len(leg_df))}
 
         spot = ctx['spot']
         runway = _runway_from_ctx(ctx)
@@ -5647,6 +5650,7 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         leg_df = leg_df[
             pd.to_numeric(leg_df['dte'], errors='coerce') >= float(runway['contract_min_holdable_dte'])
         ].copy()
+        _pool['removed_below_holdable_dte'] = _pool['side_rows'] - int(len(leg_df))
         if leg_df.empty: return None
 
         # Governed long-option moneyness range. Near-ATM OTM remains preferred,
@@ -5655,7 +5659,9 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         # OTM (<.20 delta) and deep ITM (>.75 delta) remain outside mandate.
         delta_abs = leg_df['delta'].abs()
         mandate_low, mandate_high = CONTRACT_SELECTION['delta_mandate_abs']
+        _before = int(len(leg_df))
         leg_df = leg_df[delta_abs.between(mandate_low, mandate_high, inclusive='both')].copy()
+        _pool['removed_outside_delta_mandate'] = _before - int(len(leg_df))
         if leg_df.empty: return None
 
         # Invalid/crossed observations are retained in the canonical chain for
@@ -5680,7 +5686,9 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
             | (ask_values.notna() & (ask_values < 0))
             | (bid_values.notna() & ask_values.notna() & (bid_values > ask_values))
         )
+        _before = int(len(leg_df))
         leg_df = leg_df.loc[~invalid_quote].copy()
+        _pool['removed_invalid_or_crossed_quote'] = _before - int(len(leg_df))
         if leg_df.empty:
             return None
         # OI and volume are evidence, not execution authority. New strikes can
@@ -5688,6 +5696,7 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         # Preserve them for scoring and lifecycle monitoring. A positive mark
         # is still required so contract economics can be computed.
         eligible_df = leg_df[leg_df['mark'].fillna(0) > 0].copy()
+        _pool['removed_no_positive_mark'] = int(len(leg_df)) - int(len(eligible_df))
         if eligible_df.empty: return None
 
         # WP1 E1/E2 (ACK 17 Sep 2026): only tradeable expressions are selectable — a two-sided
@@ -5703,7 +5712,13 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         # Nothing inside the spread limit: keep the best two-sided contract for manual review with the
         # reason, instead of dropping the ticker (ACK 18 Sep 2026).
         spread_above_limit = not bool(_tradeable.fillna(False).any())
+        _before = int(len(eligible_df))
+        _n_two_sided = int(_two_sided.fillna(False).sum())
         eligible_df = eligible_df.loc[(_two_sided if spread_above_limit else _tradeable).fillna(False)].copy()
+        _pool['removed_not_two_sided'] = _before - _n_two_sided
+        # When nothing is within the limit the two-sided contracts above it are kept for manual review.
+        _pool['removed_spread_over_limit'] = 0 if spread_above_limit else _n_two_sided - int(len(eligible_df))
+        _pool['spread_above_limit_fallback'] = bool(spread_above_limit)
         if eligible_df.empty: return None
 
         core_delta = eligible_df['delta'].fillna(0).abs()
@@ -5714,12 +5729,18 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
         else:
             leg_df = core_df
             leg_df["best_available_suboptimal"] = False
+        # The preferred delta band narrows only when at least one contract is inside it.
+        _pool['removed_outside_preferred_delta'] = int(len(eligible_df)) - int(len(leg_df))
+        _pool['preferred_delta_band_applied'] = not core_df.empty
+        _before = int(len(leg_df))
 
         # ── TARGET-REACHABILITY FILTER (S2-3, ACK 6 Oct 2026) ─────────────────
         # Strikes are filtered against the level the contract is VALUED at (the governing setup's anticipated
         # level at the median time), never the prior 40-bar range extreme; with no anticipated level no filter
         # applies and the basis says so.
         leg_df = filter_strikes_to_level(leg_df, ctx.get('strike_filter_level'), right, spot)
+        _pool['removed_by_strike_level'] = _before - int(len(leg_df))
+        _pool['scored'] = int(len(leg_df))
 
         if leg_df.empty: return None
 
@@ -5863,6 +5884,8 @@ def select_best_contract(df: pd.DataFrame, ctx: Dict) -> Optional[Dict]:
 # (the same model the evening valuation stage uses), measured as central return per dollar of premium.
 # The valuation is SHADOW_NO_AUTHORITY until proven (CLAUDE.md rule 5): SHADOW records the value choice
 # beside the score choice; ACTIVE (ACK's switch) makes it the selected contract.
+
+from domain.crossing_shadow import CROSSING_SHADOW_FIELDS
 
 CONTRACT_VALUE_FIELDS = (
     "contract_value_selection_mode", "contract_value_basis", "contract_value_quality_flag",
@@ -6050,6 +6073,7 @@ def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, 
     else:
         basis = "SCORE_VALUE_SHADOW"
     own = next(v for c, v in valued if c['symbol'] == selected['symbol'])
+    crossing_shadow = _crossing_shadow_for(scores, selected, ctx)
     alternatives = [{
         "symbol": c['symbol'], "expiry": c.get('expiry'), "dte": c.get('dte'), "strike": c.get('strike'),
         "delta": c.get('delta'), "ask": c.get('ask'), "spread_pct": c.get('spread_pct'),
@@ -6072,7 +6096,66 @@ def apply_contract_value_selection(scores: List[Dict], chosen: Dict, ctx: Dict, 
         "contract_value_forecast_source": getattr(valuer, "forecast_source", "UNAVAILABLE") if valuer else "UNAVAILABLE",
         "contract_value_forecast_run_id": getattr(valuer, "forecast_run_id", None) if valuer else None,
         "contract_value_forecast_age_sessions": getattr(valuer, "forecast_age_sessions", None) if valuer else None,
+        # Crossing scenario shadow (design v4, ACK 14 Nov 2026): display only, beside the value choice above.
+        **crossing_shadow,
     }
+
+
+def _crossing_anchors(ctx: Dict) -> Dict[str, Any]:
+    """The frozen thesis anchors the crossing scenario needs, from the selection context. Nothing is invented: a
+    missing session, level or arrival time is passed as missing and reported as a not-assessed state."""
+    raw_row = ctx.get('_signal_row')
+    row = raw_row.to_dict() if isinstance(raw_row, pd.Series) else dict(raw_row or {})
+    session = _CDS_V2_SESSION if isinstance(_CDS_V2_SESSION, date) else None
+    if session is None:
+        for key in ('evidence_session_date', 'bar_data_asof', 'asof_date'):
+            try:
+                session = date.fromisoformat(str(row.get(key))[:10])
+                break
+            except (TypeError, ValueError):
+                continue
+    assessment = None
+    if session is not None:
+        try:
+            from avshunter.shared.xnys_calendar import is_xnys_session, session_bounds
+            if is_xnys_session(session):
+                assessment = session_bounds(session)[1]            # the close of the evidence session
+        except Exception:                                          # noqa: BLE001 - stated as a missing anchor
+            assessment = None
+    ticker = ctx.get('ticker') or row.get('ticker')
+    dividend = {}
+    try:
+        from canonical_data.dividend_history import dividend_inputs
+        dividend = dividend_inputs(ticker, as_of=session, spot=ctx.get('spot')) if session else {}
+    except Exception:                                              # noqa: BLE001 - assumed zero is then stated
+        dividend = {}
+    return {
+        'side': ctx.get('direction'),
+        'thesis_id': row.get('thesis_id') or f"{ticker}:{ctx.get('direction')}:{session.isoformat() if session else 'NO_SESSION'}",
+        'thesis_origin_date': session.isoformat() if session else None,
+        'origin_spot': ctx.get('spot'), 'quote_spot': ctx.get('spot'),
+        'frozen_target_level': ctx.get('strike_filter_level'),
+        'arrival_sessions_median': ctx.get('evidence_move_sessions'),
+        'arrival_sessions_slow': ctx.get('evidence_runway_sessions'),
+        'assessment_instant_utc': assessment, 'evidence_session': session,
+        # A contract is only selected for a thesis under assessment in this run: the same basis on which the
+        # lifecycle below records thesis_state ACTIVE. Stated, not assumed silently.
+        'thesis_active': True, 'thesis_status_basis': 'ACTIVE_AT_SELECTION_STAGE',
+        'underlying': ticker,
+        'rate': None, 'rate_basis': None,
+        'dividend_yield': dividend.get('dividend_yield'), 'dividend_basis': dividend.get('dividend_basis'),
+    }
+
+
+def _crossing_shadow_for(scores: List[Dict], selected: Dict, ctx: Dict) -> Dict[str, Any]:
+    """Shadow comparison fields for the selected contract's row. Never takes a ticker down and never changes the
+    selection: any failure is a stated not-assessed reason."""
+    from domain.crossing_shadow import blank_shadow, crossing_shadow_fields
+    try:
+        return crossing_shadow_fields(scores, selected, anchors=_crossing_anchors(ctx),
+                                      pool_counts=ctx.get('_crossing_pool_counts'))
+    except Exception as exc:                                       # noqa: BLE001
+        return blank_shadow(f"NOT_ASSESSED_SHADOW_ERROR:{type(exc).__name__}")
 
 
 #: Run identity for the W3.3 sidecar. `process_ticker` has no access to the
@@ -6304,6 +6387,7 @@ def _options_liquidity_lifecycle_fields(
         "contract_runway_state": contract.get("contract_runway_state"),
         "spread_above_limit": contract.get("spread_above_limit"),
         **{field: contract.get(field) for field in CONTRACT_VALUE_FIELDS},
+        **{field: contract.get(field) for field in CROSSING_SHADOW_FIELDS},
         "quote_as_of": quote_as_of or evidence_session,
     }
     if side not in {"CALL", "PUT"}:
@@ -10840,6 +10924,7 @@ def run_options_layer(
         'contract_runway_floor_days','contract_runway_basis','contract_runway_state','contract_runway_hold_sessions',
         'evidence_runway_sessions','evidence_move_sessions','evidence_runway_basis','spread_above_limit',
         *CONTRACT_VALUE_FIELDS,
+        *CROSSING_SHADOW_FIELDS,
         *THESIS_GEOMETRY_REVIEW_FIELDS,
         'quote_as_of','quote_freshness','liquidity_persistence_status',
         'liquidity_persistence_error','option_chain_dataset_id','selected_quote_dataset_id',

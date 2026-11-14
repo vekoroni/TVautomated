@@ -844,6 +844,12 @@ from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
 from canonical_data.instrument_identity import IDENTITY_FIELDS, attach_identities, load_registry
 FINAL_BOOK_FIELDS += [f for f in IDENTITY_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in MONETISATION_FIELDS if f not in FINAL_BOOK_FIELDS]
+# Crossing scenario and its shadow comparison (AVS-TRADE-001 design v4, ACK 14 Nov 2026): display only. No
+# gate, rank, verdict or Lane B flag reads these fields.
+from domain.crossing_scenario import CROSSING_FIELDS
+from domain.crossing_shadow import CROSSING_SHADOW_FIELDS
+CROSSING_BOOK_FIELDS = tuple(dict.fromkeys((*CROSSING_FIELDS, *CROSSING_SHADOW_FIELDS)))
+FINAL_BOOK_FIELDS += [f for f in CROSSING_BOOK_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in (*RELIABILITY_FIELDS, 'scenario_exit_date', 'valuation_time_basis',
     'anticipated_reach_state', 'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis',
     'usmi_routing_source', 'usmi_routing_source_sha256') if f not in FINAL_BOOK_FIELDS]
@@ -4239,6 +4245,7 @@ def opportunity_book_row(
     row.update(evening_projection)
     row.update(reliability_fields({**sig, **row}))
     row.update({f:sig.get(f) for f in MONETISATION_FIELDS} if sig.get('monetisation_clock_state') else clock_fields())
+    row.update({f: sig.get(f, "") for f in CROSSING_BOOK_FIELDS})   # as recorded upstream; blank is not available
     for field in ('scenario_exit_date', 'valuation_time_basis', 'anticipated_reach_state',
                   'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis'):
         row[field] = first(sig, field)

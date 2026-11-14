@@ -898,3 +898,59 @@ def evaluate_options_liquidity_lifecycle(
             "SUFFICIENT_XNYS_RUNWAY" if available_sessions >= dte_requirement["minimum_required_sessions"]
             else "INSUFFICIENT_XNYS_RUNWAY"),
     }
+
+
+# ── Quote validity and liquidity tier (AVS-TRADE-001 design v4 section 8; ACK 11 and 14 Nov 2026) ──
+# Quote provenance needs the session clock, so it lives in domain/quote_provenance.py: this module stays free
+# of the data layer (tests/test_ddd_option_contract_liquidity.py).
+# Labels only: nothing here removes a contract, changes a rank or grants execution. Validity is assessed before the
+# tier, so a crossed quote is never graded on its negative spread. Thresholds live in governed configuration.
+
+def _governed_constants() -> Dict[str, Any]:
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[1] / "config" / "governed_constants_v1.json"
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
+def liquidity_tier_settings() -> Dict[str, Any]:
+    """The governed 11 Nov tier thresholds (config option_liquidity_tiers)."""
+    block = _governed_constants()["option_liquidity_tiers"]
+    return {key: block[key] for key in ("a_spread_pct", "b_spread_pct", "min_oi", "low_premium",
+                                        "low_premium_max_width", "boundary_tolerance")}
+
+
+def quote_tier(bid: Any, ask: Any, open_interest: Any, settings: Mapping[str, Any] | None = None) -> Dict[str, Any]:
+    """Validity, then the 11 Nov liquidity tier, for one quote.
+
+    Returns validity (VALID / UNASSESSED_NO_ASK / UNASSESSED_NO_BID / INVALID_CROSSED_QUOTE / UNASSESSED_NO_OI),
+    tier (A / B / C, or None when not VALID), a reason code, the spread as a percentage of mid, the mid and the width.
+    The caller's settings are honoured and the boundary tolerance is applied at the spread and width limits.
+    """
+    cfg = dict(settings or liquidity_tier_settings())
+    tolerance = float(cfg.get("boundary_tolerance", 1e-9))
+    bid_value, ask_value, oi_value = _finite_number(bid), _finite_number(ask), _finite_number(open_interest)
+    out: Dict[str, Any] = {"validity": None, "tier": None, "code": None, "spread_pct": None, "mid": None,
+                           "width": None, "open_interest": oi_value}
+    if ask_value is None or ask_value <= 0:
+        return {**out, "validity": "UNASSESSED_NO_ASK", "code": "NO_ASK"}
+    if bid_value is None or bid_value <= 0:
+        return {**out, "validity": "UNASSESSED_NO_BID", "code": "NO_BID"}
+    if bid_value > ask_value:
+        return {**out, "validity": "INVALID_CROSSED_QUOTE", "code": "CROSSED_QUOTE"}
+    mid = (bid_value + ask_value) / 2.0
+    width = ask_value - bid_value
+    pct = width / mid * 100.0
+    out.update(mid=mid, width=width, spread_pct=pct)
+    if oi_value is None:
+        return {**out, "validity": "UNASSESSED_NO_OI", "code": "OI_NOT_RECORDED"}
+    out["validity"] = "VALID"
+    if oi_value < float(cfg["min_oi"]):
+        return {**out, "tier": "C", "code": "OI_UNDER_MINIMUM"}
+    if pct > float(cfg["b_spread_pct"]) + tolerance:
+        return {**out, "tier": "C", "code": "SPREAD_OVER_TIER_B"}
+    if pct > float(cfg["a_spread_pct"]) + tolerance:
+        return {**out, "tier": "B", "code": "SPREAD_OVER_TIER_A"}
+    if mid < float(cfg["low_premium"]) and width > float(cfg["low_premium_max_width"]) + tolerance:
+        return {**out, "tier": "B", "code": "LOW_PREMIUM_WIDE"}
+    return {**out, "tier": "A", "code": "WITHIN_TIER_A"}

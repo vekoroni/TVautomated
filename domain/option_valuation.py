@@ -139,10 +139,27 @@ def entry_cost_usd_per_share(ask: float) -> float:
     return float(ask) + float(valuation_policy()["fee_usd_per_contract_open"]) / 100.0
 
 
-def exit_proceeds_usd_per_share(model_value: float, *, bid: Optional[float], ask: float) -> float:
+def _exit_spread_multiple(value: Any) -> float:
+    """The exit-spread stress multiple: finite and not negative. 1.0 is the quoted spread (the default everywhere)."""
+    try:
+        multiple = float(value)
+    except (TypeError, ValueError):
+        raise ValueError("exit_spread_multiple must be a finite, non-negative number") from None
+    if not math.isfinite(multiple) or multiple < 0:
+        raise ValueError("exit_spread_multiple must be a finite, non-negative number")
+    return multiple
+
+
+def exit_proceeds_usd_per_share(model_value: float, *, bid: Optional[float], ask: float,
+                                exit_spread_multiple: float = 1.0) -> float:
     """Model value less half the quoted spread, less the closing fee; floored at zero (a worthless option is not sold,
-    so the loss never exceeds the premium and opening fee)."""
+    so the loss never exceeds the premium and opening fee).
+
+    `exit_spread_multiple` (crossing scenario, ACK 14 Nov 2026) widens ONLY the half-spread deducted at the exit; the
+    entry ask and both fees are untouched and the bid is never altered. The default 1.0 is the quoted spread."""
     half_spread = max(float(ask) - float(bid), 0.0) / 2.0 if bid is not None else 0.0
+    if exit_spread_multiple != 1.0:
+        half_spread *= _exit_spread_multiple(exit_spread_multiple)
     return max(model_value - half_spread - float(valuation_policy()["fee_usd_per_contract_close"]) / 100.0, 0.0)
 
 
@@ -175,7 +192,13 @@ def resolve_dividend(dividend_yield: Any, basis: Any) -> tuple[float, str]:
     return 0.0, reason if reason.startswith("ASSUMED_ZERO") else "ASSUMED_ZERO:NOT_SUPPLIED"
 
 
-def return_on_premium(model_value: Optional[float], *, bid: Optional[float], ask: float) -> Optional[float]:
+def net_return_on_premium_raw(model_value: Optional[float], *, bid: Optional[float], ask: float,
+                              exit_spread_multiple: float = 1.0) -> Optional[float]:
+    """The one cost formula, unrounded: exit proceeds over entry cost, less one. None when an input is unusable.
+
+    Thresholds are compared with this value, never with the rounded one (a return just under a threshold must not
+    cross it by rounding). `return_on_premium` is this value to four places, as published everywhere else."""
+    multiple = _exit_spread_multiple(exit_spread_multiple)
     if model_value is None:
         return None
     try:
@@ -185,7 +208,13 @@ def return_on_premium(model_value: Optional[float], *, bid: Optional[float], ask
             return None
     except (TypeError, ValueError):
         return None
-    return round(exit_proceeds_usd_per_share(model_value, bid=bid, ask=ask) / entry_cost_usd_per_share(ask) - 1.0, 4)
+    return (exit_proceeds_usd_per_share(model_value, bid=bid, ask=ask, exit_spread_multiple=multiple)
+            / entry_cost_usd_per_share(ask) - 1.0)
+
+
+def return_on_premium(model_value: Optional[float], *, bid: Optional[float], ask: float) -> Optional[float]:
+    raw = net_return_on_premium_raw(model_value, bid=bid, ask=ask)
+    return None if raw is None else round(raw, 4)
 
 
 def scenario_value(contract: Mapping[str, Any], side: str, at_spot: float, years: float, vol: float, *,

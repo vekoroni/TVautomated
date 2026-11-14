@@ -91,7 +91,8 @@ from contracts.thesis_geometry import invalidation_on_thesis_side
 from datetime import date, datetime, timezone
 from canonical_data.session_clock import session_snapshot, xnys_sessions_between
 from earnings_calendar_enricher import EARNINGS_DISCLOSURE_FIELDS
-from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS, anticipated_move_fields
+from domain.anticipated_move import ANTICIPATED_MOVE_FIELDS, anticipated_move_fields, thesis_active_state
+from domain.crossing_shadow import CROSSING_SHADOW_FIELDS
 from canonical_data.dividend_history import dividend_inputs
 from canonical_data.market_rate_observation import rate_inputs
 from domain.option_walls import level_wall
@@ -600,6 +601,40 @@ def _eod_failure_class(row: dict, reason: str = "") -> str:
 
 def _is_structural_eod_failure(row: dict, reason: str = "") -> bool:
     return _eod_failure_class(row, reason) in {"STRUCTURAL_BLOCK", "NO_OPTIONS_ROUTE"}
+
+def _crossing_anchors_for_evening(row, candidate) -> dict:
+    """The frozen thesis anchors for the Evening crossing scenario. A missing session leaves the assessment
+    instant missing, which the scenario reports as a not-assessed state; nothing is dated from the run day."""
+    from datetime import date as _date
+    session = None
+    for key in ("evidence_session_date", "bar_data_asof"):
+        try:
+            session = _date.fromisoformat(str(row.get(key))[:10])
+            break
+        except (TypeError, ValueError):
+            continue
+    assessment = None
+    if session is not None:
+        try:
+            from avshunter.shared.xnys_calendar import is_xnys_session, session_bounds
+            if is_xnys_session(session):
+                assessment = session_bounds(session)[1]
+        except Exception:                                              # noqa: BLE001 - stated as a missing anchor
+            assessment = None
+    symbol = ""
+    for key in ("recommended_contract", "contract_occ_symbol", "contract_symbol"):
+        symbol = str(candidate.get(key) or row.get(key) or "").strip()
+        if symbol and symbol.lower() != "nan":
+            break
+    return {
+        "mode": "EVENING_AT_EVIDENCE", "thesis_id": row.get("thesis_id") or candidate.get("thesis_id"),
+        "contract_symbol": symbol or None,
+        "thesis_origin_date": session.isoformat() if session else None,
+        "origin_spot": candidate.get("signal_price"), "assessment_instant_utc": assessment,
+        "quote_timestamp_utc": row.get("contract_quote_timestamp_utc") or row.get("quote_timestamp_utc"),
+        "thesis_active": thesis_active_state(row.get("thesis_state")),
+    }
+
 
 def _thesis_state_from_eod_status(eod_status: str) -> str:
     """The thesis stage only; it never claims validity (XLU-D10, ACK 2 Oct 2026). Phase and
@@ -2912,7 +2947,13 @@ def build_candidate_manifest(
             **dividend_inputs(candidate.get("ticker"), as_of=row.get("bar_data_asof"),
                               spot=candidate.get("signal_price")),
             **card_rate,
+            # Crossing scenario (AVS-TRADE-001 design v4, ACK 14 Nov 2026): display only, for the selected contract,
+            # anchored at the close of the evidence session. No existing field is written.
+            crossing=_crossing_anchors_for_evening(row, candidate),
         ))
+        # The shadow comparison computed by the Options stage travels with the row (display only).
+        for shadow_col in CROSSING_SHADOW_FIELDS:
+            candidate[shadow_col] = row.get(shadow_col, "")
         # Step 4d: the exit plan follows the anticipated move (replaces the earlier plan's invented targets).
         candidate.update(anticipated_exit_plan(
             direction=direction, entry=candidate.get("signal_price"),

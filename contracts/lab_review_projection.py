@@ -39,6 +39,8 @@ CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *RELIABILITY_FIELDS, 'scenario_
 CARD_FIELDS = (*CARD_FIELDS, "review_validation_state", "lab_actionable_overlay_state", "lab_actionable_overlay_reason")
 HOME_FIELDS = (*HOME_FIELDS, 'instrument_type', 'instrument_identity_state', 'instrument_review_policy')
 CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *IDENTITY_FIELDS)))
+from contracts.lab_control import CROSSING_BOOK_FIELDS
+CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *CROSSING_BOOK_FIELDS)))
 
 
 class ReviewRevisionConflict(ValueError):

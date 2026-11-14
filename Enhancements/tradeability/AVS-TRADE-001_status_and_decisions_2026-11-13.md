@@ -87,3 +87,44 @@ Item 7 is the only one in my files. I have not started it: it waits for your go-
 - Whether Codex's working-tree edits pass their tests or produce the intended fields on a run. I read the diffs only.
 - The state of A4–A7, A9–A11 and C1, C3–C6 since the 11 Nov run.
 - Why the 12 Nov run did not complete.
+
+## Update 14 Nov 2026: decisions recorded and status changes
+
+Recorded by Claude Code from ACK's words on 14 Nov. Where this section differs from the text above, this section is current.
+
+### ACK's decisions of 14 Nov
+
+| # | Decision | ACK's words |
+|---|---|---|
+| D-14.1 | The Morning gate runs at any time during market hours. 09:35-09:45 ET is a preferred window that labels the run; only a start outside market hours stops. Closes open decision 6 above. | "The morning gate should have the flexibility to run anytime during market hours." |
+| D-14.2 | Macro decides which ETFs are looked at first. It does not set direction and does not gate. A wider role needs a test on held data first. | "i agree with all your recommendations" (recommendation 1 on Codex's ETF response) |
+| D-14.3 | Index ETFs: show both the over-cap near-the-money contract and the in-cap out-of-the-money one, labelled, with no automatic switch. | same (recommendation 2) |
+| D-14.4 | An ETF review view that keeps the Lab's rank, ordered by macro context. No rank change. | same (recommendation 3) |
+| D-14.5 | Leveraged, inverse and volatility products: research-only, visible and labelled, until a product-specific rule exists. | same (recommendation 4) |
+| D-14.6 | Freshness and monetisation parameters: no invented figures; a row with thin evidence says "needs evidence". Thresholds are set after the first runs publish the clock. | same (recommendation 5) |
+| D-14.7 | Claude Code builds contract selection from the clock; Codex reviews before commit. One writer per file. | "agreed, write the design note" |
+| D-14.8 | Trading principle: macro identifies the opportunity, expressed in ETFs and in pipeline names, so the ETF fixes must work. Improve the pipeline through a fixed set of criteria per trade, filled only from data held. | "our new trading principles is based on the macro identify opportunities in the etf and the pipeline" |
+
+D-14.2 and D-14.8 sit beside CLAUDE.md rule 6 (macro never influences a gate, score or rank). D-14.2 keeps macro to visibility, which is inside the rule. Any step beyond that needs rule 6 amended in writing by ACK.
+
+### Status changes since 13 Nov
+
+| Item | 13 Nov | 14 Nov |
+|---|---|---|
+| GARCH D1 | Open at `layer3_forward_variance.py:690-692` | Committed on the line (`3bd7ecf`); not yet run |
+| Station quarantine, exact session clocks, PHANTOM changes, Lab card sections, macro delivery | Uncommitted working tree | Committed (`ff694d7`, `ffcdbbe`, `79c5983`, `c213a92`, `ca060b7`); not yet run |
+| Monetisation clock (A12) | Branch only | Merged (`cc07ff1`). It measures the exact contract's own quote history, is not called by a run, and uses different field names from ACK's 12 Nov brief |
+| Contract from the clock | Assigned to Codex in the brief of 13 Nov | Assigned to Claude Code. Design note: `AVS-TRADE-001_design_contract_from_clock_2026-11-14.md`, awaiting ACK's approval |
+| ETF fixes | Draft | Package with Codex; Codex's response in `audit\trace\AVS-TRACE-001\ETF_codex_response.md`: 15 accepted, 4 challenged, 4 for ACK (now decided above), 1 interface only. Nothing built |
+| Stock outcomes | Three ledgers scored to two sessions | Nine ledgers scored to 12 Nov: direction right 52.5% at 10 sessions; with the money tag 64%, against it 42% (one month, exploratory) |
+
+The Codex brief of 13 Nov (`AVS-TRADE-001_codex_brief_2026-11-13.md`) is superseded for items W1 and W2 by the design note; W3 and W4 stand.
+
+### ACK's approval to build the crossing scenario (14 Nov, later)
+
+| # | Decision | ACK's words |
+|---|---|---|
+| D-14.9 | ETF identity work validated and committed by Claude Code (`4010d4d`). | "option 1, validate and commit the etf identity work" |
+| D-14.10 | Build design note v4 (`AVS-TRADE-001_design_contract_from_clock_2026-11-14.md`) now. Taken, as stated to ACK before the answer, as: approval of the ten proposed decisions in its section 15; confirmation of the shared-file handoff with Claude Code as the one writer until it is committed; building before Codex's fourth design review, with Codex reviewing the code before commit. | "Yes, build v4 now" |
+
+Shadow and display only. No selection, rank, gate or Lane B window-flag change. The Evening run follows the build.

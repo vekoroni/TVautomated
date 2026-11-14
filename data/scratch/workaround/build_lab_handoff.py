@@ -170,26 +170,29 @@ def publication_stage(manifest: dict) -> str:
 # ---------------------------------------------------------------- B3 flags (on Lab fields; nothing here changes a Lab field)
 
 def liquidity_tier(bid, ask, oi, settings: dict = DEFAULTS) -> tuple[str, str, float | None]:
-    """The 11 Nov tiers on one quote. Returns (tier, reason, spread as % of mid)."""
-    bid, ask, oi = num(bid), num(ask), num(oi)
-    if ask is None or ask <= 0:
-        return "C", "NO_ASK", None
-    if bid is None or bid <= 0:
-        return "C", "NO_BID", None
-    mid = (bid + ask) / 2.0
-    width = ask - bid
-    pct = width / mid * 100.0
-    if oi is None:
-        return "C", "OI_NOT_RECORDED", pct
-    if oi < settings["tier_min_oi"]:
-        return "C", f"OI_{g(oi)}_UNDER_{g(settings['tier_min_oi'])}", pct
-    if pct > settings["tier_b_spread_pct"] + 1e-9:
+    """The 11 Nov tiers on one quote. Returns (tier, reason, spread as % of mid).
+
+    The rule is owned by the pipeline (domain.option_contract_liquidity.quote_tier, AVS-TRADE-001 design v4,
+    14 Nov 2026); this adapter keeps Lane B's return shape, reason text, settings and boundary tolerance. One output
+    differs from before: a crossed quote (bid above ask) is C / CROSSED_QUOTE, where it used to be graded on its
+    negative spread."""
+    from domain.option_contract_liquidity import quote_tier
+    out = quote_tier(num(bid), num(ask), num(oi), {
+        "a_spread_pct": settings["tier_a_spread_pct"], "b_spread_pct": settings["tier_b_spread_pct"],
+        "min_oi": settings["tier_min_oi"], "low_premium": settings["tier_low_premium"],
+        "low_premium_max_width": settings["tier_low_premium_max_width"], "boundary_tolerance": 1e-9})
+    code, pct, width = out["code"], out["spread_pct"], out["width"]
+    if code in ("NO_ASK", "NO_BID", "CROSSED_QUOTE"):
+        return "C", code, None
+    if code == "OI_NOT_RECORDED":
+        return "C", code, pct
+    if code == "OI_UNDER_MINIMUM":
+        return "C", f"OI_{g(out['open_interest'])}_UNDER_{g(settings['tier_min_oi'])}", pct
+    if code == "SPREAD_OVER_TIER_B":
         return "C", f"SPREAD_{pct:.1f}PCT_OVER_{g(settings['tier_b_spread_pct'])}", pct
-    if pct > settings["tier_a_spread_pct"] + 1e-9:
-        return "B", f"SPREAD_{pct:.1f}PCT", pct
-    if mid < settings["tier_low_premium"] and width > settings["tier_low_premium_max_width"] + 1e-9:
+    if code == "LOW_PREMIUM_WIDE":
         return "B", f"PREMIUM_UNDER_{g(settings['tier_low_premium'])}_SPREAD_{width:.2f}_WIDE", pct
-    return "A", f"SPREAD_{pct:.1f}PCT", pct
+    return out["tier"], f"SPREAD_{pct:.1f}PCT", pct
 
 
 def window_flag(values: dict, settings: dict) -> tuple[str, str, str]:

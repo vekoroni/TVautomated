@@ -1,0 +1,108 @@
+{
+  "what": "ROW_LEVEL crossing scenario for the selected contract of every saved hand-off row (offline replay)",
+  "not_measured": "The 17-contract shadow set: the saved run kept no candidate quotes or scores (options/contracts_tested_*.jsonl holds symbol, dte, delta, spread and mid only). BENCHMARK_INPUT_GAP, not synthesised.",
+  "caveats": [
+    "Hand-off quotes are the Morning's (selected_quote_timestamp_utc); the path is anchored at the Evening evidence close. This is a timing benchmark and a preview of states, not run evidence.",
+    "thesis_active is taken as true for every hand-off row (the hand-off carries no thesis_state)."
+  ],
+  "input": {
+    "file": "data\\scratch\\workaround\\handoff\\lab_2026-11-12\\handoff.csv",
+    "sha256": "0d412165d34c7cfa904d83e7f76c17a8e950bdb9ec5cddd0df3ea7a3d10b6023",
+    "rows": 2132
+  },
+  "source_commit": "4010d4d",
+  "config_version": "contract_crossing_scenario_v1",
+  "search_cap_sessions": 60,
+  "machine": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.0",
+    "processor": "Intel64 Family 6 Model 126 Stepping 5, GenuineIntel"
+  },
+  "timing": {
+    "rows": 2132,
+    "rows_timed": 2032,
+    "wall_seconds": 203.8,
+    "timing_basis": "untraced rows only; memory traced on a 100-row sample",
+    "seconds_per_row_mean": 0.0821,
+    "seconds_per_row_p95": 0.1825,
+    "seconds_per_row_max": 0.457,
+    "projected_minutes_for_2800_rows": 3.8,
+    "peak_memory_mb_sample": 0.4
+  },
+  "rows_by_slow_arrival_sessions": {
+    "21-60": 596,
+    "1-20": 242,
+    "over 60": 1252,
+    "no arrival time": 42
+  },
+  "state_slow30_base": {
+    "CROSSES_COVERING": 880,
+    "NO_CROSSING_BY_USABLE_DEADLINE": 653,
+    "NO_CROSSING_BY_ARRIVAL": 280,
+    "SEARCH_TRUNCATED_AT_CONFIG_CAP": 118,
+    "NOT_ASSESSED_NO_STRIKE_IV_OR_EXPIRY": 85,
+    "NOT_ASSESSED_NO_ARRIVAL_TIME": 41,
+    "CROSSES_NOT_COVERING": 40,
+    "NOT_ASSESSED_EXIT_COST_UNKNOWN": 34,
+    "NOT_ASSESSED_NO_LEVEL": 1
+  },
+  "covers_slow30_base": {
+    "YES": 880,
+    "NO": 973,
+    "NOT_ASSESSED": 279
+  },
+  "search_limit": {
+    "ARRIVAL": 464,
+    "USABLE_DEADLINE": 1284,
+    "CONFIG_CAP": 223,
+    "None": 161
+  },
+  "selected_quote_tier": {
+    "C": 1661,
+    "A": 99,
+    "B": 248,
+    "UNASSESSED_NO_BID": 36,
+    "UNASSESSED_NO_ASK": 88
+  },
+  "crossing_session_slow30": {
+    "n": 920,
+    "q25": 4.0,
+    "median": 9.0,
+    "q75": 16.0,
+    "max": 60.0
+  },
+  "crossing_session_slow20": {
+    "n": 1017,
+    "q25": 3.0,
+    "median": 7.0,
+    "q75": 14.0,
+    "max": 58.0
+  },
+  "crossing_session_slow30_by_timeframe": {
+    "1d": {
+      "n": 257,
+      "q25": 5.0,
+      "median": 9.0,
+      "q75": 15.0,
+      "max": 52.0
+    },
+    "1mo": {
+      "n": 346,
+      "q25": 3.0,
+      "median": 8.0,
+      "q75": 16.0,
+      "max": 60.0
+    },
+    "1w": {
+      "n": 317,
+      "q25": 4.0,
+      "median": 9.0,
+      "q75": 17.0,
+      "max": 58.0
+    }
+  },
+  "crossing_vs_q80_arrival": {
+    "crossing earlier than q80 arrival": 915,
+    "crossing at q80 arrival": 5
+  }
+}

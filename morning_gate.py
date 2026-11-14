@@ -1267,7 +1267,7 @@ def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, An
     unchanged = _ticker(symbol) == _u(evening)
     if unchanged and (_f(live_data.get("live_contract_ask")) is None or _f(live_data.get("live_contract_iv")) is None):
         return {"anticipated_contract_basis": "EVENING_REFERENCE:NO_MORNING_QUOTE", **reference}
-    from domain.anticipated_move import anticipated_move_fields
+    from domain.anticipated_move import anticipated_move_fields, thesis_active_state as _thesis_active_state
     from earnings_calendar_enricher import earnings_disclosure
     today = _today_session()
     expiry = _occ_expiry(symbol)
@@ -1293,7 +1293,25 @@ def _recompute_for_morning_contract(row: Dict[str, Any], live_data: Dict[str, An
         trade_side_event=_u(row.get("thesis_structure_alignment")) == "ALIGNED",
         # Output-trust item 4: the invalidation scenario and the dividend yield from history (basis stated).
         invalidation_level=row.get("invalidation_price") or row.get("invalidation_eod") or row.get("invalidation_level"),
-        **dividend_inputs(row.get("ticker"), as_of=today, spot=_spot), **_MORNING_RATE_INPUTS)
+        **dividend_inputs(row.get("ticker"), as_of=today, spot=_spot), **_MORNING_RATE_INPUTS,
+        # Crossing scenario (AVS-TRADE-001 design v4, ACK 14 Nov 2026): what a NEW entry at this Morning quote would
+        # need. The thesis origin, origin spot, target and arrival sessions are the Evening row's, frozen: the
+        # runway is never restarted, and a repaired contract keeps the thesis origin. Display only.
+        crossing={
+            "mode": "MORNING_FRESH_ENTRY", "thesis_id": row.get("thesis_id"), "contract_symbol": symbol,
+            "thesis_origin_date": (row.get("crossing_thesis_origin_date") or row.get("evidence_session_date")
+                                   or row.get("bar_data_asof")),
+            "origin_spot": row.get("crossing_origin_spot") or row.get("signal_price"),
+            "frozen_target_level": row.get("crossing_frozen_target_level") or row.get("anticipated_level_q50"),
+            "frozen_sessions_q50": row.get("anticipated_sessions_q50"),
+            "frozen_sessions_q80": row.get("anticipated_sessions_q80"),
+            "assessment_instant_utc": datetime.now(timezone.utc),
+            "quote_timestamp_utc": (live_data.get("quote_provider_timestamp_utc")
+                                    or live_data.get("live_contract_provider_updated")
+                                    or live_data.get("selected_quote_timestamp_utc")
+                                    or live_data.get("live_contract_quote_timestamp")),
+            "thesis_active": _thesis_active_state(row.get("thesis_state") or row.get("liquidity_thesis_state")),
+        })
     out["anticipated_contract_basis"] = (f"MORNING_REPRICED:{symbol}" if unchanged
                                          else f"MORNING_CONTRACT_RECOMPUTED:{symbol}")
     out["anticipated_contract_symbol"] = symbol          # L5: the contract the decision's value belongs to

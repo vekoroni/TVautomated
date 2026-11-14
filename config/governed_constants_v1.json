@@ -369,5 +369,52 @@
     "close_tolerance": 0.01,
     "reconciliation_window_sessions": 4,
     "calibration_basis": "Calibrated 12 Oct 2026 on 4,680 sessions after the catch-up (Enhancements/phase8/intraday_index_replay.json): high / low agree with the daily bar on 99% of sessions (99th pct 0.25% / 0.08%) - a miss beyond 0.5% is a data error; the close is the closing-auction print and differs by design (median 0.04%, 95th 0.35%, 99th ~1%) - 1.0%. Only the trigger-and-response window (the 5m timeframe's 4 sessions) flags the reading."
+  },
+  "option_liquidity_tiers": {
+    "version": "option_liquidity_tiers_v1",
+    "configuration_owner": "ACK",
+    "approval": "ACK 11 Nov 2026 (triage tiers) and 14 Nov 2026 (one liquidity standard, D-14.10): A = spread at most 10% of mid, open interest at least 100, and under a 1.50 premium no more than 0.10 wide; B = 10 to 20%, or a narrow-percent quote under 1.50 that is over 0.10 wide; C = over 20% or open interest under 100.",
+    "validation_state": "PROVISIONAL",
+    "a_spread_pct": 10.0,
+    "b_spread_pct": 20.0,
+    "min_oi": 100,
+    "low_premium": 1.5,
+    "low_premium_max_width": 0.1,
+    "boundary_tolerance": 1e-09,
+    "authority": "LABEL_ONLY_NEVER_REMOVES_A_CONTRACT",
+    "note": "Validity is assessed before the tier: a crossed quote is INVALID_CROSSED_QUOTE and missing bid, ask or open interest is UNASSESSED; neither is a tier. Lane B reads these thresholds from here (one owner)."
+  },
+  "contract_crossing_scenario": {
+    "version": "contract_crossing_scenario_v1",
+    "configuration_owner": "ACK",
+    "approval": "ACK 14 Nov 2026 (D-14.10, design note AVS-TRADE-001_design_contract_from_clock_2026-11-14.md v4): display-only scenario comparison; shadow only; no selection, rank, gate or Lane B window-flag authority.",
+    "authority": "DISPLAY_ONLY_NOT_VALIDATED",
+    "validation_state": "NOT_VALIDATED_SCENARIO_ASSUMPTION",
+    "path_basis": "SQRT_TIME_PATH_TO_FROZEN_TARGET_V1",
+    "thresholds": [
+      0.2,
+      0.3
+    ],
+    "headline_threshold": 0.3,
+    "threshold_floor": 0.2,
+    "monitor_buffer_sessions": 3,
+    "exit_buffer_sessions": 5,
+    "search_cap_sessions": 60,
+    "search_cap_sessions_range": [
+      20,
+      120
+    ],
+    "exit_spread_stress_multiple": 2.0,
+    "exit_spread_stress_multiple_range": [
+      1.0,
+      5.0
+    ],
+    "iv_stress_basis": "contract_economics.iv_stress[0]",
+    "candidate_expiries": 4,
+    "candidate_contracts_per_expiry": 3,
+    "evening_close_quote_tolerance_seconds": 1800,
+    "evening_close_quote_tolerance_basis": "The value the observed A12 clock already uses (config/monetisation_clock_v1.json close_quote_tolerance_seconds).",
+    "selection_mode": "SHADOW",
+    "note": "The path is an assumption (the evidence gives the arrival time, not the route). Buffers are the existing 3 monitoring and 5 exit sessions. Not a forecast, a probability or an empirical quantile."
   }
 }
