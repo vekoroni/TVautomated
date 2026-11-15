@@ -24,6 +24,7 @@
     "ETF_OTHER": {"wrapper": null, "review_reason": "UNRESOLVED_MASTER_CLASSIFICATION"},
     "ETN": {"wrapper": "ETN"},
     "LEVERAGED_BOND_ETF": {"wrapper": "ETF", "leveraged": true, "research_only": true},
+    "LEVERAGED_EQUITY_ETF": {"wrapper": "ETF", "leveraged": true, "research_only": true},
     "LEVERAGED_INVERSE_ETF": {"wrapper": "ETF", "leveraged": true, "inverse": true, "research_only": true},
     "LEVERAGED_VOL_ETF": {"wrapper": null, "volatility": true, "research_only": true,
       "review_reason": "LEGACY_VOLATILITY_TYPE_CONFLATES_WRAPPER_AND_LEVERAGE"}
