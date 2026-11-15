@@ -17,6 +17,8 @@ data/scratch/workaround/handoff/lab_<session>/:
 
 Population: lab_verdict GO_LIMIT or MANUAL_REVIEW. Every excluded verdict is counted in the receipt.
 Order: GO_LIMIT first, then lab_rank ascending. No weights. Batches of 30 in that order.
+Focus list (settings focus_tickers, ACK 15 Nov 2026): the listed names fill the first batches in the order listed (lb_focus = FOCUS);
+    the rest follow in the Lab order. Order only: nothing is dropped, no Lab value changes.
 Flags (never filters unless the settings say so):
     lb_window_flag   D1 (ACK 12 Nov): the planned hold stays the thesis runway. The trading window is judged on the
                      monetisation clock n when the Lab publishes it; until then on anticipated_sessions_q50, labelled PROXY_Q50
@@ -80,6 +82,9 @@ DEFAULTS = {
     # stock tier
     "stock_tier_a_usd": 50_000_000, "stock_tier_b_usd": 20_000_000, "stock_tier_bars": 20,
     "batch_size": 30,
+    # focus list (ACK 15 Nov 2026): these names fill the first batches, in the order listed; every other row follows in the Lab order.
+    # Order only: no row is dropped and no Lab value changes. Empty = the Lab order alone.
+    "focus_tickers": [],
     "spotcheck_random_rows": 20, "spotcheck_seed": 20261112,
 }
 
@@ -395,6 +400,10 @@ def write_markdown(folder: Path, receipt: dict, rows: list[dict], settings: dict
           f"- Excluded by window filter: {c['excluded_by_window_filter']} (window_mode = {settings['window_mode']})", "",
           "## Order", "", "GO_LIMIT first, then `lab_rank` ascending. No weights. Batches of "
           f"{settings['batch_size']} in that order ({c['batches']} batches).", "",
+          *([f"Focus list (settings focus_tickers): {c['focus_rows']} names placed first, in the order listed; the other rows follow in "
+             "the Lab order. Order only: no row dropped, no Lab value changed."
+             + (f" Not on the hand-off: {', '.join(receipt['focus_not_on_handoff'])}." if receipt["focus_not_on_handoff"] else ""), ""]
+            if settings["focus_tickers"] else []),
           "## Flags (counts on the hand-off rows)", ""]
     for name, counts in receipt["flags"].items():
         md.append(f"- **{name}**: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
@@ -487,6 +496,11 @@ def main(argv=None) -> int:
             lb["lb_lab_missing_fields"] = ";".join(r["missing"])
             built.append((r, lb))
 
+        focus_order = {str(t).upper().strip(): i for i, t in reversed(list(enumerate(settings["focus_tickers"])))}
+        ticker_of = lambda item: str(item[0]["values"].get("ticker")).upper().strip()   # noqa: E731
+        focus_not_on_handoff = sorted(set(focus_order) - {ticker_of(item) for item in built})
+        if focus_order:   # stable: focus names first as listed, the rest keep the Lab order
+            built.sort(key=lambda item: (ticker_of(item) not in focus_order, focus_order.get(ticker_of(item), 0)))
         seen_groups, out_rows = set(), []
         for i, (r, lb) in enumerate(built, start=1):
             v = r["values"]
@@ -494,7 +508,8 @@ def main(argv=None) -> int:
             group = f"{cell(v.get('sector_etf')) or 'NO_ETF'}_{side or 'NO_DIRECTION'}"
             head = {"lb_order": str(i), "lb_batch": str((i - 1) // int(settings["batch_size"]) + 1),
                     "lb_ledger_id": f"{session}_{ticker}_{side}", "lb_row_key": r["row_key"]}
-            tail = {"lb_group": group, "lb_group_role": "ALTERNATE" if group in seen_groups else "PRIMARY"}
+            tail = {"lb_group": group, "lb_group_role": "ALTERNATE" if group in seen_groups else "PRIMARY",
+                    "lb_focus": "FOCUS" if ticker in focus_order else ""}
             seen_groups.add(group)
             out_rows.append({**head, **{f: cell(v.get(f)) for f in lab.fields}, **lb, **tail})
 
@@ -555,7 +570,8 @@ def main(argv=None) -> int:
             "counts": {"lab_rows_in": len(all_rows), "handoff_rows": len(out_rows),
                        "handoff_by_verdict": dict(Counter(o["lab_verdict"] for o in out_rows)),
                        "excluded_by_verdict": dict(sorted(excluded.items())), "excluded_by_window_filter": dropped_window,
-                       "batches": len(batches)},
+                       "batches": len(batches), "focus_rows": sum(1 for o in out_rows if o["lb_focus"])},
+            "focus_not_on_handoff": focus_not_on_handoff,
             "flags": flags, "legacy_compare": compare_state,
             "legacy_compare_counts": dict(Counter(r["differs"] for r in compare)) if compare else {},
             "revision_history": history,

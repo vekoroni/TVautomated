@@ -272,3 +272,40 @@ def test_stock_tier_from_twenty_day_dollar_volume(tmp_path):
     con.commit(); con.close()
     tiers = blh.stock_tiers(["AAA", "GOO", "BBB", "NAN"], db, {"stock_tier_a_usd": 50e6, "stock_tier_b_usd": 20e6, "stock_tier_bars": 20})
     assert tiers["AAA"][0] == "A" and tiers["GOO"][0] == "B" and tiers["BBB"][0] == "C" and tiers["NAN"][0] == "NO_PRICE_HISTORY"
+
+
+# ---------------------------------------------------------------- focus list (ACK 15 Nov 2026)
+
+def focus_build(tmp_path, names):
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "s.json").write_text(json.dumps({"batch_size": 2, "focus_tickers": names}), encoding="utf-8")
+    out = tmp_path / "handoff"
+    blh.main(["--run", RUN, "--runs-dir", str(publish(tmp_path)), "--out-root", str(out), "--settings", str(tmp_path / "s.json"),
+              "--price-db", str(tmp_path / "none.sqlite"), "--day-settings", str(tmp_path / "y.json"), "--legacy-root", str(tmp_path / "nl")])
+    folder = out / "lab_2026-11-12"
+    return folder, list(csv.DictReader((folder / "handoff.csv").open(encoding="utf-8", newline="")))
+
+
+def test_focus_names_fill_the_first_batches_in_the_order_given_and_no_row_is_dropped(tmp_path):
+    folder, rows = focus_build(tmp_path, ["bbb", "AAA"])
+    assert [r["ticker"] for r in rows] == ["BBB", "AAA", "GOO", "NAN"]     # focus first as listed, then the Lab order
+    assert [r["lb_batch"] for r in rows] == ["1", "1", "2", "2"]
+    assert [r["lb_focus"] for r in rows] == ["FOCUS", "FOCUS", "", ""]
+    assert "ticker_pack.py BBB AAA" in (folder / "pack_commands" / "ticker_pack_command_1.txt").read_text(encoding="utf-8")
+
+
+def test_a_focus_list_changes_the_order_only_never_a_lab_value(tmp_path):
+    _, plain = focus_build(tmp_path / "a", [])
+    _, focus = focus_build(tmp_path / "b", ["BBB"])
+    moved = ("lb_order", "lb_batch", "lb_focus", "lb_group_role")
+    strip = lambda rows: {r["ticker"]: {k: v for k, v in r.items() if k not in moved} for r in rows}   # noqa: E731
+    assert strip(plain) == strip(focus)
+    assert all(r["lb_focus"] == "" for r in plain)
+
+
+def test_a_focus_name_that_is_not_on_the_hand_off_is_recorded_not_invented(tmp_path):
+    folder, rows = focus_build(tmp_path, ["ZZZ", "BBB"])
+    receipt = json.loads((folder / "receipt.json").read_text(encoding="utf-8"))
+    assert rows[0]["ticker"] == "BBB" and len(rows) == 4
+    assert receipt["counts"]["focus_rows"] == 1 and receipt["focus_not_on_handoff"] == ["ZZZ"]
+    assert "Focus list" in (folder / "handoff.md").read_text(encoding="utf-8")
