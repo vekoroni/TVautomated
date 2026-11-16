@@ -167,6 +167,8 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
         """)
         for ordinal, source in enumerate(rows):
             row = _safe(source)
+            from contracts.lab_snapshot_disclosure import scope_snapshot
+            row = scope_snapshot(row)
             reach = row.get('anticipated_reachable_level')
             if isinstance(reach, (int, float)) and not isinstance(reach, bool) and reach <= 0:
                 row['source_anticipated_reachable_level'] = reach
@@ -193,9 +195,11 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
             home["sector"] = _token(row.get("sector")) or "UNKNOWN"
             home["display_sector"] = sector
             home["valuation_disclosure"] = valuation_disclosure(row)
+            home["snapshot_disclosure"] = row["snapshot_disclosure"]
             # Field names live once in the versioned schema. A single-card GET
             # expands this typed vector; missing values/reasons remain explicit.
             card = {"values": [fields[f] for f in CARD_FIELDS],
+                    "snapshot_disclosure": row["snapshot_disclosure"],
                     "timing_details": timing,
                     "missing_fields": [i for i, f in enumerate(CARD_FIELDS) if _missing(fields[f])],
                     "identity_state": "THESIS_ID_MISSING" if _missing(row.get("thesis_id")) else "SOURCE_IDENTITY_PRESENT",
@@ -229,6 +233,7 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
         if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise ReviewIntegrityError("Projection index integrity failed")
     manifest = {"schema": SCHEMA, "run_id": run_id, "revision": revision,
+        "snapshot_disclosure_version": "lab_snapshot_disclosure_v1",
         "publication_state": "COMPLETE", "authority": "DISPLAY_ONLY", "row_count": len(rows),
         "card_fields": list(CARD_FIELDS), "display_policy_version": display_policy()["version"],
         "evidence_storage": "ZLIB_JSON_LOSSLESS_V1",
