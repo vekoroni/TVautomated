@@ -246,7 +246,7 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
         receipt["validation_unmatched_rows"] = len(output["rows"]) - receipt["validation_events_applied"]
         receipt["validation_event_state"] = "UPSTREAM_IDENTITY_VERIFIED_RECEIPT"
         receipt["issues"].extend(validation_receipt["lab_projection_issues"])
-        return output, context, receipt
+        return _finish_timing_publication(output, context, receipt, root, book)
     events = defaultdict(list)
     for path in sorted(event_dir.glob("*.json")):
         event = _load(path, issues, "VALIDATION_EVENT_INVALID")
@@ -272,4 +272,61 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
                 row["review_validation_state"] = "EVENT_REJECTED"; issues.append(f"VALIDATION_EVENT_REJECTED:{row.get('ticker')}:{error}")
         receipt["validation_event_state"] = "VERIFIED_IDENTITY_PROJECTED"
     receipt["validation_unmatched_rows"] = len(output["rows"]) - receipt["validation_events_applied"]
+    return _finish_timing_publication(output, context, receipt, root, book)
+
+
+def _finish_timing_publication(output, context, receipt, root, book):
+    """Shared final stage, including the trusted-event path without event rereads."""
+    run_id = _text(book.get('run_id'))
+    issues = receipt['issues']
+    watches = receipt['watch_inputs']
+    # Saved-only timing assessment, separate from the immutable accepted book.
+    # Never promote a row. A newly established runway defect can only send an
+    # existing GO display back to manual review; its original label is retained.
+    from domain.trade_timing import timing_for_row
+    meta_path = root / 'run_meta.json'
+    _watch(root, meta_path, watches)
+    meta = _load(meta_path, issues, 'TIMING_META_UNAVAILABLE') if meta_path.is_file() else {}
+    anchor = ((meta or {}).get('dynamic_plan') or {}).get('evidence_cutoff_utc')
+    saved_reasons = defaultdict(list)
+    morning = root / 'morning_validation' / f'morning_validated_trades_{run_id}.csv'
+    _watch(root, morning, watches)
+    if morning.is_file():
+        import csv
+        old_limit = csv.field_size_limit()
+        try:
+            csv.field_size_limit(max(old_limit, 64*1024*1024))
+            with morning.open(encoding='utf-8-sig', newline='') as stream:
+                for r in csv.DictReader(stream):
+                    key = (_text(r.get('ticker')).upper(), _text(r.get('selected_contract_symbol') or r.get('contract_symbol')).removeprefix('O:'))
+                    saved_reasons[key].append({k:r.get(k) for k in ('block_reason','flag_reason','execution_viability_reason','execution_viability_state','monetisability_reason','monetisability_state','verdict','thesis_id','ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc')})
+        finally:
+            csv.field_size_limit(old_limit)
+    for row in output['rows']:
+        key = (_text(row.get('ticker')).upper(), _contract(row))
+        matches = saved_reasons.get(key, [])
+        matched = len(matches) == 1 and (not matches[0].get('thesis_id') or matches[0]['thesis_id'] == row.get('thesis_id'))
+        timing_input = dict(row)
+        if matched:
+            for field in ('ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc'):
+                if not _text(timing_input.get(field)):
+                    timing_input[field] = matches[0].get(field)
+        timing = timing_for_row(timing_input, planned_at=anchor,
+            as_of=row.get('validation_evidence_cutoff_utc') or book.get('created_at_utc'))
+        timing['published_lab_verdict'] = row.get('lab_verdict')
+        reasons = []
+        if matched:
+            reasons = [matches[0][k] for k in ('block_reason','flag_reason','execution_viability_reason','monetisability_reason') if _text(matches[0].get(k))]
+            if matches[0].get('execution_viability_state') == 'EXECUTABLE_QUOTE':
+                reasons = [r for r in reasons if r != matches[0].get('execution_viability_reason')]
+            timing['saved_morning_verdict'] = matches[0].get('verdict')
+        timing['exclusion_reasons'] = list(dict.fromkeys(reasons))
+        if timing['expiry_session_check_state'] in {'INSUFFICIENT_XNYS_RUNWAY','HOLD_BUDGET_EXHAUSTED'}:
+            timing['exclusion_reasons'].append(timing['expiry_session_check_state'])
+            if _text(row.get('lab_verdict')).upper() in {'GO','GO_LIMIT','GO_LMT','GO_WITH_LIMIT'}:
+                row['lab_verdict'] = 'MANUAL_REVIEW'
+                timing['review_override'] = 'EXACT_SESSION_RUNWAY_REQUIRES_MANUAL_REVIEW'
+        row['timing_details'] = timing
+    receipt['timing_assessment_version'] = 'trade_timing_sessions_v1'
+    # _watch added above extends the same mutable watch-list retained in receipt.
     return output, context, receipt

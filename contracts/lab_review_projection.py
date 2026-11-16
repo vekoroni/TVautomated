@@ -154,6 +154,8 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
     distribution: dict[str, dict[str, Any]] = {}
     identity_counts: Counter[str] = Counter()
     verdict_counts: Counter[str] = Counter()
+    timing_counts: Counter[str] = Counter()
+    short_candidates = []
     with closing(sqlite3.connect(database)) as conn:
         conn.executescript("""
           CREATE TABLE rows(row_key TEXT PRIMARY KEY, ordinal INTEGER UNIQUE NOT NULL,
@@ -181,6 +183,12 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
             home = {f: row.get(f) for f in HOME_FIELDS}
             spread, state = _spread(row)
             home.update(row_key=key, spread_pct_mid=spread, spread_state=state)
+            timing = row.get('timing_details') or {}
+            home['timing_details'] = timing
+            timing_counts[str(timing.get('expiry_session_check_state') or 'NOT_ASSESSED')] += 1
+            if timing.get('planned_short_1_5') or timing.get('arrival_short_1_5'):
+                short_candidates.append({'ticker': row.get('ticker'), 'row_key': key,
+                    'lab_verdict': row.get('lab_verdict'), 'timing_details': timing})
             sector = display_sector(row.get("sector"))
             home["sector"] = _token(row.get("sector")) or "UNKNOWN"
             home["display_sector"] = sector
@@ -188,6 +196,7 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
             # Field names live once in the versioned schema. A single-card GET
             # expands this typed vector; missing values/reasons remain explicit.
             card = {"values": [fields[f] for f in CARD_FIELDS],
+                    "timing_details": timing,
                     "missing_fields": [i for i, f in enumerate(CARD_FIELDS) if _missing(fields[f])],
                     "identity_state": "THESIS_ID_MISSING" if _missing(row.get("thesis_id")) else "SOURCE_IDENTITY_PRESENT",
                     "source_row_ordinal": ordinal, "spread_pct_mid": spread, "spread_state": state,
@@ -232,6 +241,10 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
         "macro_context": _safe((context or {}).get("macro", {"state": "NOT_PUBLISHED"})),
         "sector_context": _safe((context or {}).get("sector", {"state": "NOT_PUBLISHED"})),
         "reconciliation": _safe(book.get("reconciliation", {})),
+        "timing_summary": {"version": "trade_timing_sessions_v1", "session_check_counts": dict(timing_counts),
+            "planned_1_5_count": sum(bool(r['timing_details'].get('planned_short_1_5')) for r in short_candidates),
+            "arrival_1_5_count": sum(bool(r['timing_details'].get('arrival_short_1_5')) for r in short_candidates),
+            "short_candidates": short_candidates},
     }
     # Derived, saved-input research is built at publication, never on a page request.
     # It has separate display authority and cannot alter the governed rows above.
