@@ -234,6 +234,8 @@ $producers = @(
 $publish = @()
 if (-not $SkipBonds) { $publish += New-Step "bonds" "Bond macro + calendar" (Join-Path $repoRoot "bond_macro_intelligence.py") @("--verbose") }
 $publish += New-Step "fred" "FRED monitor v2.6 (+ merge)" (Join-Path $colab "avshunter_fred_monitor_v2_6.py")
+$publish += New-Step "futures_refresh" "Market snapshot + reopening refresh" (Join-Path $repoRoot "scripts/refresh_futures_snapshot.py") @("--all-market-data") @(0, 2) "exit 2 = explicitly degraded futures evidence"
+if (-not $SkipMacroJson -and -not $dataOnlyPublication) { $publish += New-Step "market_guard" "Current-run market freshness gate" (Join-Path $repoRoot "scripts/verify_macro_market_refresh.py") @() @(0) "FULL requires a current-run refresh and available source observations; otherwise stop before paid analysis/board" }
 if (-not $SkipMacroJson -and $dataOnlyPublication) { $publish += New-Step "packet" "Macro packet (data-only; no model)" (Join-Path $repoRoot "scripts/publish_macro_data_only.py") }
 if (-not $SkipMacroJson -and -not $dataOnlyPublication) { $publish += New-Step "packet" "Macro packet (build_macro_json)" (Join-Path $repoRoot "build_macro_json.py") @("--force", "--health-exit-code") @(0, 2) "exit 2 = DEGRADED macro evidence; inspect macro_health" }
 if (-not $SkipRotationFlag) {
@@ -408,6 +410,30 @@ function Invoke-StepInline($Step) {
     Add-Result $Step $code ((Get-Date) - $started) "in order"
 }
 
+function Invoke-PublishSteps($Steps, [bool]$FullPublication) {
+    $refreshStartedUtc = $null
+    foreach ($step in $Steps) {
+        if ($step.Key -eq 'futures_refresh') { $refreshStartedUtc = [DateTime]::UtcNow }
+        if ($FullPublication -and $step.Key -eq 'market_guard') {
+            $refreshResult = @($script:results | Where-Object Step -eq 'Market snapshot + reopening refresh') | Select-Object -Last 1
+            if ($null -eq $refreshStartedUtc -or $null -eq $refreshResult -or $refreshResult.Exit -notin @(0, 2)) {
+                Write-Host '[STOPPED] Current-run market refresh failed; FULL analysis and board were not started.'
+                Add-Result $step 1 ([TimeSpan]::Zero) 'in order'
+                return
+            }
+            $step.Args = @('--not-before-utc', $refreshStartedUtc.ToString('o'))
+        }
+        Invoke-StepInline $step
+        if ($FullPublication -and $step.Key -in @('market_guard', 'packet')) {
+            $result = $script:results | Select-Object -Last 1
+            if ($result.Status -notlike 'OK*') {
+                Write-Host '[STOPPED] FULL publication prerequisite failed; dependent analysis/board steps were not started.'
+                return
+            }
+        }
+    }
+}
+
 function Invoke-StepsParallel($Steps, [int]$TimeoutMinutes) {
     # Start every producer, wait for all (each with a time limit), then copy each step's log
     # into the transcript in the original order.
@@ -547,7 +573,7 @@ try {
     } else {
         Invoke-StepsParallel $producers $ProducerTimeoutMinutes
     }
-    foreach ($s in $publish) { Invoke-StepInline $s }
+    Invoke-PublishSteps $publish (-not $dataOnlyPublication)
 
     $finishedET = Get-NowET
     Write-Host ""
