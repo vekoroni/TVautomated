@@ -14,9 +14,27 @@
   "macro_directory": "dropbox/macro",
   "export_queue_directory": "dropbox/macro/exports",
   "producer_chat_ids": {
-    "usmi": "6ae19fab-20f0-83ed-a8e2-34dbfb1993d8",
-    "news": "6ab60538-7910-83eb-a256-c506a15ebcf6",
+    "usmi": "6afa494a-9ac0-83eb-93d4-30380bc73a43",
+    "news": "6af6bf6e-44f0-83eb-bcbd-2c3e608dc48b",
     "events": "6ad717cd-2750-83eb-9a8b-8a241766caa0"
+  },
+  "producer_chat_aliases": {
+    "usmi": ["6ae19fab-20f0-83ed-a8e2-34dbfb1993d8"],
+    "news": [
+      "6ab60538-7910-83eb-a256-c506a15ebcf6",
+      "6af69e13-cd38-83ed-a3e8-6da0c970faae",
+      "6af711b3-0ffc-83ed-97c0-c40889ae5fcb",
+      "6af7859c-3004-83ed-8c44-450a986e3e70"
+    ],
+    "events": []
+  },
+  "pickup_window": {
+    "timezone": "Europe/London",
+    "start": "06:00",
+    "end_exclusive": "23:00",
+    "days": [0, 1, 2, 3, 4, 5, 6],
+    "interval_minutes": 10,
+    "authority": "TRANSFER_EXISTING_EXPORTS_ONLY"
   },
   "publication_mode": "FULL",
   "capture_policy": {

@@ -353,12 +353,20 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
                 or score.get("components") != {}
                 or score.get("assessment_status") != "UNASSESSED_METHODOLOGY_NOT_RECOVERED"):
             raise USMoneyIndexValidationError("rebaseline score must remain explicitly null and unassessed; no invented components")
-        if quality.get("overall") != "PARTIAL_UNVERIFIED_REBASELINE":
-            raise USMoneyIndexValidationError("rebaseline must remain PARTIAL_UNVERIFIED_REBASELINE")
-        return as_of_utc, as_of_utc, [
+        # ACK 16 Nov 2026: later exports describe which observations were
+        # checked in this field; that text is not recovered baseline history
+        # or independent verification. All lineage/null-score/execution guards
+        # above still apply, and the normalizer always emits PARTIAL_UNVERIFIED.
+        description = quality.get("overall")
+        if not re.fullmatch(r"PARTIAL_(?:UNVERIFIED|VERIFIED)_[A-Z0-9]+(?:_[A-Z0-9]+)*", description):
+            raise USMoneyIndexValidationError("rebaseline quality must remain explicitly partial; normalized status is PARTIAL_UNVERIFIED")
+        issues = [
             "NEW_BASELINE_HISTORY_INCOMPLETE", "RISK_SCORE_AND_CONFIDENCE_UNASSESSED",
             "TASK_REPORTED_EVIDENCE_NOT_INDEPENDENTLY_VERIFIED", "SOURCE_OBSERVATIONS_NOT_SYNCHRONISED",
         ]
+        if description != "PARTIAL_UNVERIFIED_REBASELINE":
+            issues.append("PRODUCER_PARTIAL_QUALITY_DESCRIPTION_ONLY:" + description)
+        return as_of_utc, as_of_utc, issues
     headline = _number(score.get("current_score"), "risk_off_transmission_score.current_score", minimum=0, maximum=100)
     state_score = _number(current.get("risk_off_transmission_score"), "current_state.risk_off_transmission_score", minimum=0, maximum=100)
     if headline != state_score:
