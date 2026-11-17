@@ -51,4 +51,5 @@ def verify_refresh(directory, *, not_before, now=None):
             'snapshot_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
             'captured_at_utc': captured.isoformat(), 'checked_at_utc': now.isoformat(),
             'groups': {g: item['status'] for g, item in groups.items()},
+            'source_assessments': {g: item['instruments'] for g, item in groups.items()},
             'policy': 'SOURCE_TIMESTAMPS_UNCHANGED; USMI_ASSESSED_SEPARATELY'}
