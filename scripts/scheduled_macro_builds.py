@@ -18,6 +18,16 @@ from contracts.macro_build_budget import reserve, budget_status, build_fingerpri
 ET = ZoneInfo('America/New_York')
 
 
+def console_creation_options():
+    """Suppress Windows child consoles without changing I/O, waits or exits.
+
+    capture_output alone redirects handles but can still create a console.
+    Inherited stdout/stderr on build children must remain available to the
+    scheduler wrapper's existing append-only log pipeline.
+    """
+    return {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
+
+
 def decide(now, policy, *, changed_sources=False, moved_etfs=0, cash_observed_at=None):
     if now.tzinfo is None:
         raise ValueError('Aware clock required')
@@ -104,7 +114,7 @@ def main():
         return 0
     # A five-minute scheduler check never starts providers alongside another writer.
     command="Get-CimInstance Win32_Process -Filter \"Name='python.exe' OR Name='powershell.exe'\" | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -match 'Run-MacroInputs.ps1|build_macro_json.py|intelligent_orchestrator.py|backfill|macro_board' } | Select-Object -ExpandProperty ProcessId"
-    probe=subprocess.run(['powershell.exe','-NoProfile','-Command',command],capture_output=True,text=True)
+    probe=subprocess.run(['powershell.exe','-NoProfile','-Command',command],capture_output=True,text=True,**console_creation_options())
     if probe.returncode or probe.stdout.strip():
         print('DEFERRED: writer active or process inspection unavailable');return 0
     # One delayed cash snapshot after the first 15 observed minutes; no streaming poll.
@@ -121,7 +131,7 @@ def main():
             except FileExistsError:
                 pass
             else:
-                subprocess.run([str(ROOT/'venv/Scripts/python.exe'),'-B',str(ROOT/'scripts/refresh_futures_snapshot.py'),'--all-market-data'],cwd=ROOT,timeout=180)
+                subprocess.run([str(ROOT/'venv/Scripts/python.exe'),'-B',str(ROOT/'scripts/refresh_futures_snapshot.py'),'--all-market-data'],cwd=ROOT,timeout=180,**console_creation_options())
                 changed,moved,observed,identity=observations(ROOT,policy,now=datetime.now(timezone.utc))
                 reason,note=decide(datetime.now(timezone.utc),policy,changed_sources=changed,moved_etfs=moved,cash_observed_at=observed)
     if reason=='SKIP':
@@ -142,7 +152,7 @@ def main():
     command=['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(ROOT/'Run-MacroInputs.ps1'),'-Session','PreOpen' if reason=='PRE_OPEN' else 'PostClose','-Force']
     if reason in ('OPEN_CHECK','MATERIAL_CHANGE'):
         command+=['-AllowIntraday']
-    code=subprocess.run(command,cwd=ROOT,env=env).returncode
+    code=subprocess.run(command,cwd=ROOT,env=env,**console_creation_options()).returncode
     finish_attempt(ROOT,token,code)
     return code
 
