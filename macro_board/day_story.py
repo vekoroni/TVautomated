@@ -666,7 +666,7 @@ def _prompt(facts: Mapping) -> str:
 
 def ai_narrative(facts: Mapping, cfg: Mapping, *, cache_dir: Path, session: str, kind: str,
                  client_factory: Callable[[], object]) -> dict:
-    """Claude's narrative from the measured facts. Cached per facts hash; a failure never breaks the build."""
+    """Claude's narrative from the measured facts. Cached per facts hash; provider failures are unavailable, budget refusals propagate."""
     if not cfg.get("enabled"):
         return {"status": "DISABLED", "label": AI_LABEL}
     cache_dir = Path(cache_dir)
@@ -688,6 +688,8 @@ def ai_narrative(facts: Mapping, cfg: Mapping, *, cache_dir: Path, session: str,
                 pass
         return {"status": "NOT_CALLED", "label": AI_LABEL,
                 "reason": f"{kind} build: the narrative is written on {', '.join(cfg.get('call_on_build_kinds', []))} builds."}
+    from contracts.macro_build_budget import authorize_stage
+    authorize_stage(Path(__file__).resolve().parents[1], 'BOARD_NARRATIVE')
     try:
         client = client_factory()
     except Exception as exc:  # credentials or workspace not configured

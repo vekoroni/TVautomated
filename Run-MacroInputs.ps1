@@ -5,7 +5,7 @@
 # Runs twice per US session:
 #   PostClose  after the close (default start 16:30 ET, latest start 23:30 ET) - the evening
 #              record, built after the evening pipeline has written the day's prices.
-#   PreOpen    before the open (default start 08:35 ET, latest start 09:00 ET) - picks up the
+#   PreOpen    before the open (default start 09:05 ET, latest start 09:15 ET) - picks up the
 #              overnight session (Asia, London/Europe, FX) and the 08:30 ET releases, and must
 #              finish before the open and the morning pipeline.
 # Task Scheduler runs in UK time while the targets are US times; the two clocks shift on
@@ -23,7 +23,7 @@
 #
 # Usage:
 #   .\Run-MacroInputs.ps1 -Session PostClose        # evening run (waits until 16:30 ET)
-#   .\Run-MacroInputs.ps1 -Session PreOpen          # morning run (waits until 08:35 ET)
+#   .\Run-MacroInputs.ps1 -Session PreOpen          # morning run (waits until 09:05 ET)
 #   .\Run-MacroInputs.ps1                           # -Session Auto: PreOpen before 09:30 ET, else PostClose
 #                                                     (with -Force, name the session: Auto after 09:30 ET picks PostClose)
 #   .\Run-MacroInputs.ps1 -PlanOnly                 # show the session decision and steps; runs nothing
@@ -75,7 +75,7 @@
 # hours the confirmation also allows the intraday run (today's bars are partial; it is never the scored record).
 # Exit codes: 0 done or skipped (not a session day), 1 a step failed, 2 venv missing,
 # 3 refused during regular hours, 4 past the latest start, 5 pipeline still running,
-# 6 PreOpen without a session cut-off (calendar check unavailable). With -Force, exit 4 never fires.
+# 6 PreOpen without a session cut-off; 7 budget/unchanged-attempt refusal. With -Force, exit 4 never fires.
 
 param(
     [ValidateSet("Auto", "PostClose", "PreOpen")]
@@ -111,7 +111,7 @@ $logDir     = Join-Path $repoRoot "logs\scheduled"
 $etZone = [TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
 $SessionDefaults = @{
     PostClose = @{ Start = "16:30"; Latest = "23:30" }
-    PreOpen   = @{ Start = "08:35"; Latest = "09:00" }
+    PreOpen   = @{ Start = "09:05"; Latest = "09:15" }
 }
 $RegularOpen  = [TimeSpan]::new(9, 30, 0)
 $RegularGuard = [TimeSpan]::new(16, 15, 0)     # after the close plus settlement of closing prints
@@ -139,6 +139,23 @@ function Test-XnysSession([DateTime]$Day) {
         $ErrorActionPreference = $prev
         if ($LASTEXITCODE -eq 0) { return $true }
         if ($LASTEXITCODE -eq 3) { return $false }
+        return $null
+    } finally { Pop-Location }
+}
+
+function Get-XnysSessionHours([DateTime]$Day) {
+    # The same exchange calendar owns actual close and the post-close safety guard.
+    if (-not (Test-Path $venvPython)) { return $null }
+    $code = "import sys; from datetime import date; from zoneinfo import ZoneInfo; from avshunter.shared.xnys_calendar import session_bounds; a,b=session_bounds(date.fromisoformat(sys.argv[1])); z=ZoneInfo('America/New_York'); print(a.astimezone(z).strftime('%H:%M'),b.astimezone(z).strftime('%H:%M'))"
+    Push-Location $repoRoot
+    try {
+        $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+        $out = & $venvPython -B -c $code ($Day.ToString("yyyy-MM-dd")) 2>$null
+        $ErrorActionPreference = $prev
+        if ($LASTEXITCODE -ne 0) { return $null }
+        if (("$out").Trim() -match '^(\d{2}:\d{2}) (\d{2}:\d{2})$') {
+            return @{ Open = [TimeSpan]::Parse($Matches[1]); Close = [TimeSpan]::Parse($Matches[2]) }
+        }
         return $null
     } finally { Pop-Location }
 }
@@ -201,11 +218,22 @@ $startAt  = Get-ETOnDate $etNow $StartAtET
 $latestAt = Get-ETOnDate $etNow $LatestStartET
 $startAtLocal = [TimeZoneInfo]::ConvertTime($startAt, $etZone, [TimeZoneInfo]::Local)
 $isSessionDay = Test-XnysSession $etNow
+if ($isSessionDay -eq $true) {
+    $hours = Get-XnysSessionHours $etNow
+    if ($null -ne $hours) {
+        $RegularOpen = $hours.Open
+        $RegularGuard = $hours.Close.Add([TimeSpan]::FromMinutes(15))
+    } elseif ($env:AVSH_FULL_BUILD_ID -and -not $PlanOnly) {
+        Write-Host "[STOP] Scheduled exchange hours unavailable; nothing was run."
+        exit 6
+    }
+}
 # Weekends (ACK 10 Oct 2026): no US session, so no window, no regular-hours guard and no skip. The run
 # measures from the last completed session and is labelled OffSession (producers print it; the board
 # files an off-session build, never the scored evening record). Weekday XNYS holidays still skip.
 $offSession = ($etNow.DayOfWeek -eq [DayOfWeek]::Saturday -or $etNow.DayOfWeek -eq [DayOfWeek]::Sunday) -and ($isSessionDay -ne $true)
 $runLabel = if ($offSession) { "OffSession" } else { $Session }
+if (-not $offSession -and ($Now -or $AllowIntraday) -and $etNow.TimeOfDay -ge $RegularOpen -and $etNow.TimeOfDay -lt $RegularGuard) { $runLabel = "Intraday" }
 if ($Now) { $Force = $true }                   # -Now: a manual run starts at once (see header)
 $forced = $Force -and -not $offSession          # weekends already start at once with no window
 $lateBy = if ($forced -and $etNow -gt $latestAt) { $etNow - $latestAt } else { [TimeSpan]::Zero }
@@ -332,7 +360,7 @@ Start-Transcript -Path $logFile -Append | Out-Null
 # PowerShell process, so they are saved here and restored on exit (9 Oct 2026: a PostClose run left
 # AVSH_RUN_SESSION=PostClose behind and labelled the next morning's board build as the evening one).
 $script:CallerEnv = @{}
-foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "AVSH_SESSION_CUTOFF", "AVSH_US_CLOSE_UTC", "AVSH_RUN_FORCED") {
+foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "AVSH_SESSION_CUTOFF", "AVSH_US_CLOSE_UTC", "AVSH_RUN_FORCED", "AVSH_FULL_BUILD_ID", "AVSH_BUILD_REASON", "AVSH_BUILD_FINGERPRINT", "AVSH_BUILD_OWNER") {
     $script:CallerEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 $env:PYTHONIOENCODING = "utf-8"
@@ -346,6 +374,7 @@ $previousOutputEncoding = [Console]::OutputEncoding
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 
 $script:results = @()
+$script:BudgetAttemptToken = $null
 
 function Write-Header([string]$Name, [string]$Note = "") {
     Write-Host ""
@@ -564,6 +593,21 @@ try {
         Write-Host "[WARN] session cut-off unavailable; PostClose run continues uncut"
     }
 
+    # Reserve an auditable preflight identity. Only the first paid stage consumes a FULL slot.
+    if (-not $dataOnlyPublication -and -not $ResearchDeliveryOnly -and -not $SkipMacroJson) {
+        if (-not $env:AVSH_BUILD_REASON) { $env:AVSH_BUILD_REASON = if ($runLabel -eq "PreOpen") { "PRE_OPEN" } elseif ($runLabel -eq "PostClose") { "POST_CLOSE" } else { "MATERIAL_CHANGE" } }
+        # Only the controller passes a shared reservation. A stale token left in an
+        # interactive shell must not let a later manual run reuse an old attempt.
+        if ($env:AVSH_BUILD_OWNER -ne 'SCHEDULED_CONTROLLER') { Remove-Item Env:AVSH_FULL_BUILD_ID -ErrorAction SilentlyContinue }
+        $budgetCode = "import os; from pathlib import Path; from datetime import datetime; from zoneinfo import ZoneInfo; from contracts.macro_build_budget import reserve,build_fingerprint; root=Path.cwd(); day=datetime.now(ZoneInfo('America/New_York')).date().isoformat(); reason=os.environ['AVSH_BUILD_REASON']; print(reserve(root,reason=reason,key=os.environ.get('AVSH_BUILD_FINGERPRINT') or build_fingerprint(root,reason,day),inherited=os.environ.get('AVSH_FULL_BUILD_ID')))"
+        $ErrorActionPreference = 'Continue'
+        $budgetToken = & $venvPython -B -c $budgetCode
+        $budgetExit = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($budgetExit -ne 0) { Write-Host '[STOPPED] full-build budget unavailable, unchanged attempt, or daily paid cap reached'; $exitCode=7; break run }
+        $env:AVSH_FULL_BUILD_ID = ([string]$budgetToken).Trim()
+        $script:BudgetAttemptToken = $env:AVSH_FULL_BUILD_ID
+    }
     $runStarted = Get-Date
     Write-Host ("[START] {0} run at {1:yyyy-MM-dd HH:mm} ET  (per-step logs: {2})" -f $runLabel, (Get-NowET), $stepLogDir)
 
@@ -581,7 +625,7 @@ try {
     Write-Host ("SUMMARY  {0}{1} run  (total {2:hh\:mm\:ss}, finished {3:HH:mm} ET)" -f $runLabel, $(if ($forced) { " FORCED" } else { "" }), ((Get-Date) - $runStarted), $finishedET)
     Write-Host ("=" * 78)
     $script:results | Format-Table -AutoSize | Out-String -Width 120 | Write-Host
-    if (-not $offSession -and $Session -eq "PreOpen" -and $finishedET.TimeOfDay -ge $PreOpenWarn) {
+    if (-not $offSession -and $runLabel -eq "PreOpen" -and $finishedET.TimeOfDay -ge $PreOpenWarn) {
         Write-Host ("[WARN] PreOpen run finished at {0:HH:mm} ET - after 09:25, close to the open and the morning pipeline." -f $finishedET)
     }
     $failed = @($script:results | Where-Object { $_.Status -notlike "OK*" -and $_.Status -ne "DEFERRED" })
@@ -599,6 +643,13 @@ try {
     Write-Host ("[COMPLETE] {0}{1} run: all {2} steps succeeded - log: {3}" -f $runLabel, $(if ($forced) { " FORCED" } else { "" }), $script:results.Count, $logFile)
   } while ($false)
 } finally {
+    if ($script:BudgetAttemptToken) {
+        $ErrorActionPreference = 'Continue'
+        $finishCode = "import sys; from pathlib import Path; from contracts.macro_build_budget import finish_attempt; print('BUDGET_OUTCOME='+finish_attempt(Path.cwd(),sys.argv[1],int(sys.argv[2])))"
+        try { & $venvPython -B -c $finishCode $script:BudgetAttemptToken ([string]$exitCode) | Out-Host }
+        catch { Write-Host '[WARN] Build outcome could not be recorded; paid-stage charges remain preserved.' }
+        $ErrorActionPreference = 'Stop'
+    }
     Stop-Transcript | Out-Null
     try { [Console]::OutputEncoding = $previousOutputEncoding } catch { }
     foreach ($name in $script:CallerEnv.Keys) {

@@ -1,0 +1,23 @@
+{
+  "contract_version": "macro_build_schedule_v1",
+  "timezone": "America/New_York",
+  "effective_from_session": "2026-11-17",
+  "max_full_builds_per_et_day": 4,
+  "max_intraday_builds": 2,
+  "pre_open_minutes": 25,
+  "pre_open_window_minutes": 10,
+  "post_close_minutes": 30,
+  "post_close_window_minutes": 60,
+  "opening_observation_minutes": 15,
+  "quote_delay_allowance_minutes": 15,
+  "quote_max_age_minutes": 20,
+  "cooldown_minutes": 60,
+  "material_move_percentage_points": 0.5,
+  "material_move_min_focus_etfs": 2,
+  "threshold_authority": "PROVISIONAL_DISPLAY_REFRESH_ONLY_NOT_TRADING_SIGNAL",
+  "poll_minutes": 5,
+  "authority": "SCHEDULED_FULL_BUILDS_ONLY_NO_TRADING_PIPELINE",
+  "retry_failed_unchanged_build": false,
+  "budget_count_basis": "FIRST_PAID_STAGE_ATTEMPT",
+  "retry_changed_inputs_after_preflight_stop": true
+}

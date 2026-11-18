@@ -2037,7 +2037,14 @@ def main():
             manifest_receipt.get("evidence_bytes", "0"),
         )
 
-    # API call
+    # Budget refusals are non-zero and happen before any paid API request.
+    if not args.dry_run:
+        from contracts.macro_build_budget import authorize_stage
+        try:
+            authorize_stage(BASE_DIR, 'MACRO_SYNTHESIS')
+        except ValueError as error:
+            log.error("FULL build budget refused: %s", error)
+            sys.exit(7)
     log.info("Calling Anthropic API (3-prompt sequence)...")
     try:
         macro_json = call_macro_api(data_str, dry_run=args.dry_run)

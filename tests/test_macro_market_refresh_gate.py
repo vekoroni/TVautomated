@@ -177,7 +177,7 @@ Write-Output ('RESULT_JSON='+(@{keys=@($publish|ForEach-Object{$_.Key});scripts=
 
 @pytest.mark.skipif(not SHELL or not (ROOT/'venv/Scripts/python.exe').exists(),reason='Windows runner environment required')
 @pytest.mark.parametrize('session,clock,start',[
-    ('PreOpen','2026-11-16 07:30','08:35'),
+    ('PreOpen','2026-11-16 07:30','09:05'),
     ('PostClose','2026-11-16 16:20','16:30'),
 ])
 def test_scheduled_preopen_and_postclose_dry_plans_include_guard_in_order(session,clock,start):
