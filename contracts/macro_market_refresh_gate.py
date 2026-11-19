@@ -26,7 +26,9 @@ def verify_refresh(directory, *, not_before, now=None):
         raise ValueError('MARKET_REFRESH_CAPTURE_EXPIRED')
     if doc.get('as_of_utc') != refresh.get('as_of_utc'):
         raise ValueError('MARKET_REFRESH_CLOCK_MISMATCH')
-    if refresh.get('errors') or (doc.get('futures_refresh') or {}).get('errors'):
+    from contracts.macro_collection_health import assess_collection
+    collection = assess_collection(doc, now)
+    if collection['fatal_errors']:
         raise ValueError('MARKET_REFRESH_COLLECTION_ERRORS')
     if not set(GROUPS) <= set(refresh.get('groups_refetched') or []):
         raise ValueError('MARKET_REFRESH_GROUPS_INCOMPLETE')
@@ -52,4 +54,5 @@ def verify_refresh(directory, *, not_before, now=None):
             'captured_at_utc': captured.isoformat(), 'checked_at_utc': now.isoformat(),
             'groups': {g: item['status'] for g, item in groups.items()},
             'source_assessments': {g: item['instruments'] for g, item in groups.items()},
+            'collection_assessment': collection, 'warnings': collection['warnings'],
             'policy': 'SOURCE_TIMESTAMPS_UNCHANGED; USMI_ASSESSED_SEPARATELY'}

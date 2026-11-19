@@ -53,6 +53,9 @@ def refresh_document(document, *, history=None, now=None, all_market_data=False,
             'observation_time_policy':'SOURCE_TIMESTAMPS_UNCHANGED_BY_TRANSPORT','errors':list(ext.errors)}
     result['futures_refresh']={'as_of_utc':now.isoformat().replace('+00:00','Z'),
         'authority':'DISPLAY_ONLY','errors':ext.errors}
+    if all_market_data:
+        from contracts.macro_collection_health import assess_collection
+        result['market_refresh']['collection_assessment']=assess_collection(result,now)
     return result
 
 def refresh_until_ready(document, *, history=None, clock=None, sleep=None, max_wait_seconds=0, all_market_data=False, marketdata_key=None):
@@ -97,6 +100,8 @@ def main(argv=None):
     temporary.write_text(json.dumps(result,indent=2,allow_nan=False),encoding='utf-8')
     temporary.replace(target)
     print('FUTURES '+result['futures_refresh']['status']+': '+str(target))
+    for warning in (result.get('market_refresh',{}).get('collection_assessment') or {}).get('warnings',[]):
+        print('WARNING: '+warning['code']+'; fallback='+warning['fallback_source']+'; observed='+warning['fallback_last_bar_utc'])
     return 0 if result['futures_refresh']['status']=='AVAILABLE' else 2
 
 if __name__=='__main__': raise SystemExit(main())

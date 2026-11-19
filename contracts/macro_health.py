@@ -88,6 +88,17 @@ def assess_macro_health(macro, *, report=None, now=None):
         if incomplete: issues.append(prefix+'_MISSING')
         if any(x['stale'] for x in details): issues.append(prefix+'_STALE')
         if any(x['state']=='REOPEN_PENDING' for x in details): issues.append(prefix+'_REOPEN_PENDING')
+    from contracts.macro_collection_health import assess_collection
+    collection = assess_collection(overnight, now)
+    source_health['collection'] = collection
+    if collection['warnings']:
+        source_health['volatility']['warnings'] = collection['warnings']
+        issues.extend(warning['code'] for warning in collection['warnings'])
+    if collection['fatal_errors']:
+        issues.append('MARKET_REFRESH_COLLECTION_ERRORS')
+    if collection['vix_fallback']['status'] == 'INVALID':
+        source_health['volatility']['status'] = 'DEGRADED'
+        issues.append('VIX_FALLBACK_INVALID')
     module_source = extras.get('macro_module_source_health') or {}
     dxy = module_source.get('dxy_source')
     source_health['dollar_index'] = {'source':dxy, 'as_of':module_source.get('as_of'),
