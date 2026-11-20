@@ -1,0 +1,12 @@
+{
+  "version": "board_store_writer_v1",
+  "approved": "ACK 20 Nov 2026: option B of STALE_UNIVERSE_PRICES_root_cause_2026-11-20.md (one-time store backfill plus a governed daily writer for the board universe).",
+  "board_config": "macro_board/config/macro_board_config_v1.json",
+  "grouped_cache_dir": "macro_board/output/cache/grouped",
+  "daily_receipts_dir": "macro_board/output/store_writer",
+  "backfill_dir": "Enhancements/macro_board/store_backfill",
+  "max_daily_gap_sessions": 10,
+  "jump_hold_ratio": 1.45,
+  "seam_tolerance": 0.005,
+  "rationale": "The price store's universe ETFs had no writer once Discovery's universe became stock-only (16 May 2026; RSP/UUP were never in it). This step writes the board universe's completed sessions into the store through HistoricalPriceDatabase.ingest, after the board's settle margin (board config prices.settle_minutes), from the grouped daily bars the board already caches (no extra call when cached). The daily step only inserts sessions the store lacks and never revises a stored value; a gap longer than max_daily_gap_sessions is left whole and reported for the one-time backfill (per-ticker adjusted history, dry run first, run by ACK). Splits: one Polygon splits call covers the window; a listed split re-fetches that ticker's full adjusted history (the old rows become recorded revisions). A day-on-day close ratio beyond jump_hold_ratio (either way) with no listed split is held, not written (19 Nov 2026: BITO x1.983 on the board's grouped bars, a likely reverse split; 3x ETFs rarely pass +45% or -31% in a session; the most common split ratios are 2 and above). seam_tolerance: a stored close and the re-fetched close count as the same when within 0.5% (as the 7 Oct backfill). PROVISIONAL: jump_hold_ratio and max_daily_gap_sessions are starting values, to be reviewed on the receipts."
+}
