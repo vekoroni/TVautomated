@@ -35,11 +35,11 @@ from macro_board.decision_points import LEVEL_LABELS
 MISSING = "MISSING"
 FLOW_SIGN = {"INFLOW": 1, "TURNING_IN": 1, "OUTFLOW": -1, "TURNING_OUT": -1}
 FLOW_TEXT = {
-    "INFLOW": "Money is moving in",
-    "TURNING_IN": "Money is turning in after a weak stretch",
-    "OUTFLOW": "Money is moving out",
-    "TURNING_OUT": "Money is leaving a recent leader",
-    "NONE": "No clear money flow",
+    "INFLOW": "Outperforming the benchmark",
+    "TURNING_IN": "Relative performance improving after a weak stretch",
+    "OUTFLOW": "Underperforming the benchmark",
+    "TURNING_OUT": "Relative performance weakening after a strong stretch",
+    "NONE": "No clear relative-performance edge",
 }
 AI_LABEL = ("AI NARRATIVE: written by Claude from the measured facts on this tab only; hypotheses, not "
             "verified news")
@@ -66,7 +66,7 @@ def money_flow(relative_pp: Mapping[str, float | None], bands: Mapping[str, floa
     if short is None or long_ is None:
         gone = [h for h in (short_h, long_h) if rel[h] is None]
         return {"label": MISSING, "relative_pp": rel,
-                "text": f"Flow unknown: relative return over {', '.join(gone)} sessions is missing."}
+                "text": f"Relative performance unknown: return over {', '.join(gone)} sessions is missing."}
     sb, lb = float(bands[short_h]), float(bands[long_h])
     if abs(short) < sb:
         label = "NONE"
@@ -574,7 +574,7 @@ industry ETF, share-volume and option-flow footprints, macro conditions with eac
 cross-asset co-movement, published news items (made by another LLM and not verified), live scenario
 triggers, pipeline candidates and the price levels for the day.
 
-Write the story of where money is moving and the reasons that fit the measurements.
+Describe relative price performance and the associations that fit. Relative returns and share volume are NOT net fund flows. Never describe benchmark outperformance as capital inflow or underperformance as capital outflow.
 - Use only the facts given. No outside knowledge, no news that is not in the facts.
 - Every claim about a sector or ticker cites at least one number from the facts. Copy numbers exactly.
 - A driver is a measured association. Write "fits", "is consistent with" or "goes against", never
@@ -664,9 +664,18 @@ def _prompt(facts: Mapping) -> str:
             + json.dumps(facts, sort_keys=True))
 
 
+def reused_macro_narrative(payload: Mapping) -> dict:
+    """Reuse the published synthesis with its clock, never label it newly generated."""
+    intel = payload.get('intel') or {}
+    return {'status': 'REUSED_MACRO', 'label': 'Published macro analysis reused; no additional AI request',
+            'overview': (intel.get('packet') or {}).get('notes'),
+            'synthesis': intel.get('synthesis') or {}, 'additional_api_calls': 0,
+            'reason': 'Measured ETF activity remains separate from the published macro synthesis.'}
+
+
 def ai_narrative(facts: Mapping, cfg: Mapping, *, cache_dir: Path, session: str, kind: str,
                  client_factory: Callable[[], object]) -> dict:
-    """Claude's narrative from the measured facts. Cached per facts hash; a failure never breaks the build."""
+    """Claude's narrative from the measured facts. Cached per facts hash; provider failures are unavailable, budget refusals propagate."""
     if not cfg.get("enabled"):
         return {"status": "DISABLED", "label": AI_LABEL}
     cache_dir = Path(cache_dir)
@@ -688,19 +697,14 @@ def ai_narrative(facts: Mapping, cfg: Mapping, *, cache_dir: Path, session: str,
                 pass
         return {"status": "NOT_CALLED", "label": AI_LABEL,
                 "reason": f"{kind} build: the narrative is written on {', '.join(cfg.get('call_on_build_kinds', []))} builds."}
+    from contracts.macro_api_cost import budgeted_message, ApiCostLimit
+    request = {"model": cfg["model"], "max_tokens": int(cfg["max_tokens"]),
+               "system": SYSTEM_PROMPT + "\nReturn only JSON matching this schema: " + json.dumps(AI_SCHEMA),
+               "messages": [{"role": "user", "content": prompt}], "timeout": float(cfg["timeout_seconds"])}
     try:
-        client = client_factory()
-    except Exception as exc:  # credentials or workspace not configured
-        return {"status": "UNAVAILABLE", "label": AI_LABEL, "reason": f"{type(exc).__name__}: {str(exc)[:200]}"}
-    request = {"model": cfg["model"], "max_tokens": int(cfg["max_tokens"]), "system": SYSTEM_PROMPT,
-               "messages": [{"role": "user", "content": prompt}],
-               "output_config": {"effort": cfg["effort"], "format": {"type": "json_schema", "schema": AI_SCHEMA}},
-               "timeout": float(cfg["timeout_seconds"])}
-    if cfg.get("fallbacks"):
-        request["betas"] = ["server-side-fallback-2026-07-01"]
-        request["extra_body"] = {"fallbacks": cfg["fallbacks"]}
-    try:
-        response = client.beta.messages.create(**request)
+        response = budgeted_message(Path(__file__).resolve().parents[1], 'BOARD_NARRATIVE', request, client_factory)
+    except (ApiCostLimit, ValueError):
+        raise
     except Exception as exc:
         return {"status": "FAILED", "label": AI_LABEL, "reason": f"{type(exc).__name__}: {str(exc)[:200]}"}
     stop = getattr(response, "stop_reason", None)
@@ -850,14 +854,14 @@ def build(payload: Mapping, config: Mapping, *, opens: pd.DataFrame, closes: pd.
         return [s["ticker"] for s in stories if s["flow"]["label"] in label_set]
 
     overview = []
-    for label_set, words in ((("INFLOW", "TURNING_IN"), "Money moving in"), (("OUTFLOW", "TURNING_OUT"), "Money moving out")):
+    for label_set, words in ((("INFLOW", "TURNING_IN"), "Relative outperformers"), (("OUTFLOW", "TURNING_OUT"), "Relative underperformers")):
         group = [s for s in stories if s["flow"]["label"] in label_set][:6]
         if group:
             overview.append(f"{words} (vs {bench}, {short} sessions): " + ", ".join(
                 f"{s['ticker']} {_pp(s['flow']['relative_pp'].get(short))}" for s in group) + ".")
     missing = names((MISSING,))
     if missing:
-        overview.append("Flow unknown (missing prices): " + ", ".join(missing) + ".")
+        overview.append("Relative performance unavailable (missing prices): " + ", ".join(missing) + ".")
 
     ideas = [s["trade"] for s in stories if s["trade"]["side"] != "STAND_ASIDE"][: int(cfg["max_trade_ideas"])]
     day = _day_scenarios(payload, footprints, focus, cfg)
@@ -897,8 +901,11 @@ def build(payload: Mapping, config: Mapping, *, opens: pd.DataFrame, closes: pd.
     ai_cfg = dict(cfg["ai_narrative"])
     if not ai_enabled:  # as-of or AVSH_BOARD_AI=0 builds: no call, the session's latest narrative is shown labelled
         ai_cfg["call_on_build_kinds"] = []
-    ai = ai_narrative(facts, ai_cfg, cache_dir=resolve(ai_cfg["cache_dir"]), session=session, kind=kind,
-                      client_factory=client_factory)
+    if ai_cfg.get("mode") == "REUSE_PUBLISHED_MACRO":
+        ai = reused_macro_narrative(payload)
+    else:
+        ai = ai_narrative(facts, ai_cfg, cache_dir=resolve(ai_cfg["cache_dir"]), session=session, kind=kind,
+                          client_factory=client_factory)
     print(f"[board] day story: {len(stories)} ETFs, in {names(('INFLOW', 'TURNING_IN'))}, "
           f"out {names(('OUTFLOW', 'TURNING_OUT'))}; AI narrative {ai['status']}"
           + (f" ({ai.get('reason')})" if ai.get("reason") else ""))

@@ -21,7 +21,21 @@ from zoneinfo import ZoneInfo
 from macro_board import market_prices as mkt
 
 NEW_YORK = ZoneInfo("America/New_York")
-BEST_PREOPEN_ET = "08:35"
+SCHEDULE_CONFIG = Path(__file__).resolve().parents[1] / "config" / "macro_build_schedule_v1.json"
+
+
+def scheduled_preopen_et(policy: Mapping) -> str:
+    """The pre-open full build's ET start: the 09:30 open minus the schedule's pre_open_minutes (ACK 20 Nov 2026:
+    07:00 ET, 12:00 UK in winter)."""
+    minutes = 9 * 60 + 30 - int(policy["pre_open_minutes"])
+    return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+
+def _configured_preopen_et() -> str | None:
+    try:
+        return scheduled_preopen_et(json.loads(SCHEDULE_CONFIG.read_text(encoding="utf-8-sig")))
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
 OPEN_ET = "09:30"
 
 
@@ -34,8 +48,9 @@ def _hhmm(dt: datetime) -> str:
 
 
 def report(*, now: datetime, session: str, segment: str, last_session: str | None,
-           releases: Sequence[Mapping], inputs: Mapping) -> dict:
+           releases: Sequence[Mapping], inputs: Mapping, preopen_et: str | None = None) -> dict:
     """{"timing": EARLY | WAIT_RELEASES | GOOD | INTRADAY | EVENING | OFF_SESSION, "lines": [...]}."""
+    preopen_et = preopen_et or _configured_preopen_et() or "09:05"
     et = now.astimezone(NEW_YORK)
     local = now.astimezone()
     today = et.date().isoformat()
@@ -62,7 +77,7 @@ def report(*, now: datetime, session: str, segment: str, last_session: str | Non
         timing = "OFF_SESSION"
         lines.append(f"No US session today: the run measures from the {last} close (off-session build).")
     else:                                                   # PREMARKET
-        timing = "GOOD" if t >= BEST_PREOPEN_ET else "WAIT_RELEASES"
+        timing = "GOOD" if t >= preopen_et else "WAIT_RELEASES"
         lines.append("Pre-market is open (since 04:00 ET); volume builds after 07:00 ET.")
     if pending:
         lines.append("Today's releases not out yet: " + ", ".join(f"{r['name']} {r['time_et']}" for r in pending)
@@ -70,9 +85,9 @@ def report(*, now: datetime, session: str, segment: str, last_session: str | Non
     if in_session:
         lines.append("Due during the session: " + ", ".join(f"{r['name']} {r['time_et']}" for r in in_session) + " ET.")
     if timing in ("EARLY", "WAIT_RELEASES"):
-        best = datetime.combine(et.date(), datetime.strptime(BEST_PREOPEN_ET, "%H:%M").time(), NEW_YORK)
-        lines.append(f"Best time for the pre-open run: {BEST_PREOPEN_ET} ET ({_hhmm(best.astimezone())} local), after "
-                     "the 08:30 releases and with pre-market prices.")
+        best = datetime.combine(et.date(), datetime.strptime(preopen_et, "%H:%M").time(), NEW_YORK)
+        lines.append(f"Scheduled pre-open build: {preopen_et} ET ({_hhmm(best.astimezone())} local). Today's 08:30 ET "
+                     "releases arrive after it; the opening check picks up the cash reaction.")
     weak = [(k, v) for k, v in inputs.items() if getattr(v, "status", "MISSING") != "FRESH"]
     if weak:
         lines.append("Inputs that are not fresh now (a run refreshes the ones it produces):")

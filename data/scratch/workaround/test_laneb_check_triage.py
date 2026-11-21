@@ -113,3 +113,20 @@ def test_a_later_batch_may_continue_the_rank_count_but_gaps_still_fail(tmp_path,
     _, out = run(tmp_path, capsys, [legacy_row(1, "AAA", "CALL", "AAA270115C00090000", "3.80/4.00 OI 817", "103.674", "107.9199"),
                                     legacy_row(3, "CPNG", "PUT", "CPNG270219P00017000", "1.86/2.23 OI 161", "10.9258", "10.9258")])
     assert "deep_mine_rank is not 1..2 without gaps or duplicates" in out
+
+
+def test_batch_one_prompts_saved_with_the_b1_suffix_are_found_not_a_missing_fail(tmp_path, capsys):
+    # 19 Nov 2026: the batch-1 triage chat saved deep_dive_prompts_<session>_b1.md, and the check failed it as missing.
+    (tmp_path / "triage").mkdir()
+    (tmp_path / "triage" / f"deep_dive_prompts_{SESSION}_b1.md").write_text("# 1 AAA\n", encoding="utf-8")
+    _, out = run(tmp_path, capsys, [legacy_row(1, "AAA", "CALL", "AAA270115C00090000", "3.80/4.00 OI 817", "103.674", "107.9199")])
+    assert "is missing: the deep dives have no prompts" not in out
+
+
+def test_batch_one_prefers_the_unsuffixed_prompts_file_when_both_exist(tmp_path):
+    plain, b1 = tmp_path / f"deep_dive_prompts_{SESSION}.md", tmp_path / f"deep_dive_prompts_{SESSION}_b1.md"
+    b1.write_text("x", encoding="utf-8")
+    assert check_triage.prompts_file(tmp_path, SESSION, 1) == b1
+    plain.write_text("x", encoding="utf-8")
+    assert check_triage.prompts_file(tmp_path, SESSION, 1) == plain
+    assert check_triage.prompts_file(tmp_path, SESSION, 2).name == f"deep_dive_prompts_{SESSION}_b2.md"

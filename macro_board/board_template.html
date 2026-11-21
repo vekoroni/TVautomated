@@ -155,7 +155,7 @@ table.corr th,table.corr td{text-align:center;padding:4px 6px;font-variant-numer
 </div></header>
 <div class="wrap">
   <div class="authority" id="authority"></div>
-  <div class="fresh-strip" id="fresh"></div>
+  <div id="price-age-warning" role="status" style="border:2px solid var(--serious);padding:12px;margin:10px 0;font-weight:600"></div><div class="fresh-strip" id="fresh"></div>
   <div id="current-market-status"></div>
   <div id="macro-health-status"></div>
   <section class="page" id="p-review"></section>
@@ -299,8 +299,8 @@ $("#authority").innerHTML = `<b>Standalone decision board.</b> Reads AVSHUNTER d
   ` <span class="muted">${esc(B.board_version)} · ${esc(B.config_version)}</span>`;
 $("#fresh").innerHTML = `<span class="sub" style="font-weight:600">Inputs:</span> ` + Object.values(B.external).map(s =>
   `<span data-tip="${esc(`<b>${esc(s.name)}</b><br>${esc(s.path)}<br>as of ${esc(s.as_of||"—")} · age ${s.age_hours ?? "—"} h${s.note ? "<br>"+esc(s.note) : ""}`)}">${statusChip(s.status, s.name.split(" (")[0])}</span>`).join("") +
-  `<span data-tip="${esc(`Daily bars: pipeline store historical_prices.sqlite to ${B.prices?.store_last_session || "?"} (Polygon, split-adjusted)` + (Object.keys(B.prices?.fill?.filled || {}).length ? `<br>Filled by the board from Polygon grouped daily (completed sessions only): ${Object.entries(B.prices.fill.filled).map(([t, d]) => t + " " + d.length + " session" + (d.length > 1 ? "s" : "")).join(", ")}` : "") + (Object.keys(B.prices?.fill?.unavailable || {}).length ? `<br>Unavailable: ${Object.keys(B.prices.fill.unavailable).join(", ")}` : "") + (Object.keys(B.prices?.fill?.gap_too_long || {}).length ? `<br>Gap too long to fill (left stale): ${Object.entries(B.prices.fill.gap_too_long).map(([t, g]) => t + " since " + g.last_stored).join(", ")}` : ""))}">${statusChip("FRESH", "Prices to " + B.as_of_session + (B.prices?.store_last_session && B.prices.store_last_session !== B.as_of_session ? " (store to " + B.prices.store_last_session + ")" : ""))}</span>` +
-  (B.latest && B.latest.status !== "NOT_APPLICABLE_AS_OF_BUILD" ? `<span data-tip="${esc(`Latest prices: Polygon snapshot (about 15 min delayed) · ${B.latest.status} · fetched ${B.latest.fetched_utc || "—"}${B.latest.status === "NO_QUOTE_YET" ? "<br>The US market was closed when the board was built (pre-market opens 04:00 ET), so no quote exists after the " + esc(B.as_of_session) + " close yet. The board uses that close. Run the pre-open package after 08:35 ET for pre-market prices." : ""}<br>${B.latest.superseding || 0} ETFs have a quote after the ${esc(B.as_of_session)} close, used as the current price for room and levels. Leans and the reaction review stay on completed sessions.`)}">${statusChip(B.latest.status === "OK" ? "FRESH" : B.latest.status === "NO_QUOTE_YET" ? "INFO" : "MISSING", B.latest.status === "NO_QUOTE_YET" ? "Latest prices · none since the close yet" : "Latest prices" + (B.latest.superseding ? " · " + B.latest.superseding + " after the close" : ""))}</span>` : "") +
+  `<span data-tip="${esc(`Daily bars: pipeline store historical_prices.sqlite to ${B.prices?.store_last_session || "?"} (Polygon, split-adjusted)` + (Object.keys(B.prices?.fill?.filled || {}).length ? `<br>Filled by the board from Polygon grouped daily (completed sessions only): ${Object.entries(B.prices.fill.filled).map(([t, d]) => t + " " + d.length + " session" + (d.length > 1 ? "s" : "")).join(", ")}` : "") + (Object.keys(B.prices?.fill?.unavailable || {}).length ? `<br>Unavailable: ${Object.keys(B.prices.fill.unavailable).join(", ")}` : "") + (Object.keys(B.prices?.fill?.gap_too_long || {}).length ? `<br>Gap too long to fill (left stale): ${Object.entries(B.prices.fill.gap_too_long).map(([t, g]) => t + " since " + g.last_stored).join(", ")}` : ""))}">${statusChip("INFO", "Completed prices to " + B.as_of_session + (B.prices?.store_last_session && B.prices.store_last_session !== B.as_of_session ? " (store to " + B.prices.store_last_session + ")" : ""))}</span>` +
+  (B.latest && B.latest.status !== "NOT_APPLICABLE_AS_OF_BUILD" ? `<span data-tip="${esc(`Latest prices: Polygon snapshot (about 15 min delayed) · ${B.latest.status} · fetched ${B.latest.fetched_utc || "—"}${B.latest.status === "NO_QUOTE_YET" ? "<br>The US market was closed when the board was built (pre-market opens 04:00 ET), so no quote exists after the " + esc(B.as_of_session) + " close yet. The board uses that close. Run the pre-open package after 08:35 ET for pre-market prices." : ""}<br>${B.latest.superseding || 0} ETFs have a quote after the ${esc(B.as_of_session)} close, used as the current price for room and levels. Leans and the reaction review stay on completed sessions.`)}">${statusChip(currentMarketView().usable ? "FRESH" : "STALE", B.latest.status === "NO_QUOTE_YET" ? "Latest prices · none since the close yet" : "Latest prices" + (B.latest.superseding ? " · " + B.latest.superseding + " after the close" : ""))}</span>` : "") +
   `<span data-tip="${esc(`tastytrade market metrics (read-only) · ${B.tastytrade?.file || "no snapshot"} · fetched ${B.tastytrade?.fetched_utc || "—"}${(B.tastytrade?.skipped||[]).length ? " · rejected by the MCP server's schema: " + B.tastytrade.skipped.join(", ") : ""}${(B.refresh_report?.tastytrade?.status === "FAILED") ? " · today's refresh failed: " + B.refresh_report.tastytrade.error : ""}`)}">${statusChip(B.tastytrade?.status || "MISSING", "tastytrade metrics")}</span>` +
   Object.entries(B.holdings_status || {}).map(([etf, h]) => `<span data-tip="${esc(`${h.issuer} daily holdings · as of ${h.as_of} · ${h.count} positions`)}">${statusChip(h.status, etf + " holdings")}</span>`).join("") +
   Object.entries((B.refresh_report || {}).holdings || {}).filter(([, r]) => r.status === "OK" && r.source === "FALLBACK").map(([etf, r]) => `<span data-tip="${esc("Primary issuer refused (" + (r.primary_error || "") + "). Holdings taken from " + (r.issuer || "the fallback file") + ", as of " + (r.as_of || "—") + ".")}">${statusChip("FRESH", etf + " holdings via " + String(r.issuer || "fallback").split(" (")[0])}</span>`).join("") +
@@ -379,6 +379,7 @@ const csvBtn = (key, label) => `<button class="btn" data-csv="${key}" title="Dow
 const CSV_EXPORTS = {
   story_flows: () => downloadCsv("day_story_flows", [["etf","ticker"],["name","name"],["kind","kind"],["flow",r=>r.flow?.label],["rel_1d_pp",r=>r.flow?.relative_pp?.["1"]],["rel_5d_pp",r=>r.flow?.relative_pp?.["5"]],["rel_20d_pp",r=>r.flow?.relative_pp?.["20"]],["volume_ratio",r=>r.volume?.ratio],["quadrant","quadrant"],["options_lean",r=>r.footprint?.lean],["options",r=>r.footprint?.text],["reasons_for",r=>(r.drivers||[]).filter(d=>d.fit==="CONSISTENT").map(d=>d.text).join(" | ")],["reasons_against",r=>(r.drivers||[]).filter(d=>d.fit==="AGAINST").map(d=>d.text).join(" | ")],["published",r=>(r.published||[]).map(n=>n.name).join(" | ")],["trade",r=>r.trade?.text]], (B.day_story?.stories)||[]),
   story_trades: () => downloadCsv("day_story_trades", [["etf","ticker"],["side","side"],["trigger",r=>r.trigger?.name],["trigger_level",r=>r.trigger?.level],["invalidation",r=>r.invalidation?.name],["invalidation_level",r=>r.invalidation?.level],["options",r=>r.expression?.pricing],["for",r=>r.balance?.with],["against",r=>r.balance?.against],["after_this_read","record"],["flow_record","persistence"],["text","text"]], (B.day_story?.trade_ideas)||[]),
+  story_triage: () => downloadCsv("day_story_triage", [["batch","batch"],["rank","deep_mine_rank"],["ticker","ticker"],["ledger_id","ledger_id"],["side","side"],["sector_etf","sector_etf"],["link_corr_60d","link_corr_60d"],["link_state","link_state"],["side_fit_measured","side_fit_measured"],["side_fit_packet","side_fit_packet"],["money_tag","money_tag"],["money_why","money_why"],["macro_sector_agreement","macro_sector_agreement"],["macro_kill_switch","macro_kill_switch"],["macro_scenario_ids","macro_scenario_ids"],["card","card"]], (B.day_story?.triage_impact?.rows)||[]),
   story_tickers: () => downloadCsv("day_story_tickers", [["ticker","ticker"],["side","direction"],["verdict","verdict"],["sector_etf","etf"],["sector_flow","sector_flow"],["link_corr","link_corr"],["reading","relation"]], ((B.day_story?.stories)||[]).flatMap(s => (s.candidates||[]).map(c => ({...c, etf: s.ticker})))),
   decision_calendar: () => downloadCsv("decision_calendar", [["date","date"],["sessions_ahead","sessions_ahead"],["windows",r=>(r.windows||[]).join("/")],["kind","kind"],["event","name"],["time_et","time_et"],["detail","detail"],["weights",r=>r.weights?Object.entries(r.weights).map(([k,v])=>k+" "+v+"%").join("; "):""],["source","source"]], (B.decision_points?.calendar)||[]),
   reassess: () => downloadCsv("reassess_next_session", [["etf","etf"],["kind","kind"],["time_et","time_et"],["item","text"]],
@@ -431,7 +432,7 @@ function currentMarketView(){
   const now = Date.now(), limit = Number(M.stale_after_minutes);
   const expired = (M.segment_end_utc && now >= Date.parse(M.segment_end_utc)) || Object.values(M.rows||{}).some(r => !Number.isFinite(Date.parse(r.time_utc)) || (now-Date.parse(r.time_utc))/60000 > limit || now < Date.parse(r.time_utc));
   const usable = M.status === "CURRENT" && !expired;
-  const rows = Object.entries(M.rows||{}).map(([t,r]) => `<div><b>${esc(t)}</b> ${fmt(r.price)} · ${pct(r.change_vs_close_pct)} vs ${esc(M.completed_session)} close · quote ${esc(r.time_utc)}${r.reversal ? ` <b style="color:var(--serious)">REVERSAL${r.erased_prior_move ? " · prior move erased" : ""}</b>` : ""}</div>`).join("");
+  const rows = (usable ? Object.entries(M.rows||{}) : []).map(([t,r]) => `<div><b>${esc(t)}</b> ${fmt(r.price)} · ${pct(r.change_vs_close_pct)} vs ${esc(M.completed_session)} close · quote ${esc(r.time_utc)}${r.reversal ? ` <b style="color:var(--serious)">REVERSAL${r.erased_prior_move ? " · prior move erased" : ""}</b>` : ""}</div>`).join("");
   return {usable, html:`<div class="card" style="border:2px solid var(--serious)"><h3>Current market · ${esc(M.market_session||"unknown date")} · ${esc(M.segment||"unknown segment")}</h3><b>${usable ? esc(M.direction)+" versus prior close · cash-session acceptance unconfirmed" : "CURRENT GUIDANCE UNAVAILABLE — refresh market prices"}</b>${rows}<div class="note">${expired ? "Snapshot expired. " : ""}Missing/invalid: ${esc((M.missing||[]).join(", ")||"none at build")}. Built ${esc(M.as_of_utc)}. This page is a snapshot; quotes do not stream. Freshness limit ${esc(M.stale_after_minutes)} minutes.</div></div>`};
 }
 
@@ -861,14 +862,14 @@ function renderMoneyIndex(){
     return `<tr><td class="l"><b>${t}</b></td>` + B.horizons.map(h => { const x = (e.band_evidence||{})[String(h)] || {}, a = x.analog || {}, b = x.base || {};
       return `<td class="${cls(a.mean_pct)}" data-tip="${esc(`After past ${R.band} sessions: n=${a.n}, independent windows ${a.n_eff}, up ${isNum(a.hit_rate)?Math.round(a.hit_rate*100)+"%":"—"}<br>All days ${pct(b.mean_pct)} · lean ${x.lean||"—"} · ${x.holdout||""}`)}">${pct(a.mean_pct)} <span class="muted">vs ${pct(b.mean_pct)}</span></td>`; }).join("") +
       `<td>${isNum(e.ic?.ic) ? e.ic.ic.toFixed(2) : "—"}</td></tr>`; }).join("");
-  return `<div id="mi"><h2>US Money Index, measured here <span class="sub">7 of the published ladder's 9 components from data AVSHUNTER holds · each scored against its own past year · shown beside the published (LLM) packet</span> ${csvBtn("money_index")}<button class="btn" data-sheet="copy" title="Copy the measured sheet (facts + instructions) to paste into ChatGPT" style="float:right;padding:2px 8px;font-size:12px;margin-left:6px">Copy sheet for ChatGPT</button><button class="btn" data-sheet="download" title="Download the measured sheet as Markdown" style="float:right;padding:2px 8px;font-size:12px">sheet .md</button></h2>
+  return `<div id="mi"><h2>Local historical risk model <span class="sub">Separate from the producer US Money Index · seven market-data components scored against their own history</span> ${csvBtn("money_index")}<button class="btn" data-sheet="copy" title="Copy the measured sheet (facts + instructions) to paste into ChatGPT" style="float:right;padding:2px 8px;font-size:12px;margin-left:6px">Copy sheet for ChatGPT</button><button class="btn" data-sheet="download" title="Download the measured sheet as Markdown" style="float:right;padding:2px 8px;font-size:12px">sheet .md</button></h2>
   <div class="grid g-2">
-    <div class="card"><h3>Risk-off transmission <span class="chip ${bc[0]}">${bc[1]}</span></h3>
+    <div class="card"><h3>Local historical model <span class="chip ${bc[0]}">${bc[1]} · local model only</span></h3><div class="note"><b>Historical calculation for ${esc(R.session||B.as_of_session)} close.</b> This band is not the producer USMI regime, a live market reading or verified capital flow. The models use different inputs and methods; their scores are not interchangeable. A missing producer score remains UNKNOWN.</div>
       <div class="big">${isNum(R.score) ? R.score.toFixed(0) : "—"}<span class="sub">/100 measured (${esc(R.measured_weight)} of 100 weight)</span></div>
-      <div class="sub">Published (ChatGPT) ${isNum(C.published_score) ? C.published_score.toFixed(0) : "—"}/100 · comparable total ${isNum(C.comparable_total) ? C.comparable_total.toFixed(0) : "—"}/100 (measured + published geopolitics/Hormuz)${(R.missing||[]).length ? ` · <span style="color:var(--serious)">missing: ${esc(R.missing.join(", "))}</span>` : ""}</div>
+      <div class="sub">Producer USMI score ${isNum(C.published_score) ? C.published_score.toFixed(0) : "UNKNOWN"}/100 · experimental combined total ${isNum(C.comparable_total) ? C.comparable_total.toFixed(0) : "—"}/100 (measured + published geopolitics/Hormuz)${(R.missing||[]).length ? ` · <span style="color:var(--serious)">missing: ${esc(R.missing.join(", "))}</span>` : ""}</div>
       <div style="margin-top:6px">${sparkSvg((M.history||{}).score, {h: 46})}</div>
       <div class="note">${esc(M.history_sessions)} scored sessions · bands ${Object.entries(M.band_counts||{}).map(([k,v]) => k.toLowerCase().replace("_","-") + " " + v).join(", ")} · 0 points at or below the median of the past year, full weight at the 95th percentile. ${esc(C.note||"")}</div></div>
-    <div class="card"><h3>What followed today's band <span class="sub">next open → close · vs all days · hover for n</span></h3>
+    <div class="card"><h3>What followed this historical local-model band <span class="sub">next open → close · vs all days · hover for n</span></h3>
       <table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th>${B.horizons.map(h => `<th>${h}d</th>`).join("")}<th data-tip="Rank correlation of the score with the next 5-session return, non-overlapping windows">IC 5d</th></tr></thead><tbody>${focus}</tbody></table>
       <div class="note">Every ETF's own band history, beta and correlation are in the Next session plan (ETF by ETF).</div></div>
   </div>
@@ -920,7 +921,7 @@ function renderIntel(){
       ${p.notes ? `<details style="margin-top:6px"><summary>Packet notes</summary><p class="note">${esc(p.notes)}</p></details>` : ""}
       ${(p.conflict_flags||[]).length ? `<details><summary>Conflict flags (${p.conflict_flags.length})</summary><ul class="list">${p.conflict_flags.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
       ${srcLine("macro_packet")}</div>
-    <div class="card"><h3>US Money Index · risk-off transmission</h3>
+    <div class="card"><h3>Producer US Money Index · advisory research</h3><div class="note">Revision ${esc(u.revision)} · source observation ${esc(B.external.us_money_index?.as_of||"UNKNOWN")}. Independent of the local historical model above. Source observations may lag this board build.</div>
       ${u.baseline_lineage ? `<div class="note"><b>New baseline — historical continuity incomplete.</b> Revision ${esc(u.revision)} is a delivery sequence, not recovered revision 73. Score and confidence are UNKNOWN / unassessed; task-reported observations are not synchronised or independently verified. Execution remains disabled.</div>` : ""}
       <div class="big">${fmt(u.score,0)}<span class="sub"> / 100 · previous ${fmt(u.previous_score,0)}</span> ${uncal}</div>
       <div class="note">${esc(u.method||"")} Ladder: ${esc(Object.entries(u.ladder||{}).map(([k,v])=>k+" "+v.replace(/_/g," ").toLowerCase()).join(" · "))}. Its record is on the Scorecards tab.</div>
@@ -1002,7 +1003,7 @@ function renderScore(){
       <table class="mini" style="width:100%"><thead><tr><th class="l">Horizon</th><th>Scored</th><th>Pending</th><th>Hit</th><th>Signed</th><th>Price-only scored</th><th>Price-only hit</th><th>Price-only signed</th></tr></thead><tbody>${brows}</tbody></table>
       <div class="note">This record grows with every daily build and is the board's only forward-tested evidence. The price-only columns score the leans the board would give from each ETF's own drift, without macro. The gap between the two is what macro adds.</div></div>
     ${rotationFlagScore()}
-    <div class="card"><h3>US Money Index · by its own ladder band</h3>
+    <div class="card"><h3>Local historical model · outcome history by band</h3>
       <div class="sub">${mi.revisions ?? 0} revisions → ${mi.entry_sessions ?? 0} entry sessions (latest revision before each open wins). No direction is assigned. The table shows what SPY and QQQ did next while the index sat in each band.</div>
       <div class="table-wrap" style="max-height:none"><table class="mini" style="width:100%"><thead><tr><th class="l">ETF</th><th class="l">Band</th>${B.horizons.map(h=>`<th>${h}d mean</th><th>${h}d up</th><th>${h}d win.</th>`).join("")}</tr></thead><tbody>${miRows || `<tr><td colspan="11" class="muted">No completed windows yet.</td></tr>`}</tbody></table></div>
       <details style="margin-top:6px"><summary>Revision history</summary><ul class="list">${(mi.calls||[]).map(c => `<li>${esc(c.entry_session)}: ${fmt(c.score,0)} · ${words(c.band)}</li>`).join("")}</ul></details></div>
@@ -1049,6 +1050,26 @@ function renderMethod(){
       <li>Breadth uses the price store's own ticker universe, which grows over time.</li>
       <li>All thresholds are provisional. The board's own scorecard is how they get validated.</li></ul></div>
   </div>`;
+}
+
+/* Absolute activity and verified fund flows have separate evidence and clocks. */
+function activityPanel(){
+  const A = B.fund_activity || {rows:[]};
+  const rows = (A.rows||[]).map(r => { const f=r.fund_flow||{}, reported=f.status==="REPORTED";
+    return `<tr><td class="l"><b>${esc(r.ticker)}</b></td><td class="l">${esc(r.price_session||"unavailable")} close</td><td class="${cls(r.absolute_1d_pct)}">${pct(r.absolute_1d_pct)}</td><td class="${cls(r.absolute_5d_pct)}">${pct(r.absolute_5d_pct)}</td><td class="${cls(r.absolute_20d_pct)}">${pct(r.absolute_20d_pct)}</td><td class="l">${esc(r.price_direction||"UNAVAILABLE")}</td><td>${isNum(r.relative_volume)?r.relative_volume.toFixed(2)+"×":"unavailable"}</td><td class="${reported?cls(f.net_flow_usd):"muted"}">${reported?"$"+Number(f.net_flow_usd).toLocaleString():"UNAVAILABLE"}</td><td class="l">${reported?esc(f.period_start)+" to "+esc(f.period_end)+" · "+esc(f.publisher):esc(f.reason||"No verified source")}</td></tr>`;
+  }).join("");
+  return `<h2>ETF activity and fund capital flows</h2><div class="authority"><b>Absolute price moves are shown directly. Fund flows require publisher-reported net creations/redemptions.</b> Price direction, relative strength and share volume do not prove capital inflows. Fund flows are dated reports, not live order flow. ${esc(A.note||"")}</div><div class="table-wrap"><table><thead><tr><th class="l">ETF</th><th class="l">Price observation</th><th>1 session %</th><th>5 sessions %</th><th>20 sessions %</th><th class="l">Own-price direction</th><th>Share volume / own average</th><th>Reported net flow USD</th><th class="l">Flow period / source</th></tr></thead><tbody>${rows||'<tr><td colspan="9">No verified observations available.</td></tr>'}</tbody></table></div>`;
+}
+function updatePriceAgeWarning(){
+  const M=B.session_plan?.call?.current_market, usable=currentMarketView().usable;
+  const built=Date.parse(B.built_at_utc), age=Number.isFinite(built)?Math.max(0,Math.floor((Date.now()-built)/60000)):null;
+  const el=$("#price-age-warning"); if(!el)return;
+  const quoteTimes=Object.values(M?.rows||{}).map(r=>Date.parse(r.time_utc)).filter(Number.isFinite);
+  const quoteAge=quoteTimes.length?Math.max(0,Math.floor((Date.now()-Math.min(...quoteTimes))/60000)):null;
+  const analysisClock=B.intel?.synthesis?.analysis_built_at||"UNKNOWN — separate analysis timestamp not recorded";
+  const packetClock=B.intel?.synthesis?.packet_built_at||"UNKNOWN";
+  el.innerHTML=`${usable?"DATED MARKET SNAPSHOT — NOT STREAMING":"STALE / HISTORICAL PRICES — NO CURRENT MARKET DIRECTION"}<br>Completed-session prices: ${esc(B.as_of_session)} close. Quote snapshot: ${esc(M?.as_of_utc||B.latest?.fetched_utc||"unavailable")}. Oldest quote: ${quoteAge===null?"UNKNOWN":quoteAge+" minutes old"}. Board generated: ${esc(B.built_at_utc)}${age!==null?" ("+age+" minutes ago)":""}. Macro AI analysis: ${esc(analysisClock)}. Macro packet built: ${esc(packetClock)}. <b>ETF return tables use the completed-session close, even when a separate quote snapshot is available. A rising or leading historical reading is not today's live move.</b> Source FRESH badges describe checks at build time; they do not refresh while this page is open.`;
+  el.style.borderColor=usable?"var(--warn)":"var(--critical)";
 }
 
 /* ---------- sector rotation ---------- */
@@ -1170,7 +1191,7 @@ function renderRotation(){
   const P = R.packet || {}, LL = R.lead_lag_scorecard || {};
   const llRows = B.horizons.map(hh => { const x = (LL.results||{})[String(hh)] || {}; const thin = (x.n_eff||0) < B.settings.evidence.min_effective_n;
     return `<tr><td>${hh}d</td><td>${x.n ?? 0}</td><td class="${thin?"muted":""}">${x.n_eff ?? 0}${thin?" ?":""}</td><td>${isNum(x.hit_rate)?Math.round(100*x.hit_rate)+"%":"—"}</td><td class="${cls(x.mean_spread_pct)}">${pct(x.mean_spread_pct)}</td></tr>`; }).join("");
-  $("#p-rotation").innerHTML = `<h2>Sector rotation <span class="sub">relative strength vs SPY and the macro's measured impact on it</span></h2>
+  $("#p-rotation").innerHTML = activityPanel() + `<details><summary>Secondary analysis: historical performance relative to SPY — not fund flows</summary><h2>Sector rotation <span class="sub">relative strength vs SPY and the macro's measured impact on it</span></h2>
     <div class="controls">${horizonSeg("hz-rot")} <span class="seg" id="rot-set"><button data-s="sector" aria-pressed="${state.rotSet==="sector"}">SPDR sectors</button><button data-s="industry" aria-pressed="${state.rotSet==="industry"}">Industries & themes</button></span></div>
     <div class="grid g-2">
       <div class="card"><h3>Rotation map <span class="sub">weekly tail, last ${B.rotation.settings.tail_points} points</span></h3>${rrgSvg(rows)}
@@ -1200,7 +1221,7 @@ function renderRotation(){
         <details style="margin-top:6px"><summary>Latest archived calls</summary><ul class="list">${(LL.latest||[]).map(c => `<li>${esc(c.entry_session)}: lead ${esc(c.lead.join(", "))} · lag ${esc(c.lag.join(", "))}</li>`).join("")}</ul></details>
         <div class="note">Scored from each archived generation's leading_sectors vs lagging_sectors (latest wins per session): equal-weight lead basket minus lag basket, next open → close.</div></div>
     </div>`;
-  $("#p-rotation").insertAdjacentHTML("beforeend", corrSection());
+  $("#p-rotation").insertAdjacentHTML("beforeend", "<details><summary>Historical sector correlations</summary>" + corrSection() + "</details>");
   if ($("#corr-view")) $("#corr-view").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.corrView = b.dataset.v; renderRotation(); };
   bindHorizon("hz-rot");
   $("#rot-set").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.rotSet = b.dataset.s; renderRotation(); };
@@ -1503,7 +1524,7 @@ function renderScenario(){
 }
 
 /* ---------- day story ---------- */
-const FLOW_TXT = {INFLOW:"Money in", TURNING_IN:"Turning in", OUTFLOW:"Money out", TURNING_OUT:"Leaving a leader", NONE:"No clear flow", MISSING:"Missing"};
+const FLOW_TXT = {INFLOW:"Relative outperformer", TURNING_IN:"Relative improvement", OUTFLOW:"Relative underperformer", TURNING_OUT:"Relative weakening", NONE:"No relative edge", MISSING:"Missing"};
 const FLOW_CLS = {INFLOW:"up", TURNING_IN:"up", OUTFLOW:"down", TURNING_OUT:"down", NONE:"flat", MISSING:"na"};
 const flowChip = l => `<span class="chip ${FLOW_CLS[l] || "na"}">${esc(FLOW_TXT[l] || l || "—")}</span>`;
 const FIT_TXT = {CONSISTENT:"fits", AGAINST:"against", NEUTRAL:"neutral"};
@@ -1526,6 +1547,10 @@ state.storySel = state.storySel || null;
 
 function storyAi(ai){
   if (!ai) return "";
+  if (ai.status === "REUSED_MACRO") {
+    const stamp = ai.synthesis?.analysis_built_at || ai.synthesis?.packet_built_at;
+    return `<div class="card soft"><h3>Published macro analysis · reused</h3><div class="sub">${esc(ai.label)} · Source packet: ${esc(stamp || "timestamp unavailable")}. This is not a new ETF narrative.</div><p>${esc(ai.overview || "Published macro commentary unavailable.")}</p></div>`;
+  }
   const head = `<h2 style="margin-top:22px">The story in words ${voice("AI")} <span class="sub">${esc(ai.label || "")}</span></h2>`;
   if (ai.status !== "OK") {
     const why = {DISABLED:"The AI narrative is switched off in the config.", NOT_CALLED:ai.reason, UNAVAILABLE:"No Anthropic credentials for this build: " + (ai.reason || ""),
@@ -1574,9 +1599,32 @@ function storyDetail(s){
   </div>`;
 }
 
+/* AVS-MACRO-TRIAGE-001 T6 (ACK 20 Nov 2026): Ticker impact reads the next session's Lane B triage through this build */
+const TAG_CLS = {WITH:"good", AGAINST:"bad", MIXED:"", NO_READ:"", NO_SIDE:""};
+const tagChip = (t, why) => `<span class="ck ${TAG_CLS[t] ?? ""}" data-tip="${esc(why || "")}"><i aria-hidden="true">${CK_ICON[TAG_CLS[t] ?? ""]}</i>${esc(t || "—")}</span>`;
+function triageImpactSection(S){
+  const T = S.triage_impact;
+  if (!T || !["TRIAGE", "HANDOFF_NOT_TRIAGED"].includes(T.status) || !(T.rows || []).length) return "";
+  const flowOf = Object.fromEntries((S.stories || []).map(s => [s.ticker, s.flow?.label]));
+  const counts = Object.entries(T.counts?.money_tag || {}).map(([k, v]) => `${esc(k.toLowerCase().replace("_", " "))} ${v}`).join(" · ");
+  const head = T.status === "TRIAGE" ? `Lane B triage for ${esc(T.session)}` : `Lane B hand-off for ${esc(T.session)}, not triaged yet`;
+  let batch = null;
+  const body = T.rows.map(r => {
+    const sep = r.batch !== batch ? `<tr><td colspan="9" class="l"><b>Batch ${esc(r.batch)}</b></td></tr>` : ""; batch = r.batch;
+    const name = r.card ? `<a href="${esc(r.card)}" target="_blank" rel="noopener" title="Open the deep-dive card">${esc(r.ticker)}</a>` : esc(r.ticker);
+    const side = ["CALL", "PUT"].includes(r.side) ? `<span class="chip ${r.side === "PUT" ? "down" : "up"}">${esc(r.side)}</span>` : `<span class="chip na">${esc(r.side || "—")}</span>`;
+    return sep + `<tr><td class="l">${esc(r.deep_mine_rank || "")}</td><td class="l"><b>${name}</b></td><td class="l">${side}</td>
+      <td class="l">${esc(r.sector_etf)} ${flowOf[r.sector_etf] ? flowChip(flowOf[r.sector_etf]) : ""}</td><td>${fmt(r.link_corr_60d)}</td>
+      <td class="l">${tagChip(r.money_tag, r.money_why)}</td><td class="l muted">${esc(String(r.side_fit_measured || "").toLowerCase().replaceAll("_", " "))} / packet ${esc(String(r.side_fit_packet || "").toLowerCase().replaceAll("_", " "))}</td>
+      <td class="l">${esc(r.macro_kill_switch || "")}</td><td class="l muted">${esc(r.macro_scenario_ids || "")}</td></tr>`; }).join("");
+  return `<h2 style="margin-top:22px">Ticker impact <span class="sub">${head} · ${esc(T.note || "")} · read through this build (${esc(T.board_build_kind || "")} ${esc(T.board_built_at_utc || "")}) · ${counts}</span> ${csvBtn("story_triage")}</h2>
+    <div class="note">${voice("MEASURED")} relative performance and the stock's 60-session link to its sector ETF; the packet reading is an LLM read of our own sheet, so agreement is not independent. Hover a tag for both readings. Names link to their deep-dive card when one is saved. Display only: the Lab rank, side and contract are unchanged.</div>
+    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">Rank</th><th class="l">Ticker</th><th class="l">Side</th><th class="l">Sector ETF</th><th data-tip="Correlation of daily returns with the sector ETF, 60 sessions">Link</th><th class="l" data-tip="WITH / MIXED / AGAINST: measured and packet agree gives that word; they differ gives MIXED">money_tag</th><th class="l">Measured / packet</th><th class="l">Kill switch</th><th class="l">Scenarios</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
 function renderStory(){
   const S = B.day_story; const el = $("#p-story");
-  if (!S || S.status !== "OK") { el.innerHTML = `<h2>Day story</h2><div class="sub muted">Day story not built${S?.reason ? ": " + esc(S.reason) : ""}.</div>`; return; }
+  if (!S || S.status !== "OK") { el.innerHTML = activityPanel() + `<h2>Day story</h2><div class="sub muted">Day story not built${S?.reason ? ": " + esc(S.reason) : ""}.</div>`; return; }
   const D = S.day || {}, W = S.settings?.flow_windows || {day:"1", short:"5", long:"20"};
   const events = (D.events || []).map(e => `<li><b>${esc(e.date)} ${esc(e.time_et || "")}</b> ${esc(e.name)} <span class="muted">${esc(e.detail || "")}</span></li>`).join("");
   const branches = (D.instruments || []).map(i => `<div class="card"><h3>${esc(i.ticker)} <span class="sub">${fmt(i.reference)} · ${esc(i.basis || "")} · normal day ±${fmt(i.daily_move_pct)}%${isNum(i.implied_move_pct) ? ` · options price ±${fmt(i.implied_move_pct)}%` : ""}</span></h3>
@@ -1601,24 +1649,25 @@ function renderStory(){
   const LR = S.live_record || {};
   const rec = Object.entries(LR).map(([h, r]) => `<li>Next ${esc(h)} session${h === "1" ? "" : "s"}: ${r.scored} call${r.scored === 1 ? "" : "s"} scored, ${r.pending} pending${r.scored ? ` · on the flow's side ${pct(r.mean_flow_side_pp)} pts on average, right ${Math.round(100 * r.flow_side_rate)}%` : ""}</li>`).join("");
   const ic = S.impact_counts || {};
-  el.innerHTML = `<h2>Day story <span class="sub">completed-session measurements through ${esc(B.as_of_session)}; current-market status above · where money is going, the measured reasons that fit, and the trade analysis for ${esc(D.next_session || "the next session")}</span></h2>
+  el.innerHTML = activityPanel() + `<h2>Day story <span class="sub">completed-session measurements through ${esc(B.as_of_session)}; current-market status above · historical performance, the measured associations that fit, and the trade analysis for ${esc(D.next_session || "the next session")}</span></h2>
     <div class="authority">Three voices, each labelled. ${voice("MEASURED")} sentences are built only from the board's own numbers. ${voice("PUBLISHED")} items come from the event payload, made by another LLM, and are not verified here. ${voice("AI")} text is written by Claude from the measured facts on this tab only; numbers it uses that the facts do not contain are flagged. A reason is a measured association with a sector's return, not a proven cause. Display only: nothing here is a gate, score or rank.</div>
     <h2>The day ahead <span class="sub">market call ${esc(String(D.call || "").replace(/_/g, " ").toLowerCase())}</span></h2>
-    <div class="card soft">${(D.sentences || []).map(x => `<div>${esc(x)}</div>`).join("")}${currentMarketView().usable && D.approach ? `<p><b>Approach:</b> ${esc(D.approach)}</p>` : ""}
+    <div class="card soft">${(D.sentences || []).filter(x => currentMarketView().usable || !/^(Current |Reversal against)/.test(x)).map(x => `<div>${esc(x)}</div>`).join("")}${currentMarketView().usable && D.approach ? `<p><b>Approach:</b> ${esc(D.approach)}</p>` : ""}
       ${events ? `<h3>Scheduled before the next close</h3><ul class="story-list">${events}</ul>` : `<div class="muted">No scheduled release before the next close.</div>`}
       ${D.published_narrative ? `<h3>Published narrative ${voice("PUBLISHED")}</h3><div class="sub"><b>${esc(D.published_narrative.classification || "")}</b> ${esc(D.published_narrative.text || "")}</div>` : ""}</div>
     <h2 style="margin-top:18px">Possible paths for the index ETFs <span class="sub">from the Next session plan's levels · option footprint from the stored chain</span></h2>
     <div class="grid g-focus">${branches || `<div class="card muted">No index levels.</div>`}</div>
-    ${storyAi(S.ai)}
-    <h2 style="margin-top:22px">Where money is going ${voice("MEASURED")} <span class="sub">relative return vs ${esc(B.rotation?.settings?.benchmark || "SPY")} in pts · click a row for the reasons, trade and tickers</span> ${csvBtn("story_flows")}</h2>
-    <div class="card soft">${(S.overview || []).map(x => `<div>${esc(x)}</div>`).join("") || `<div class="muted">No sector or industry has a clear flow.</div>`}</div>
-    <div class="table-wrap"><table><thead><tr><th class="l">ETF</th><th class="l">Name</th><th class="l">Flow</th><th>${esc(W.day)}d</th><th>${esc(W.short)}d</th><th>${esc(W.long)}d</th><th data-tip="Last session's share volume against its own 20-session average">Volume</th><th class="l">Rotation</th><th class="l" data-tip="What option traders paid for on the last stored chain, against this ETF's own history">Options</th><th data-tip="Measured reasons that fit / go against the flow">Reasons</th><th class="l" data-tip="Published items that name this sector">News</th><th class="l">Trade</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <details><summary>Archived AI narrative — earlier measurements; any flow wording is unverified</summary>${storyAi(S.ai)}</details>
+    <h2 style="margin-top:22px">Historical relative-performance context ${voice("MEASURED")} <span class="sub">relative return vs ${esc(B.rotation?.settings?.benchmark || "SPY")} in pts · click a row for the reasons, trade and tickers</span> ${csvBtn("story_flows")}</h2>
+    <div class="card soft">${(S.overview || []).map(x => x.replaceAll("Money moving in", "Relative outperformers").replaceAll("Money moving out", "Relative underperformers")).map(x => `<div>${esc(x)}</div>`).join("") || `<div class="muted">No sector or industry has a clear flow.</div>`}</div>
+    <div class="table-wrap"><table><thead><tr><th class="l">ETF</th><th class="l">Name</th><th class="l">Relative performance</th><th>${esc(W.day)}d</th><th>${esc(W.short)}d</th><th>${esc(W.long)}d</th><th data-tip="Last session's share volume against its own 20-session average">Volume</th><th class="l">Rotation</th><th class="l" data-tip="What option traders paid for on the last stored chain, against this ETF's own history">Options</th><th data-tip="Measured reasons that fit / go against the flow">Reasons</th><th class="l" data-tip="Published items that name this sector">News</th><th class="l">Trade</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${sel ? storyDetail(sel) : ""}
     <h2 style="margin-top:22px">Trade analysis for the day <span class="sub">side from the measured flow · trigger and invalidation from price room · options cheap or rich against history · "after this read" says whether the same flow has followed through or reversed · for you to decide</span> ${csvBtn("story_trades")}</h2>
     <div class="table-wrap"><table class="mini"><thead><tr><th class="l">ETF</th><th class="l">Side</th><th class="l">Trigger</th><th class="l">Wrong if</th><th class="l">Options</th><th data-tip="Measured reasons, option footprint and the flow's own record, for / against">For / against</th><th class="l" data-tip="What this ETF's relative return did over the next 5 sessions after the same flow read, all history (hover for numbers)">After this read</th><th class="l">Live scenarios</th></tr></thead><tbody>${ideas || `<tr><td colspan="8" class="muted">No sector has a clear flow today: stand aside and wait for one to break its level.</td></tr>`}</tbody></table></div>
-    <h2 style="margin-top:22px">Ticker impact <span class="sub">pipeline candidates read against their sector's money flow · with ${ic.WITH_FLOW ?? 0} · against ${ic.AGAINST_FLOW ?? 0} · stock-specific ${ic.STOCK_SPECIFIC ?? 0} · no clear flow ${ic.NO_FLOW_READ ?? 0}</span> ${csvBtn("story_tickers")}</h2>
-    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">Ticker</th><th class="l">Side</th><th class="l">Verdict</th><th class="l">Sector flow</th><th data-tip="Correlation of daily returns with the sector ETF, 60 sessions">Link</th><th class="l">Reading</th></tr></thead><tbody>${impactRows || `<tr><td colspan="6" class="muted">No pipeline candidates mapped to a story ETF.</td></tr>`}</tbody></table></div>
-    <h2 style="margin-top:22px">The board's own flow calls <span class="sub">every pre-open and evening build records each ETF's flow; scored on what money did next</span></h2>
+    ${triageImpactSection(S) || `<h2 style="margin-top:22px">Ticker impact <span class="sub">pipeline candidates read against their sector relative performance · with ${ic.WITH_FLOW ?? 0} · against ${ic.AGAINST_FLOW ?? 0} · stock-specific ${ic.STOCK_SPECIFIC ?? 0} · no clear flow ${ic.NO_FLOW_READ ?? 0}</span> ${csvBtn("story_tickers")}</h2>
+    ${S.triage_impact?.note ? `<div class="note muted">Lane B triage view not shown: ${esc(S.triage_impact.note)}</div>` : ""}
+    <div class="table-wrap"><table class="mini"><thead><tr><th class="l">Ticker</th><th class="l">Side</th><th class="l">Verdict</th><th class="l">Sector flow</th><th data-tip="Correlation of daily returns with the sector ETF, 60 sessions">Link</th><th class="l">Reading</th></tr></thead><tbody>${impactRows || `<tr><td colspan="6" class="muted">No pipeline candidates mapped to a story ETF.</td></tr>`}</tbody></table></div>`}
+    <h2 style="margin-top:22px">Historical relative-performance calls <span class="sub">each build records relative-performance classifications; scored on subsequent relative prices</span></h2>
     <div class="card soft"><ul class="story-list">${rec || "<li class='muted'>No calls recorded yet.</li>"}</ul><div class="note muted">${S.ledger_rows} rows in the ledger. The trade table's \"After this read\" column shows the same flow label measured over all past sessions.</div></div>`;
   el.querySelectorAll("[data-story]").forEach(r => r.addEventListener("click", () => { state.storySel = state.storySel === r.dataset.story ? null : r.dataset.story; renderStory(); $("#story-detail")?.scrollIntoView({block:"start"}); }));
   if ($("#story-close")) $("#story-close").onclick = () => { state.storySel = null; renderStory(); };
@@ -1641,12 +1690,13 @@ function renderMacroHealth(){
 }
 
 function renderAll(){
+  updatePriceAgeWarning();
   $("#current-market-status").innerHTML = currentMarketView().html;
   $("#macro-health-status").innerHTML = renderMacroHealth();
   renderReview(); renderStory(); renderOverview(); renderEtfs(); renderMap(); renderRotation(); renderDesk(); renderScenario(); renderIntel(); renderScore(); renderMethod(); renderPlan();
 }
 renderAll();
-setInterval(() => { $("#current-market-status").innerHTML = currentMarketView().html; renderReview(); renderStory(); renderPlan(); }, 30000);
+setInterval(() => { updatePriceAgeWarning(); $("#current-market-status").innerHTML = currentMarketView().html; renderReview(); renderStory(); renderPlan(); }, 30000);
 let start = "review"; try { start = localStorage.getItem("macroBoardPage") || start; } catch(e) {}
 show(PAGES.some(p => p[0]===start) ? start : "review");
 })();

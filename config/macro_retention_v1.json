@@ -1,0 +1,28 @@
+{
+  "config_version": "macro_retention_v1",
+  "registered": "2026-11-20",
+  "approval": "ACK 20 Nov 2026: \"yes add the 10-session clean-up\". Raw macro JSON is intelligence for human review; 10 completed US sessions are enough to look back on.",
+  "sessions": 10,
+  "targets": [
+    {"name": "board_inputs", "dir": "macro_board/output/inputs", "rule": "board_inputs",
+     "snapshots_dir": "macro_board/output/snapshots",
+     "note": "Content-addressed copies of every board input. Kept while a board build of the window used them."},
+    {"name": "feed_archive", "dir": "data/macro/delivery/archive", "rule": "feed_blobs",
+     "accepted": "data/macro/delivery/accepted.json", "events_ledger": "data/macro/delivery/events.json",
+     "note": "Exact bytes of each delivered US Money Index, events and news file. Accepted feeds and every source the events ledger cites are kept."},
+    {"name": "feed_receipts", "dir": "data/macro/delivery/transport_receipts", "rule": "feed_blobs",
+     "accepted": "data/macro/delivery/accepted.json", "events_ledger": "data/macro/delivery/events.json",
+     "note": "Transport receipts, named by the same sha256 as the archived feed file."},
+    {"name": "feed_quarantine", "dir": "data/macro/delivery/quarantine", "rule": "age",
+     "note": "Rejected deliveries and their receipts."},
+    {"name": "old_event_payloads", "dir": "dropbox/macro/Archive", "rule": "age",
+     "note": "Dated event payloads from before the delivery transport (to 17 Oct 2026); nothing reads them."},
+    {"name": "etf_intelligence", "dir": "macro_board/output/etf_intelligence", "rule": "age",
+     "keep": ["etf_intelligence_latest.json"],
+     "note": "Per-ETF intelligence from each board build (AVS-MACRO-TRIAGE-001 T1). Dated files go with age; the latest file the triage join reads is kept."}
+  ],
+  "not_targets": {
+    "data/macro/archive": "Macro packet archive: pipeline replays bind to each packet id and hash (build_macro_json WP0-06).",
+    "macro_board/output/snapshots and *_ledger.jsonl": "Small board records; kept."
+  }
+}

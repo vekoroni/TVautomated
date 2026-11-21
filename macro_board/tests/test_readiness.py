@@ -57,3 +57,16 @@ def test_during_regular_hours_it_warns_that_todays_bars_are_partial():
 
 def test_too_early_is_flagged_so_the_prompt_can_say_so():
     assert _report("03:50")["timing"] == "EARLY"
+
+
+def test_the_scheduled_pre_open_time_comes_from_the_schedule_config():
+    # ACK 20 Nov 2026: pre-open build at 07:00 ET (12:00 UK); 08:30 releases still listed as not out yet before then
+    assert rd.scheduled_preopen_et({"pre_open_minutes": 150}) == "07:00"
+    h, m = 6, 30
+    now = datetime(2026, 10, 19, h + 4, m, tzinfo=timezone.utc)
+    out = rd.report(now=now, session="PreOpen", segment="PREMARKET", last_session="2026-10-16", releases=RELEASES,
+                    inputs=INPUTS, preopen_et="07:00")
+    assert out["timing"] == "WAIT_RELEASES" and any("07:00 ET" in line for line in out["lines"])
+    later = rd.report(now=datetime(2026, 10, 19, 11, 10, tzinfo=timezone.utc), session="PreOpen", segment="PREMARKET",
+                      last_session="2026-10-16", releases=RELEASES, inputs=INPUTS, preopen_et="07:00")
+    assert later["timing"] == "GOOD" and any("CPI 08:30" in line for line in later["lines"])

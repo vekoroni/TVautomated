@@ -1195,6 +1195,11 @@
     "max_trade_ideas": 8,
     "max_candidates_per_story": 8,
     "ledger": "macro_board/output/day_story_ledger.jsonl",
+    "triage_impact": {
+      "max_batches": 4,
+      "handoff_root": "data/scratch/workaround/handoff",
+      "rationale": "ACK 20 Nov 2026 (AVS-MACRO-TRIAGE-001 T6): Ticker impact lists the next session's Lane B triaged names (or its first 4 hand-off batches before the triage runs) read through this build's per-ETF intelligence, with a link to each name's deep-dive card; without a hand-off it keeps the pipeline candidates, labelled. Display only."
+    },
     "options_flow": {
       "db": "data/phantom/phantom_history.db",
       "front_bucket": "8_30",
@@ -1212,18 +1217,15 @@
       "guards_basis": "Measured 14 Oct 2026 on the stored iv_surface_history (8-30 DTE bucket, ~70 dates): median day-to-day change of 25-delta skew is 1.0-2.5 pts for SPY/QQQ/IWM/DIA/XLK/SMH/SOXX but 10-50 pts for XLI/XLV/KRE/XHB/XLF/XLP/XLY/XLC/IYR/XRT/XLU/XLRE/KBE/XLB (not plausible for real skew); ATM IV median daily change relative to its level 0.04-0.13 for liquid ETFs (SPY 0.10, SMH 0.07), 0.16-0.45 for KRE/IYT/XLC/IYR/XRT/XLRE/KBE/XLB/XLU/XLP; contracts captured per day vary (XLE 179 vs 213). A series is read only if its own median daily change is within the limit; a change is flagged only if larger than 90% of its own daily changes; volume and OI compare only dates with chain coverage within 10%."
     },
     "ai_narrative": {
-      "enabled": true,
-      "model": "claude-opus-5-5",
+      "enabled": false,
+      "model": "claude-sonnet-4-6",
       "effort": "medium",
-      "max_tokens": 16000,
-      "call_on_build_kinds": [
-        "MORNING",
-        "EVENING"
-      ],
+      "max_tokens": 4000,
+      "call_on_build_kinds": [],
       "cache_dir": "macro_board/output/narratives",
       "prompt_version": "2026-10-14.1",
       "timeout_seconds": 300,
-      "fallbacks": "default"
+      "mode": "REUSE_PUBLISHED_MACRO"
     },
     "news_keywords": {
       "XLK": [
@@ -1407,5 +1409,335 @@
   },
   "research_intelligence": {
     "max_displayed_events": 8
+  },
+  "etf_intelligence": {
+    "version": "etf_intelligence_v1",
+    "max_reasons": 2,
+    "rationale": "ACK 20 Nov 2026 (AVS-MACRO-TRIAGE-001 T1): every current board build writes output/etf_intelligence/etf_intelligence_<as_of_session>_<build_kind>.json and etf_intelligence_latest.json, a per-ETF projection of the board's own reads (relative performance, measured and packet stances kept apart and compared, top reasons for and against with their source, decision scenarios with trigger, invalidation and horizon) for the Lane B triage to join by ledger id. --as-of rebuilds write their own file and never replace latest. Intelligence for human review (CLAUDE.md rule 6): never a gate, score, rank, contract, side or size.",
+    "max_events": 5,
+    "event_fields": {
+      "name": [
+        "event_name",
+        "name",
+        "event",
+        "title"
+      ],
+      "time_utc": [
+        "information_cutoff_utc",
+        "market_perception.observation_window.information_cutoff_utc",
+        "release_time_utc",
+        "original_report_release_time_utc"
+      ],
+      "actual": [
+        "actual"
+      ],
+      "consensus": [
+        "pre_release_consensus",
+        "consensus",
+        "consensus_forecast",
+        "forecast"
+      ],
+      "consensus_source": [
+        "pre_release_consensus_source",
+        "consensus_source",
+        "consensus_provenance"
+      ],
+      "consensus_time_utc": [
+        "pre_release_consensus_timestamp",
+        "consensus_timestamp_utc",
+        "consensus_timestamp"
+      ],
+      "interpretation": [
+        "market_perception.interpretation",
+        "interpretation"
+      ],
+      "alternative_explanation": [
+        "market_perception.alternative_explanation",
+        "alternative_explanation",
+        "strongest_counter_case"
+      ],
+      "invalidation": [
+        "market_perception.invalidation",
+        "invalidation",
+        "invalidation_conditions"
+      ],
+      "required_confirmation": [
+        "market_perception.required_confirmation",
+        "required_confirmation"
+      ],
+      "evidence_status": [
+        "market_perception.evidence_status",
+        "evidence_status"
+      ],
+      "beneficiaries": [
+        "beneficiaries"
+      ]
+    },
+    "sector_impact_views": {
+      "favoured_or_resilient": "FAVOURED",
+      "adverse": "ADVERSE",
+      "high_dispersion": "HIGH_DISPERSION"
+    },
+    "usmi_trigger_keys": [
+      "relief_confirmation",
+      "risk_off_escalation",
+      "invalidation",
+      "invalidation_conditions"
+    ],
+    "usmi_sector_map": {
+      "technology": [
+        "XLK"
+      ],
+      "semiconductors": [
+        "SMH",
+        "SOXX"
+      ],
+      "software": [
+        "IGV"
+      ],
+      "financials": [
+        "XLF",
+        "KRE",
+        "KBE"
+      ],
+      "banks": [
+        "KBE",
+        "KRE"
+      ],
+      "healthcare": [
+        "XLV",
+        "XBI",
+        "IBB"
+      ],
+      "biotech": [
+        "XBI",
+        "IBB"
+      ],
+      "energy": [
+        "XLE",
+        "XOP",
+        "OIH"
+      ],
+      "real_estate": [
+        "XLRE",
+        "IYR",
+        "VNQ"
+      ],
+      "metals_miners": [
+        "XLB",
+        "GDX",
+        "XME"
+      ],
+      "materials": [
+        "XLB"
+      ],
+      "industrials": [
+        "XLI"
+      ],
+      "transports": [
+        "IYT"
+      ],
+      "consumer_discretionary": [
+        "XLY"
+      ],
+      "consumer_discretionary_retail": [
+        "XLY",
+        "XRT"
+      ],
+      "homebuilders": [
+        "XHB",
+        "ITB"
+      ],
+      "consumer_staples": [
+        "XLP"
+      ],
+      "utilities": [
+        "XLU"
+      ],
+      "communication_services": [
+        "XLC"
+      ],
+      "small_caps": [
+        "IWM"
+      ]
+    },
+    "benchmarks": {
+      "market": "SPY",
+      "sector_peer": "EW_SECTORS",
+      "industry_parent": {
+        "SMH": "XLK",
+        "SOXX": "XLK",
+        "IGV": "XLK",
+        "HACK": "XLK",
+        "KRE": "XLF",
+        "KBE": "XLF",
+        "XBI": "XLV",
+        "IBB": "XLV",
+        "ARKG": "XLV",
+        "ARKK": "QQQ",
+        "ARKW": "QQQ",
+        "XOP": "XLE",
+        "OIH": "XLE",
+        "XME": "XLB",
+        "GDX": "XLB",
+        "ITB": "XLY",
+        "XHB": "XLY",
+        "XRT": "XLY",
+        "IYR": "XLRE",
+        "VNQ": "XLRE",
+        "IYT": "XLI",
+        "JETS": "XLI"
+      },
+      "group_peer": {
+        "Broad indices": "EW_SECTORS",
+        "Factors": "EW_SECTORS",
+        "Rates & credit": "AGG",
+        "International": "EFA",
+        "Commodities & dollar": null,
+        "Crypto": "IBIT"
+      },
+      "ticker_peer": {
+        "VWO": "EEM",
+        "EWZ": "EEM",
+        "FXI": "EEM",
+        "KWEB": "EEM",
+        "MCHI": "EEM",
+        "INDA": "EEM",
+        "EWY": "EEM",
+        "EWT": "EEM",
+        "GDXJ": "GDX",
+        "IAU": "GLD"
+      },
+      "absolute_read": [
+        "SPY",
+        "VOO",
+        "IVV",
+        "VTI"
+      ],
+      "derived": {
+        "TQQQ": {
+          "underlying": "QQQ",
+          "sign": 1
+        },
+        "SQQQ": {
+          "underlying": "QQQ",
+          "sign": -1
+        },
+        "SPXL": {
+          "underlying": "SPY",
+          "sign": 1
+        },
+        "SPXS": {
+          "underlying": "SPY",
+          "sign": -1
+        },
+        "SPXU": {
+          "underlying": "SPY",
+          "sign": -1
+        },
+        "SDS": {
+          "underlying": "SPY",
+          "sign": -1
+        },
+        "SOXL": {
+          "underlying": "SOXX",
+          "sign": 1
+        },
+        "SOXS": {
+          "underlying": "SOXX",
+          "sign": -1
+        },
+        "TNA": {
+          "underlying": "IWM",
+          "sign": 1
+        },
+        "TZA": {
+          "underlying": "IWM",
+          "sign": -1
+        },
+        "LABU": {
+          "underlying": "XBI",
+          "sign": 1
+        },
+        "LABD": {
+          "underlying": "XBI",
+          "sign": -1
+        },
+        "FAS": {
+          "underlying": "XLF",
+          "sign": 1
+        },
+        "FAZ": {
+          "underlying": "XLF",
+          "sign": -1
+        },
+        "TMF": {
+          "underlying": "TLT",
+          "sign": 1
+        },
+        "NUGT": {
+          "underlying": "GDX",
+          "sign": 1
+        },
+        "DUST": {
+          "underlying": "GDX",
+          "sign": -1
+        },
+        "ERX": {
+          "underlying": "XLE",
+          "sign": 1
+        },
+        "ERY": {
+          "underlying": "XLE",
+          "sign": -1
+        },
+        "BOIL": {
+          "underlying": "UNG",
+          "sign": 1
+        },
+        "KOLD": {
+          "underlying": "UNG",
+          "sign": -1
+        },
+        "UDOW": {
+          "underlying": "DIA",
+          "sign": 1
+        },
+        "SDOW": {
+          "underlying": "DIA",
+          "sign": -1
+        },
+        "UCO": {
+          "underlying": "USO",
+          "sign": 1
+        }
+      },
+      "no_read": {
+        "VXX": "volatility product: no relative-performance read",
+        "VIXY": "volatility product: no relative-performance read",
+        "UVXY": "volatility product: no relative-performance read",
+        "SVXY": "volatility product: no relative-performance read"
+      },
+      "rationale": "ACK 20 Nov 2026 (AVS-MACRO-TRIAGE-001 T7c/T7d): SPY stays the market reference and sets the measured stance for every ETF, as for the 26 rotation ETFs. One peer reference is shown beside it: sectors against EW_SECTORS, the plain mean of the 11 sector ETFs' returns (ACK 20 Nov 2026: RSP has no bars in the price store after 20 Aug; live builds fill it from the board's grouped-daily cache but as-of rebuilds cannot, while the 11 sector ETFs are in the store every session; every basket member must be fresh or the read is MISSING with the stale members named); broad indices and factors also use EW_SECTORS (ACK 20 Nov 2026), for the same reason; industries against their parent sector; other universe ETFs against their group reference (a ticker override first). A peer equal to the ETF itself is NO_PEER. SPY and its near-clones get an absolute read (a read of SPY against SPY is zero by construction). Leveraged and inverse ETFs take their underlying's read, flipped for inverse ones; volatility products get no read. Same windows and bands as the Day story (day_story.flow_windows, opportunity.relative_band_pp). Display only.",
+      "baskets": {
+        "EW_SECTORS": {
+          "label": "the equal-weight 11 sectors",
+          "members": [
+            "XLK",
+            "XLF",
+            "XLE",
+            "XLV",
+            "XLY",
+            "XLP",
+            "XLI",
+            "XLB",
+            "XLU",
+            "XLRE",
+            "XLC"
+          ]
+        }
+      }
+    },
+    "t7_rationale": "ACK 20 Nov 2026 (AVS-MACRO-TRIAGE-001 T7): the event file and the US Money Index are read into the same projection. Event fields are read with these aliases (first present and non-empty wins, the field used is recorded), so a spelling change is a config edit. Both files are ChatGPT outputs written from our measured sheet plus outside news: every item is labelled LLM_WITH_NEWS with its as-of time and is not independent confirmation of the measured read. Sector names in the US Money Index routing that are not in usmi_sector_map are listed, never dropped. Intelligence for human review (CLAUDE.md rule 6)."
   }
 }

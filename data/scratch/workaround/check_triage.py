@@ -27,6 +27,10 @@ Checks (per batch triage file)
   packs      every name has a pack in packs_folder (else the avs_day.ps1 packs -Tickers line to paste)
   inbox      lessons\\fix_inbox\\<session>_triage.md exists
   strategy   old hand-off layout only: strategy_layer_<session>.csv challenges become WARN lines
+  macro      (AVS-MACRO-TRIAGE-001 T5, ACK 20 Nov 2026; WARN only, never FAIL) each row whose ledger_id is in the board macro
+             context (triage_macro_context_<session>.csv in the hand-off folder): money_tag's first word = the file's
+             money_tag, macro_sector_agreement starts with the file's agreement word, macro_kill_switch carries the file's
+             kill level. A missing file, or one behind the latest board build, is a WARN
 
 Run (PowerShell, repo root), or let avs_day.ps1 checktriage run it:
     venv\\Scripts\\python.exe data\\scratch\\workaround\\check_triage.py --all
@@ -48,8 +52,11 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_lab_handoff import liquidity_tier, num, same_number  # noqa: E402  (one owner of the 11 Nov tiers)
 
-VERSION = "check_triage_v4"   # v2 17 Oct spread gate; v3 18 Oct strategy layer; v4 12 Nov Lab contract/target, 11 Nov tiers, any batch
+VERSION = "check_triage_v5"   # v2 17 Oct spread gate; v3 18 Oct strategy layer; v4 12 Nov Lab contract/target, 11 Nov tiers, any batch; v5 20 Nov macro context
 WORK = Path("data") / "scratch" / "workaround"
+MACRO_INTEL = Path("macro_board") / "output" / "etf_intelligence" / "etf_intelligence_latest.json"
+FIRST_WORD = re.compile(r"^\W*([A-Za-z_]+)")
+KILL_LEVEL = re.compile(r"void (?:above|below) (\d+(?:\.\d+)?)")
 OCC = re.compile(r"\b([A-Z]{1,6})\s*(\d{2})(\d{2})(\d{2})([CP])(\d{8})\b")
 NEED = ["deep_mine_rank", "ticker", "ledger_id", "side", "trigger", "kill", "trade_contract", "pays_at_half_target",
         "earnings_tastytrade", "cluster", "main_challenge", "rank_reason"]
@@ -87,12 +94,78 @@ def batch_number(path: Path) -> int:
 
 
 def prompts_file(folder: Path, session: str, batch: int) -> Path:
+    numbered = folder / f"deep_dive_prompts_{session}_b{batch}.md"
+    if batch != 1:
+        return numbered
+    # batch 1 may be saved unsuffixed or with _b1 (19 Nov 2026); the unsuffixed file wins when both exist
     first = folder / f"deep_dive_prompts_{session}.md"
-    return first if batch == 1 else folder / f"deep_dive_prompts_{session}_b{batch}.md"
+    return numbered if numbered.exists() and not first.exists() else first
+
+
+def first_word(v) -> str:
+    m = FIRST_WORD.match(s(v))
+    return m.group(1).upper() if m else ""
+
+
+def load_macro_context(folder: Path, session: str, intel_path: Path, warns: list, notes: list) -> dict | None:
+    """The board macro context rows by ledger_id, or None (one WARN) when the file is missing or unreadable.
+    A context older than the latest board build is a WARN: avs_day.ps1 board refreshes it."""
+    csv_path = folder / f"triage_macro_context_{session}.csv"
+    if not csv_path.exists():
+        warns.append(f"macro: the board macro context was not available ({csv_path.name} not in {folder.name}): the macro columns "
+                     "are hand-written; run avs_day.ps1 packs or avs_day.ps1 board to build it")
+        return None
+    try:
+        M = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+        built = json.loads((folder / f"triage_macro_context_{session}.json").read_text(encoding="utf-8")).get("board", {}).get("built_at_utc")
+    except (OSError, ValueError) as exc:
+        warns.append(f"macro: the board macro context could not be read ({type(exc).__name__}): the macro columns are not checked")
+        return None
+    latest = None
+    if intel_path.exists():
+        try:
+            latest = json.loads(intel_path.read_text(encoding="utf-8")).get("meta", {}).get("built_at_utc")
+        except (OSError, ValueError):
+            latest = None
+    if built and latest and str(latest) > str(built):
+        warns.append(f"macro: the board macro context is from the build of {built}; the board was rebuilt at {latest}: "
+                     "run avs_day.ps1 board, then take the macro columns from the refreshed file")
+    notes.append(f"macro: board macro context {csv_path.name}, board build {built or 'unknown'}")
+    return {r["ledger_id"]: r for r in M.to_dict("records")}
+
+
+def check_macro(T: pd.DataFrame, macro: dict, tag: str, warns: list, notes: list) -> None:
+    """WARN only: the triage's macro columns against the board macro context, with the board's value beside each."""
+    if "ledger_id" not in T.columns:
+        return
+    unknown, matched = [], 0
+    for _, row in T.sort_values("_rank").iterrows():
+        t, ctx = row["ticker"], macro.get(s(row.get("ledger_id")))
+        if ctx is None:
+            unknown.append(t)
+            continue
+        issues = []
+        mine, board = first_word(row.get("money_tag")), first_word(ctx.get("money_tag"))
+        if mine != board:
+            issues.append(f"money_tag {mine or 'blank'} vs board {board}")
+        mine, board = first_word(row.get("macro_sector_agreement")), first_word(ctx.get("macro_sector_agreement"))
+        if board and mine != board:
+            issues.append(f"macro_sector_agreement {mine or 'blank'} vs board {board}")
+        level = KILL_LEVEL.search(s(ctx.get("macro_kill_switch")))
+        if level and level.group(1) not in s(row.get("macro_kill_switch")):
+            issues.append(f"macro_kill_switch lacks the board level {level.group(1)} "
+                          f"(board: {s(ctx.get('macro_kill_switch')).split(' (')[0]})")
+        if issues:
+            warns.append(f"{t} macro: " + "; ".join(issues) + " (take them from the board macro context row)")
+        else:
+            matched += 1
+    if unknown:
+        warns.append(f"{tag} macro: ledger_id not in the board macro context: " + ", ".join(unknown))
+    notes.append(f"{tag} macro: {matched} of {len(T)} rows match the board macro context")
 
 
 def check_batch(tri: Path, H: pd.DataFrame, lab: bool, session: str, cap: float, packs, handoff_folder: Path,
-                fails: list, warns: list, notes: list) -> None:
+                fails: list, warns: list, notes: list, macro: dict | None = None) -> None:
     b = batch_number(tri)
     tag = f"batch {b}"
     T = pd.read_csv(tri, dtype=str, keep_default_na=False)   # keep_default_na=False: the ticker NAN is a real ticker
@@ -274,6 +347,10 @@ def check_batch(tri: Path, H: pd.DataFrame, lab: bool, session: str, cap: float,
             conf = [t for t in T["ticker"] if sby.get(t, {}).get("confluence") == "CONFLUENCE"]
             notes.append(f"strategy confluence (2+ families): {', '.join(conf) or 'none'}")
 
+    # macro (T5): WARN only
+    if macro is not None:
+        check_macro(T, macro, tag, warns, notes)
+
     # packs
     if packs and packs.exists():
         nopack = [t for t in T["ticker"] if not (packs / f"{t}_pack.zip").exists()]
@@ -295,6 +372,8 @@ def main(argv=None) -> int:
     ap.add_argument("--batch", type=int, action="append", help="batch number to check (repeat for several)")
     ap.add_argument("--all", action="store_true", help="check every batch triage file found (the default for a Lab hand-off)")
     ap.add_argument("--context", default=str(WORK / "today_context.json"))
+    ap.add_argument("--macro-intelligence", default=str(MACRO_INTEL),
+                    help="the board's latest per-ETF intelligence: a macro context older than it is a WARN")
     a = ap.parse_args(argv)
     ctx = {}
     cpath = Path(a.context)
@@ -316,6 +395,7 @@ def main(argv=None) -> int:
     lab = "lb_batch" in H.columns
     notes.append(f"hand-off {folder.name}: {'Lab publication' if lab else 'old split layout'}, {len(H)} names; triage files read from {tfolder}")
 
+    macro = load_macro_context(folder, session, Path(a.macro_intelligence), warns, notes) if lab else None
     found = {batch_number(f): f for f in sorted(tfolder.glob(f"batch*_triage_{session}.csv"))}
     if a.batch:
         wanted = a.batch
@@ -327,7 +407,7 @@ def main(argv=None) -> int:
         if b not in found:
             fails.append(f"batch{b}_triage_{session}.csv is missing in {tfolder}: the triage did not run or did not save")
             continue
-        check_batch(found[b], H, lab, session, cap, packs, folder, fails, warns, notes)
+        check_batch(found[b], H, lab, session, cap, packs, folder, fails, warns, notes, macro)
     unchecked = sorted(set(found) - set(wanted))
     if unchecked:
         notes.append("batch triage files not checked in this run: " + ", ".join(f"batch {b}" for b in unchecked) + " (use --all or --batch N)")

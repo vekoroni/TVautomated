@@ -17,6 +17,15 @@ import pytest
 
 from macro_board import day_story as ds
 
+
+@pytest.fixture(autouse=True)
+def isolate_provider_and_budget(monkeypatch):
+    """Legacy narrative unit fixtures never touch the production usage/build ledgers."""
+    from contracts import macro_api_cost
+    def fake_message(root, stage, request, factory):
+        return factory().beta.messages.create(**request)
+    monkeypatch.setattr(macro_api_cost, 'budgeted_message', fake_message)
+
 BANDS = {"1": 0.1, "5": 0.25, "20": 0.5}
 WINDOWS = {"day": "1", "short": "5", "long": "20"}
 
@@ -332,7 +341,7 @@ def test_api_failure_or_missing_credentials_never_breaks_the_build(tmp_path):
         raise RuntimeError("ANTHROPIC_WORKSPACE_ID is required")
     out = ds.ai_narrative(FACTS, AI_CFG, cache_dir=tmp_path / "x", session="2026-10-13", kind="EVENING",
                           client_factory=no_creds)
-    assert out["status"] == "UNAVAILABLE"
+    assert out["status"] == "FAILED" and 'WORKSPACE_ID' in out['reason']
 
 
 def test_an_ai_flow_call_that_contradicts_the_measured_flow_is_flagged(tmp_path):

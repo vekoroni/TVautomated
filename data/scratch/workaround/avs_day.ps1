@@ -57,6 +57,22 @@ elseif ($LabHandoff) { $S.handoff_source = 'LAB'; ($S | ConvertTo-Json) | Set-Co
 $UseLab = $S.handoff_source -eq 'LAB'
 $CapLabel = ([double]$S.cap).ToString('0.##', [Globalization.CultureInfo]::InvariantCulture)
 
+function Format-Utc($v) {
+    # Windows PowerShell 5.1 keeps ISO strings from ConvertFrom-Json; PowerShell 7 turns them into dates
+    if ($v -is [datetime]) { return $v.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'+00:00'") }
+    if ($null -eq $v) { return $null }
+    return [string]$v
+}
+
+function Invoke-MacroContext($c) {
+    # AVS-MACRO-TRIAGE-001 T3 (ACK 20 Nov 2026): join the board's per-ETF intelligence to this session's hand-off,
+    # one row per name (triage_macro_context_<session>.csv). Intelligence for the triage; it never changes a rank.
+    if (-not $UseLab) { 'Macro context reads the Lab hand-off (lb_ledger_id): not built for the legacy hand-off'; return }
+    if (-not (Test-Path (Join-Path $c.handoff 'handoff.csv'))) { "No hand-off for $($c.session) yet: macro context not built"; return }
+    & $Py -m macro_board.triage_context --handoff $c.handoff
+    if ($LASTEXITCODE -ne 0) { "Macro context not written (exit $LASTEXITCODE): read the NOT WRITTEN line above; until it is, the triage has no board context for its macro columns" }
+}
+
 function Get-LedgerDates {
     Get-ChildItem $W -Filter 'decision_ledger_*.csv' | ForEach-Object {
         if ($_.Name -match '^decision_ledger_(\d{4}-\d{2}-\d{2})\.csv$') { $Matches[1] } } | Sort-Object
@@ -105,7 +121,21 @@ function Get-Context {
         $m = Select-String -Path $board.FullName -Pattern '"built_at_utc"\s*:\s*"([^"]+)"' -List -ErrorAction SilentlyContinue
         $boardBuilt = if ($m) { $m.Matches[0].Groups[1].Value } else { $board.LastWriteTimeUtc.ToString('yyyy-MM-ddTHH:mmZ') + ' (file time)' }
     }
+    # Board macro context for the hand-off names (AVS-MACRO-TRIAGE-001 T3, ACK 20 Nov 2026): one row per ledger id,
+    # written by macro_board.triage_context from the board's per-ETF intelligence; the triage fills its macro columns from it.
+    $mcCsv = Join-Path $split "triage_macro_context_$session.csv"
+    $mcJson = Join-Path $split "triage_macro_context_$session.json"
+    $mcBuilt = $null; $mcNote = $null
+    if ((Test-Path $mcCsv) -and (Test-Path $mcJson)) {
+        try {
+            $mj = Get-Content $mcJson -Raw | ConvertFrom-Json
+            $mcBuilt = Format-Utc $mj.board.built_at_utc
+            $mcNote = [string]$mj.board_session_note
+        } catch { $mcNote = 'UNREADABLE' }
+    }
     $prompts = Join-Path $split "deep_dive_prompts_$session.md"
+    $promptsB1 = Join-Path $split "deep_dive_prompts_${session}_b1.md"   # batch 1 may be saved with _b1 (19 Nov 2026); unsuffixed wins
+    if (-not (Test-Path $prompts) -and (Test-Path $promptsB1)) { $prompts = $promptsB1 }
     $strat = Join-Path $split "strategy_layer_$session.csv"
     $cards = Join-Path $split "cards_$session.csv"
     $tickets = Join-Path $split "order_tickets_$session.md"
@@ -163,6 +193,10 @@ function Get-Context {
         packs_missing       = @($packsMissing)                                    # batch 1 names without a pack
         triage_check        = $chkVerdict
         macro_board_built   = $boardBuilt
+        macro_context       = $(if (Test-Path $mcCsv) { $mcCsv } else { $null })      # board macro context per hand-off name (by ledger_id)
+        macro_context_built = $mcBuilt                                            # the board build it was joined from
+        macro_context_note  = $mcNote                                             # MATCH / OLDER_BUILD / NEWER_BUILD against the session
+        macro_context_current = $(if ($mcBuilt -and $boardBuilt) { $mcBuilt -eq $boardBuilt } else { $null })   # False = board rebuilt since: avs_day.ps1 board
         deep_dive_prompts   = $(if (Test-Path $prompts) { $prompts } else { $null })   # null = B3 has not saved it yet
         strategy_layer      = $(if (Test-Path $strat) { $strat } else { $null })       # null = avs_day.ps1 strategy has not run
         cards               = $(if (Test-Path $cards) { $cards } else { $null })
@@ -215,6 +249,8 @@ switch ($Step) {
         if ($c.split_triage_files.Count -and -not $c.triage_check) { 'Triage written but not checked: run avs_day.ps1 checktriage before the deep dives' }
         if ($c.split_triage_files.Count -and -not $c.deep_dive_prompts) { 'WARNING: triage exists but deep_dive_prompts_<session>.md is missing: B3 must save it' }
         if ($c.macro_board_built -like '*file time*') { 'Note: board build time read from the file time (BOARD.built_at_utc not found)' }
+        if ($UseLab -and $c.split_handoff_built -and -not $c.macro_context) { 'No board macro context for this hand-off: run avs_day.ps1 packs (or avs_day.ps1 board) to build it' }
+        elseif ($c.macro_context_current -eq $false) { "Board macro context is from the build of $($c.macro_context_built); the board was rebuilt at $($c.macro_board_built): run avs_day.ps1 board to refresh it" }
     }
 
     'evening' {
@@ -235,6 +271,8 @@ switch ($Step) {
             & $Py @labArgs
             if ($LASTEXITCODE -ne 0) { "Lab hand-off not built (exit $LASTEXITCODE): read the REFUSED line above. Fallback: avs_day.ps1 evening -LegacyHandoff"; $null = Write-Context; break }
             'Strategy layer and hand-off comparison read the old hand-off layout: not run on the Lab hand-off (see audit\laneb_fixB\99_report.md)'
+            "== Board macro context for the hand-off names"
+            Invoke-MacroContext (Get-Context)
             "== Trade guard: open forecasts on tonight's price store"
             Invoke-Guard
             $null = Write-Context
@@ -337,6 +375,9 @@ switch ($Step) {
         "Building packs for $($list.Count) names into data\scratch\ticker_packs\$($c.session): $($list -join ' ')"
         & $Py 'tools\ticker_pack.py' @list --run $c.run_id --session $c.session
         if ($LASTEXITCODE -ne 0) { "Packs not built (exit $LASTEXITCODE): read the REFUSED line above" }
+        # Board macro context (T3): built once per board build; later batches reuse it while it is current
+        if ($c.macro_context_current) { "Board macro context current (board build $($c.macro_context_built)): $($c.macro_context)" }
+        else { Invoke-MacroContext $c }
         $c = Write-Context
         "Packs ready for batches: $(if ($c.packs_ready_batches.Count) { $c.packs_ready_batches -join ', ' } else { 'none' })"
     }
@@ -349,8 +390,16 @@ switch ($Step) {
 
     'board' {
         & (Join-Path $Root 'Run-MacroBoard.ps1')
+        Invoke-MacroContext (Get-Context)
         $c = Write-Context
-        "Board rebuilt ($($c.macro_board_built)). Before more deep dives: re-tag money for every triaged name against this build (TEVA 14 Oct: AGAINST became WITH after CPI)."
+        $changed = $null
+        $mcJson = Join-Path $c.handoff "triage_macro_context_$($c.session).json"
+        if ($c.macro_context_current -and (Test-Path $mcJson)) { try { $changed = (Get-Content $mcJson -Raw | ConvertFrom-Json).changed_money_tag } catch { } }
+        if ($c.macro_context_current) {
+            "Board rebuilt ($($c.macro_board_built)). Macro context refreshed: $(if ($null -ne $changed) { $changed } else { 'first build,' }) names changed money_tag ($($c.macro_context)). Triage rows written before this build: take money_tag from the file (checktriage flags differences)."
+        } else {
+            "Board rebuilt ($($c.macro_board_built)), but the macro context was not refreshed (see above): re-tag money for every triaged name against this build by hand (TEVA 14 Oct: AGAINST became WITH after CPI)."
+        }
     }
 
     'checktriage' {

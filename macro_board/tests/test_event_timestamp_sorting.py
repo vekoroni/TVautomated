@@ -79,3 +79,25 @@ def test_legacy_release_fields_and_unlimited_zero_and_tied_order_are_preserved()
           event('tied','2026-11-10T21:00:00Z'), event('unknown')]
     assert ids(ordered(rows))==['original','tied','release','unknown']
     assert ordered(rows,0)['events']==[]
+
+
+def test_native_nvda_api_observation_end_survives_display_limit():
+    old = [event(f"old-{i}", "2026-11-17T20:00:00Z") for i in range(10)]
+    native = [event(name, market_perception={"observation_window": {
+        "start": "2026-11-17T21:20:00Z", "end": "2026-11-17T22:10:47Z"}},
+        release_time={"utc": release}) for name, release in [
+        ("NVDA", "2026-11-17T21:20:00Z"), ("API", "2026-11-17T21:30:00Z")]]
+    assert ids(ordered(old + native, 8))[:2] == ["NVDA", "API"]
+
+
+@pytest.mark.parametrize("release", [None, [], "unknown", {"utc": "bad"}])
+def test_malformed_native_release_is_not_a_crash_or_new_observation(release):
+    assert ids(ordered([event("unknown", release_time=release),
+                        event("dated", "2026-11-17T20:00:00Z")])) == ["dated", "unknown"]
+
+
+def test_native_release_fallback_and_cutoff_precedence():
+    native = event("native", release_time={"utc": "2026-11-17T21:30:00Z"})
+    explicit = event("explicit", "2026-11-17T20:00:00Z", market_perception={
+        "observation_window": {"end": "2026-11-17T23:00:00Z"}})
+    assert ids(ordered([explicit, native])) == ["native", "explicit"]

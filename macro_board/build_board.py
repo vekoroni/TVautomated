@@ -361,7 +361,8 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                             for etf, block in holdings_payload.items()},
         "refresh_report": refresh_report,
         "external": {name: read.public() for name, read in external.items()},
-        "intel": build_intel(external, packet, max_events=config.get("research_intelligence",{}).get("max_displayed_events")),
+        "intel": build_intel(external, packet, max_events=config.get("research_intelligence",{}).get("max_displayed_events"),
+                             t7=config.get("etf_intelligence")),
         "overnight": build_overnight(external),
         "latest": latest,
         "review": None,
@@ -410,6 +411,12 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                            lows=lows, sessions=sessions, metrics=metrics, proposals=proposals["rows"],
                                            external=external, latest=latest, kind=kind,
                                            record=kind in ("EVENING", "MORNING") and not as_of, as_of=as_of)
+    attach_triage_impact(payload, config, price_db=price_db, output_dir=output_dir, as_of=as_of)
+    from macro_board.fund_flows import load_reported_flows, activity_rows
+    flow_path = src.ROOT / "dropbox" / "market_data" / "etf_reported_net_flows.json"
+    flow_tickers = list(payload["etfs"])
+    reported = load_reported_flows(flow_path, flow_tickers, as_of=now.date().isoformat())
+    payload["fund_activity"] = activity_rows(payload, reported)
     payload["measured_sheet"] = write_measured_sheet(payload, config, output_dir, kind=kind, as_of=as_of)
     print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
           f"agreement {payload['session_plan']['jigsaw']['agreement']['all']}")
@@ -453,6 +460,7 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
         # Publish only after the matching board HTML has been saved successfully.
         from contracts.lab_macro_desk import publish as publish_lab_macro
         publish_lab_macro(payload, output_dir)
+    write_etf_intelligence(payload, config, output_dir, as_of=as_of)
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
 
@@ -570,6 +578,49 @@ def build_decision_points(payload: dict, config: dict, holdings_payload: dict, e
     print(f"[board] decision points: {len(block['calendar'])} scheduled, "
           f"{len(block['unscheduled']['items'])} unscheduled, earnings unknown {len(block['coverage']['earnings_unknown'])}")
     return block
+
+
+def attach_triage_impact(payload: dict, config: dict, *, price_db: Path, output_dir: Path, as_of: str | None,
+                         handoff_root: Path | None = None, link_reader=None) -> None:
+    """AVS-MACRO-TRIAGE-001 T6: the Day story's ticker impact reads the next session's Lane B triage (or its first
+    hand-off batches) through this build's per-ETF intelligence. As-of rebuilds have no hand-off: they keep the
+    pipeline candidates. Display only; a failure is reported in the block and the board still builds."""
+    story = payload.get("day_story")
+    if not isinstance(story, dict):
+        return
+    if as_of:
+        story["triage_impact"] = {"status": "AS_OF_BUILD", "rows": [], "counts": {},
+                                  "note": "historical rebuild: the pipeline candidates are shown"}
+        return
+    from macro_board import etf_intelligence as ei
+    from macro_board import triage_context as tc
+    tcfg = config["day_story"]["triage_impact"]
+    cfg = {"min_link_corr": float(config["session_plan"]["min_link_corr"]),
+           "corr_window_sessions": int(config["money_index"]["corr_window_sessions"]),
+           "max_batches": int(tcfg["max_batches"])}
+    try:
+        intel = ei.project(payload, config)
+    except Exception as exc:  # noqa: BLE001
+        story["triage_impact"] = {"status": "FAILED", "rows": [], "counts": {}, "note": f"{type(exc).__name__}: {exc}"}
+        return
+    story["triage_impact"] = tc.board_ticker_impact(
+        intel, handoff_root or src.resolve(tcfg["handoff_root"]), cfg,
+        link_reader=link_reader or tc.links_from_store(price_db, cfg["corr_window_sessions"]), board_dir=output_dir)
+    print(f"[board] day story ticker impact: {story['triage_impact']['status']} "
+          f"({len(story['triage_impact']['rows'])} names, session {story['triage_impact'].get('session')})")
+
+
+def write_etf_intelligence(payload: dict, config: dict, output_dir: Path, *, as_of: str | None) -> Path | None:
+    """AVS-MACRO-TRIAGE-001 T1: the per-ETF intelligence for the triage join. A failure is reported loudly and the
+    board is kept; the triage then sees the previous file's build time, never a silent neutral."""
+    from macro_board import etf_intelligence as ei
+    try:
+        path = ei.write(ei.project(payload, config), output_dir / "etf_intelligence", as_of=as_of)
+    except Exception as exc:  # noqa: BLE001 - the board HTML is already saved; say what failed
+        print(f"[board] ETF INTELLIGENCE NOT WRITTEN: {type(exc).__name__}: {exc}")
+        return None
+    print(f"[board] wrote {path}")
+    return path
 
 
 def write_measured_sheet(payload: dict, config: dict, output_dir: Path, *, kind: str, as_of: str | None) -> dict:
@@ -919,8 +970,19 @@ def _dated(usmi: dict) -> list[dict]:
     return [{"metric": m, "value": v, "observed": d or "not dated in packet"} for m, v, d in rows if v is not None]
 
 
-def build_intel(external: dict, packet: dict | None, *, max_events: int | None = None) -> dict:
-    """Pick the human-relevant fields from each advisory source (display only)."""
+def build_intel(external: dict, packet: dict | None, *, max_events: int | None = None,
+                t7: dict | None = None) -> dict:
+    """Pick the human-relevant fields from each advisory source (display only). With the etf_intelligence config
+    (AVS-MACRO-TRIAGE-001 T7) it also reads the event file and the US Money Index into the per-ETF projection's
+    blocks; a read that fails is UNREADABLE with its reason and the board still builds."""
+    from macro_board import etf_intelligence as ei
+
+    def t7_read(reader, *args):
+        try:
+            return reader(*args)
+        except Exception as exc:  # noqa: BLE001 - one malformed LLM file must not stop the board
+            return {"status": "UNREADABLE", "reason": f"{type(exc).__name__}: {exc}"}
+
     def data(name):
         read = external.get(name)
         return None if read is None or read.status in ("MISSING", "UNREADABLE") else read.data
@@ -930,6 +992,7 @@ def build_intel(external: dict, packet: dict | None, *, max_events: int | None =
         intel["macro_health"]=packet.get("macro_health") or {}
         metadata=packet.get("_builder_metadata") or {}
         intel["synthesis"]={key:metadata.get(key) for key in ("build_mode","analysis_built_at","data_refreshed_at_utc","synthesis_status","model_called")}
+        intel["synthesis"]["packet_built_at"] = metadata.get("built_at")
     if packet:
         keys = ("regime_label", "regime_state", "regime_probability", "macro_conviction", "risk_on_off_switch",
                 "dir_bias", "trend_energy", "vol_mode", "liquidity_pulse", "rates_impulse", "usd_state",
@@ -959,6 +1022,8 @@ def build_intel(external: dict, packet: dict | None, *, max_events: int | None =
             "dealer_gamma": (usmi.get("cross_asset") or {}).get("dealer_gamma_gex"),
             "dated": _dated(usmi),
         }
+        if t7 and t7.get("usmi_sector_map") is not None:
+            intel["usmi_intelligence"] = t7_read(ei.usmi_intelligence, usmi, t7)
     events = data("event_payload")
     if isinstance(events, dict):
         def event_clock(event):
@@ -970,8 +1035,11 @@ def build_intel(external: dict, packet: dict | None, *, max_events: int | None =
             window = window if isinstance(window, dict) else {}
             candidates = (event.get("information_cutoff_utc"),
                           window.get("information_cutoff_utc"),
+                          window.get("end"),
                           event.get("original_report_release_time_utc"),
-                          event.get("release_time_utc"))
+                          event.get("release_time_utc"),
+                          (event.get("release_time") or {}).get("utc")
+                          if isinstance(event.get("release_time"), dict) else None)
             for value in candidates:
                 try:
                     stamp=datetime.fromisoformat(str(value or '').replace('Z','+00:00'))
@@ -979,6 +1047,8 @@ def build_intel(external: dict, packet: dict | None, *, max_events: int | None =
                 except (ValueError,TypeError):pass
             return datetime.min.replace(tzinfo=timezone.utc)
         all_events=sorted(events.get("events") or [],key=event_clock,reverse=True)
+        if t7 and t7.get("event_fields") is not None:
+            intel["event_intelligence"] = t7_read(ei.event_intelligence, events, all_events, t7)
         displayed=all_events if max_events is None else all_events[:max(0,int(max_events))]
         intel["events"] = {
             "classification": (events.get("regime_summary") or {}).get("classification"),
