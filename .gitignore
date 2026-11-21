@@ -241,3 +241,16 @@ data/canonical/
 
 # Operator-local Claude permissions are not part of the production release.
 /pipeline_interpreter/.claude/settings.local.json
+
+# Isolated production packaging: generated runtime evidence is retained in
+# shared stores, not committed as application source. No source patterns here.
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+/data/daily_history_v7/refresh_20261001/*.json
+/data/daily_history_v7/refresh_20261001/parts/*.json
+/data/phantom/staging/*.json
+/data/phantom/staging/*.gz
+/data/governance/universe_security_master/universe_remediation_log_*.md
+/data/universe/universe_remediation_log_*.md
