@@ -584,6 +584,7 @@ FINAL_BOOK_FIELDS = [
     "hidden_state_label",
     "state_transition_label",
     "physics_verdict",
+    "physics_iv_input_state",
     "market_energy_score",
     "compression_energy",
     "directional_force",
@@ -770,6 +771,12 @@ FINAL_BOOK_FIELDS = [
     "garch_data_state",
     "garch_method",
     "garch_forecast_vol",
+    "l3_atm_iv_30d",
+    "l3_iv_basis",
+    "l3_iv_source",
+    "l3_iv_as_of",
+    "l3_iv_unit",
+    "l3_iv_input_state",
     "garch_iv_tailwind_score",
     "garch_jump_risk_flag",
     "garch_forecast_confidence",
@@ -3874,6 +3881,7 @@ def opportunity_book_row(
         "hidden_state_label": first(sig, "hidden_state_label", "vg__hidden_state_label"),
         "state_transition_label": first(sig, "state_transition_label", "vg__state_transition_label"),
         "physics_verdict": first(sig, "physics_verdict"),
+        "physics_iv_input_state": first(sig, "physics_iv_input_state", "vg__physics_iv_input_state"),
         "market_energy_score": first(sig, "market_energy_score", "vg__market_energy_score"),
         "compression_energy": first(sig, "compression_energy", "vg__compression_energy"),
         "directional_force": first(sig, "directional_force", "vg__directional_force"),
@@ -4071,7 +4079,16 @@ def opportunity_book_row(
         "garch_data_state": "AVAILABLE" if not _is_missing(garch_method) else "MISSING_DATA_DEFECT",
         "garch_method": garch_method,
         "garch_forecast_vol": first(sig, "garch_forecast_vol", "l3_vol_forecast", "garch__l3_vol_forecast"),
-        "garch_iv_tailwind_score": first(sig, "garch_iv_tailwind_score", "l3_iv_tailwind_score", "garch__l3_iv_tailwind_score"),
+        "l3_iv_input_state": first(sig, "l3_iv_input_state", "garch__l3_iv_input_state"),
+        "l3_atm_iv_30d": first(sig, "l3_atm_iv_30d", "garch__l3_atm_iv_30d"),
+        "l3_iv_basis": first(sig, "l3_iv_basis", "garch__l3_iv_basis"),
+        "l3_iv_source": first(sig, "l3_iv_source", "garch__l3_iv_source"),
+        "l3_iv_as_of": first(sig, "l3_iv_as_of", "garch__l3_iv_as_of"),
+        "l3_iv_unit": first(sig, "l3_iv_unit", "garch__l3_iv_unit"),
+        "garch_iv_tailwind_score": (
+            None if first(sig, "l3_iv_input_state", "garch__l3_iv_input_state") in {"IV_MISSING", "IV_DATA_DEFECT"}
+            else first(sig, "l3_iv_tailwind_score", "garch__l3_iv_tailwind_score", "garch_iv_tailwind_score")
+        ),
         "garch_jump_risk_flag": first(sig, "garch_jump_risk_flag", "l3_jump_risk_flag", "garch__l3_jump_risk_flag"),
         "garch_forecast_confidence": first(sig, "garch_forecast_confidence", "l3_forecast_confidence", "garch__l3_forecast_confidence"),
         "expected_move_5d_fraction": first(sig, "expected_move_5d_fraction"),
@@ -4415,7 +4432,14 @@ def _lab_extract_field_aliases() -> Dict[str, List[str]]:
         "catalyst_event_status": ["catalyst_event_status"],
         "garch_method": ["garch_method", "l3_method"],
         "garch_forecast_vol": ["garch_forecast_vol", "l3_forward_realised_vol"],
-        "garch_iv_tailwind_score": ["garch_iv_tailwind_score", "l3_iv_tailwind_score"],
+        "physics_iv_input_state": ["physics_iv_input_state", "vg__physics_iv_input_state"],
+        "l3_iv_input_state": ["l3_iv_input_state", "garch__l3_iv_input_state"],
+        "l3_atm_iv_30d": ["l3_atm_iv_30d", "garch__l3_atm_iv_30d"],
+        "l3_iv_basis": ["l3_iv_basis", "garch__l3_iv_basis"],
+        "l3_iv_source": ["l3_iv_source", "garch__l3_iv_source"],
+        "l3_iv_as_of": ["l3_iv_as_of", "garch__l3_iv_as_of"],
+        "l3_iv_unit": ["l3_iv_unit", "garch__l3_iv_unit"],
+        "garch_iv_tailwind_score": ["l3_iv_tailwind_score", "garch_iv_tailwind_score"],
         "garch_jump_risk_flag": ["garch_jump_risk_flag", "l3_jump_risk_flag"],
         "garch_forecast_confidence": ["garch_forecast_confidence", "l3_vol_forecast_conf"],
         "garch_expected_move_1_5d": ["garch_expected_move_1_5d", "l3_expected_move_1_5d"],
@@ -4533,7 +4557,7 @@ def _lab_field_source_priority(field: str) -> List[str]:
         return ["morning_validated_trades", "morning_candidates"]
     if field.startswith("pretrade_") or field in {"monetisability_quote_snapshot_id", "evidence_session_date", "liquidity_thesis_state"}:
         return ["morning_candidates"]
-    if field.startswith("garch_"):
+    if field.startswith(("garch_", "l3_iv_")) or field == "l3_atm_iv_30d":
         return ["garch_forecasts"]
     if field.startswith("wbs"):
         return ["wall_break_scores", "eil_enriched", "execution_v3_5"]
@@ -4846,6 +4870,9 @@ def _enrich_lab_extract_rows_from_run_sources(rows: List[Dict[str, Any]], runs_d
                         row["rr_contract_symbol"] = source_contract
                         provenance["rr_contract_symbol"] = source_name
                     break
+        if _u(row.get("l3_iv_input_state")) in {"IV_MISSING", "IV_DATA_DEFECT"}:
+            row["garch_iv_tailwind_score"] = None
+            provenance.pop("garch_iv_tailwind_score", None)
         # AVS-FIX-001 W1.1: a zero target_price must not be copied across as a
         # structural target; and once the target is known absent, say so.
         if _is_missing_price(row.get("structural_target")) and not _is_missing_price(

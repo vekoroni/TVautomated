@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from math import isclose
 from pathlib import Path
 
 import pandas as pd
@@ -38,6 +39,22 @@ def _base(**overrides):
     }
     row.update(overrides)
     return row
+
+
+def test_missing_iv_omits_its_terms_and_preserves_measured_rank():
+    missing = calculate_market_physics(_base(iv_rank=None))
+    measured = calculate_market_physics(_base(iv_rank=50))
+    zero = calculate_market_physics(_base(iv_rank=0))
+
+    assert missing["physics_iv_input_state"] == "IV_COMPONENT_OMITTED"
+    assert measured["physics_iv_input_state"] == zero["physics_iv_input_state"] == "IV_RANK_PRESENT"
+    assert measured["compression_energy"] - missing["compression_energy"] == 5.0
+    assert isclose(measured["volatility_pressure"] - missing["volatility_pressure"], 18.5)
+    assert isclose(measured["shock_sensitivity"] - missing["shock_sensitivity"], 15.0)
+    assert missing["directional_force"] == measured["directional_force"]
+
+    for invalid in (float("nan"), float("inf"), -1, 101, "unknown"):
+        assert calculate_market_physics(_base(iv_rank=invalid)) == missing
 
 
 def test_physics_engine_returns_all_required_fields_for_normal_row() -> None:

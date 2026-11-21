@@ -8443,6 +8443,50 @@ def _thesis_alternatives_priceable(signal_row: Any) -> bool:
     return False
 
 
+def _layer3_atm_iv_fields(chain: pd.DataFrame, spot: float, session: Optional[date]) -> dict:
+    """Estimate constant 30-calendar-day ATM IV from governed chain observations."""
+    dataset = chain.attrs.get("canonical_dataset_id")
+    provider = chain.attrs.get("canonical_provider")
+    expiry_column = "expiration_date" if "expiration_date" in chain else "expiry"
+    columns = [expiry_column, "strike", "implied_vol"]
+    if not dataset or not provider or not session or not spot or not set(columns).issubset(chain):
+        return {}
+
+    quotes = chain[columns].copy()
+    quotes["days"] = (
+        pd.to_datetime(quotes[expiry_column], errors="coerce", utc=True).dt.normalize()
+        - pd.Timestamp(session, tz="UTC").normalize()
+    ).dt.days
+    quotes["strike"] = pd.to_numeric(quotes["strike"], errors="coerce")
+    quotes["implied_vol"] = pd.to_numeric(quotes["implied_vol"], errors="coerce")
+    atm = quotes[
+        quotes["days"].between(3, 90)
+        & quotes["strike"].between(spot * 0.95, spot * 1.05)
+        & quotes["implied_vol"].between(0.03, 3.0)
+    ].copy()
+    if atm.empty:
+        return {}
+    atm["distance"] = (atm["strike"] - spot).abs()
+    atm = atm[atm["distance"].eq(atm.groupby("days")["distance"].transform("min"))]
+    expiries = atm.groupby("days")["implied_vol"].median()
+    lower, upper = expiries.loc[:30], expiries.loc[30:]
+    if lower.empty or upper.empty:
+        return {}
+    lo, hi = int(lower.index[-1]), int(upper.index[0])
+    if lo == hi:
+        iv = float(expiries.loc[lo])
+    else:
+        variance_lo = float(expiries.loc[lo]) ** 2 * lo
+        variance_hi = float(expiries.loc[hi]) ** 2 * hi
+        iv = sqrt((variance_lo + (variance_hi - variance_lo) * (30 - lo) / (hi - lo)) / 30)
+    return {
+        "atm_iv_30d": iv,
+        "atm_iv_30d_unit": "ANNUALISED_FRACTION",
+        "atm_iv_30d_as_of": str(session),
+        "atm_iv_30d_source": f"{provider}:{dataset}",
+    }
+
+
 def _chain_lineage_fields(chain: pd.DataFrame) -> Dict[str, Any]:
     finality = chain.attrs.get('provider_finality')
     return {
@@ -9176,6 +9220,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         **nbbo_fields,
 
         # IV environment — core
+        **_layer3_atm_iv_fields(chain, spot, _CDS_V2_SESSION),
         'atm_iv'                  : iv_ctx.get('atm_iv'),
         'iv_rank'                 : iv_ctx.get('iv_rank'),
         'iv_percentile'           : iv_ctx.get('iv_percentile'),
@@ -10962,6 +11007,7 @@ def run_options_layer(
         'contract_gamma','contract_oi','contract_spread_pct',
         # iv_engine fields
         'hv_30d','atm_iv','iv_vs_hv','iv_direction','iv_regime',
+        'atm_iv_30d','atm_iv_30d_unit','atm_iv_30d_as_of','atm_iv_30d_source',
         'iv_percentile_source','iv_history_samples','iv_vs_rv_range_252d','iv_vs_rv_range_30d',
         'ivp_source','iv_rank_definition','iv_rank_window_sessions','ivp_suppressed_sources',
         'iv_history_state','iv_history_first_date',

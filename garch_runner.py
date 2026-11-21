@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import date
 import logging
 import os
 import sys
@@ -94,7 +95,7 @@ def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS) -> Optional[pd.DataFrame]:
         log.warning(f'[{ticker}] POLYGON_API_KEY not set — cannot fetch price history')
         return None
 
-    from datetime import date, timedelta
+    from datetime import timedelta
     end_date   = date.today().strftime('%Y-%m-%d')
     start_date = (date.today() - timedelta(days=int(bars * 1.5))).strftime('%Y-%m-%d')
 
@@ -180,35 +181,50 @@ def _load_regime(base_dir: Path) -> str:
 
 # ── IV lookup ──────────────────────────────────────────────────────────────────
 
-def _build_iv_map(run_id: str, runs_dir: Path) -> Dict[str, float]:
-    """
-    Build ticker → ATM IV map from options_intelligence CSV.
-    IV is read from the 'implied_vol' or 'iv_rank' field.
-    Returns decimal annualised vol (e.g. 0.28 for 28%).
-    """
-    oi_path = runs_dir / run_id / 'options' / f'options_intelligence_{run_id}.csv'
+def _layer3_iv_observation(row: dict) -> dict:
+    """Accept only a labelled 30-calendar-day ATM benchmark for comparison."""
+    source = row.get("atm_iv_30d_source")
+    as_of = row.get("atm_iv_30d_as_of")
+    units = {"ANNUALISED_FRACTION": 1.0, "ANNUALISED_PERCENT": 100.0}
+    divisor = units.get(row.get("atm_iv_30d_unit"))
+    state = "IV_MISSING"
+    iv = None
+    if pd.notna(row.get("atm_iv_30d")):
+        state = "IV_DATA_DEFECT"
+        if divisor and isinstance(source, str) and source.strip() and isinstance(as_of, str):
+            try:
+                date.fromisoformat(as_of)
+                candidate = float(row["atm_iv_30d"]) / divisor
+                if 0.03 <= candidate <= 3.0:
+                    iv = candidate
+                    state = "IV_MEASURED"
+            except (ValueError, TypeError):
+                pass
+    return {
+        "l3_atm_iv_30d": iv,
+        "l3_contract_iv_reported": row.get("contract_iv"),
+        "l3_iv_basis": "ATM_30_CALENDAR_DAYS" if iv is not None else None,
+        "l3_iv_source": source if iv is not None else None,
+        "l3_iv_as_of": as_of if iv is not None else None,
+        "l3_iv_unit": "ANNUALISED_FRACTION" if iv is not None else None,
+        "l3_iv_input_state": state,
+    }
+
+
+def _build_iv_map(run_id: str, runs_dir: Path) -> Dict[str, dict]:
+    oi_path = runs_dir / run_id / "options" / f"options_intelligence_{run_id}.csv"
     if not oi_path.exists():
-        log.warning(f'options_intelligence CSV not found: {oi_path}')
+        log.warning(f"options_intelligence CSV not found: {oi_path}")
         return {}
     try:
-        df = pd.read_csv(oi_path)
-        iv_map = {}
-        for _, row in df.iterrows():
-            ticker = str(row.get('ticker', '')).strip().upper()
-            if not ticker:
-                continue
-            # Prefer actual IV over IV rank
-            iv = row.get('implied_vol') or row.get('contract_iv')
-            if iv and float(iv) > 0:
-                iv_val = float(iv)
-                # Normalise: if > 5 assume it's in percent not decimal
-                if iv_val > 5:
-                    iv_val /= 100.0
-                iv_map[ticker] = iv_val
-        return iv_map
-    except Exception as e:
-        log.warning(f'IV map build failed: {e}')
+        rows = pd.read_csv(oi_path).to_dict("records")
+    except (OSError, ValueError) as error:
+        log.warning(f"IV map build failed: {error}")
         return {}
+    return {
+        row["ticker"].strip().upper(): _layer3_iv_observation(row)
+        for row in rows if isinstance(row.get("ticker"), str) and row["ticker"].strip()
+    }
 
 
 # ── GARCH result audit ────────────────────────────────────────────────────────
@@ -312,6 +328,9 @@ def _process_one_ticker(args: tuple) -> tuple:
     an absent row that merges as an unexplained NaN (R1; tests/test_layer3_volatility_leftovers.py V6).
     """
     ticker, iv, regime = args
+    iv_observation = iv if isinstance(iv, dict) else None
+    if iv_observation is not None:
+        iv = iv_observation["l3_atm_iv_30d"]
     try:
         ohlcv = _fetch_ohlcv(ticker, PRICE_BARS)
         time.sleep(RATE_SLEEP)
@@ -320,6 +339,8 @@ def _process_one_ticker(args: tuple) -> tuple:
             ohlcv = pd.DataFrame()
         result   = compute_forward_variance(ticker, ohlcv, implied_vol=iv, regime=regime)
         row_dict = _audit_garch_result(result.to_dict())
+        if iv_observation is not None:
+            row_dict.update(iv_observation)
         method   = row_dict.get('l3_method', '')
         status   = method if method in FORECAST_METHOD_LABELS else STATUS_FAIL
         return row_dict, status

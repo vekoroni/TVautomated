@@ -5,7 +5,7 @@ neutral defaults (avg_volume, beta, gap_pct, iv_rank, return_5d, return_10d, spr
 - gap_pct: Discovery has it on every row; the physics copy list omitted it.
 - return_5d / return_10d / avg_volume / beta: computed nowhere. Now from the canonical price store at the row's
   evidence session (bar_data_asof), point-in-time. Returns are fractions (physics reads |x| <= 1 as a fraction).
-- iv_rank and the option spread do not exist before the options stage: they stay flagged defaults, never invented.
+- IV rank is omitted when missing. Option spread remains an explicit default.
 """
 
 from __future__ import annotations
@@ -66,9 +66,12 @@ def test_physics_counts_only_the_inputs_that_are_really_missing(store):
     last, _ = store
     row = {"ticker": "ABC", "gap_pct": 1.2, "atr_percentile_rank": 40, "adx_14": 22, "volume_ratio": 1.1,
            **phys.physics_price_inputs("ABC", last.isoformat())}
-    defaulted = set(json.loads(phys.calculate_market_physics(row)["physics_defaulted_fields"]))
+    physics = phys.calculate_market_physics(row)
+    defaulted = set(json.loads(physics["physics_defaulted_fields"]))
     assert not defaulted & {"avg_volume", "beta", "gap_pct", "return_5d", "return_10d"}
-    assert {"iv_rank", "spread_pct_mid"} <= defaulted          # the two that cannot exist before options
+    assert "spread_pct_mid" in defaulted
+    assert "iv_rank" not in defaulted
+    assert physics["physics_iv_input_state"] == "IV_COMPONENT_OMITTED"
 
 
 def test_the_vanguard_runner_supplies_the_inputs_before_physics():

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+from math import isfinite
 from typing import Any, Dict, Iterable, Mapping, Optional
 
 import pandas as pd
@@ -59,6 +60,7 @@ PHYSICS_NUMERIC_FIELDS = [
 
 PHYSICS_AUDIT_FIELDS = [
     "physics_data_quality",
+    "physics_iv_input_state",
     "physics_defaulted_fields",
     "physics_degraded_reason",
 ]
@@ -177,7 +179,11 @@ def calculate_market_physics(
     volume_ratio = _as_0_100(n(["volume_ratio", "rvol", "scanner_rvol", "relative_volume"], 1.0))
     if volume_ratio <= 5.0:
         volume_ratio = _clamp(volume_ratio * 50.0)
-    iv_rank = _as_0_100(n(["iv_rank", "iv_percentile", "ivp", "ivp_252d", "contract_iv_percentile"], 50.0))
+    iv_rank_raw, iv_unavailable = _num(
+        row, ["iv_rank", "iv_percentile", "ivp", "ivp_252d", "contract_iv_percentile"], float("nan")
+    )
+    iv_measured = not iv_unavailable and isfinite(iv_rank_raw) and 0 <= iv_rank_raw <= 100
+    iv_rank = _as_0_100(iv_rank_raw) if iv_measured else None
     spread_pct = n(["spread_pct_mid", "contract_spread_pct", "spread_pct", "eil_spread_pct_live"], 0.08)
     if spread_pct <= 1.0:
         spread_pct *= 100.0
@@ -203,7 +209,7 @@ def calculate_market_physics(
     crabel_text = _word(row, ["crabel_pattern", "crabel_state"])
     if _contains(crabel_text, ["SQUEEZE", "COMPRESSION", "INSIDE", "NR7"]):
         squeeze_flag = 25.0
-    compression_energy = _clamp((100.0 - atr_pct) * 0.70 + squeeze_flag + (100.0 - min(iv_rank, 100.0)) * 0.10)
+    compression_energy = _clamp((100.0 - atr_pct) * 0.70 + squeeze_flag + ((100.0 - iv_rank) * 0.10 if iv_rank is not None else 0.0))
 
     force = (return_5d * 0.35) + (return_10d * 0.20)
     if _contains(trend_text, ["UP", "BULL", "RISING", "MARKUP"]):
@@ -251,7 +257,7 @@ def calculate_market_physics(
         inertia_bonus += 18.0
     trend_inertia = _clamp(adx * 0.55 + min(abs(directional_force), 100.0) * 0.25 + inertia_bonus)
 
-    volatility_pressure = _clamp(atr_pct * 0.45 + iv_rank * 0.35 + compression_energy * 0.20)
+    volatility_pressure = _clamp(atr_pct * 0.45 + (iv_rank * 0.35 if iv_rank is not None else 0.0) + compression_energy * 0.20)
     entropy_score = _clamp((100.0 - force_alignment_score) * 0.45 + (100.0 - min(abs(directional_force), 100.0)) * 0.25 + (100.0 - trend_inertia) * 0.20 + max(0.0, volatility_pressure - 70.0) * 0.10)
 
     drift_status = str(macro_context.get("regime_drift_status") or row.get("regime_drift_status") or "").upper()
@@ -263,7 +269,7 @@ def calculate_market_physics(
     regime_instability_score = _clamp(instability)
 
     gap_score = _as_0_100(abs(n(["gap_pct", "gap_percent", "overnight_gap_pct"], 0.0)) * 5.0)
-    shock_sensitivity = _clamp(atr_pct * 0.35 + iv_rank * 0.30 + min(abs(beta), 3.0) / 3.0 * 20.0 + gap_score * 0.15)
+    shock_sensitivity = _clamp(atr_pct * 0.35 + (iv_rank * 0.30 if iv_rank is not None else 0.0) + min(abs(beta), 3.0) / 3.0 * 20.0 + gap_score * 0.15)
 
     liquidity_friction_score = _clamp(
         min(spread_pct * 4.0, 70.0)
@@ -363,9 +369,17 @@ def calculate_market_physics(
         "transition_success_5d": _success_probability(phase_transition_probability, "5d"),
         "transition_success_10d": _success_probability(phase_transition_probability, "10d"),
         "transition_success_20d": _success_probability(phase_transition_probability, "20d"),
-        "physics_data_quality": "DEGRADED_DEFAULTS" if defaulted else "CONFIRMED",
+        "physics_data_quality": (
+            "DEGRADED_DEFAULTS" if defaulted else "CONFIRMED" if iv_measured else "DEGRADED_MISSING_IV"
+        ),
+        "physics_iv_input_state": "IV_RANK_PRESENT" if iv_measured else "IV_COMPONENT_OMITTED",
         "physics_defaulted_fields": json.dumps(sorted(set(defaulted))),
-        "physics_degraded_reason": "NEUTRAL_DEFAULTS_USED" if defaulted else "",
+        "physics_degraded_reason": ";".join(
+            reason for reason, active in (
+                ("NEUTRAL_DEFAULTS_USED", bool(defaulted)),
+                ("IV_COMPONENT_OMITTED", not iv_measured),
+            ) if active
+        ),
     }
     return out
 

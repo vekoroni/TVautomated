@@ -105,6 +105,7 @@ PHYSICS_FIELD_NAMES = [
     "transition_success_10d",
     "transition_success_20d",
     "physics_data_quality",
+    "physics_iv_input_state",
     "physics_defaulted_fields",
     "physics_degraded_reason",
 ]

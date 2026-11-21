@@ -2456,6 +2456,7 @@ _LAB_COMPACT_BASE_FIELDS = {
     "qomega_gate", "qomega_gate_reason",
     "tce_entry_type", "tce_trigger_reason", "tce_trigger_score", "tce_trigger_state",
     "physics_state_id", "hidden_state_label", "state_transition_label", "phase_transition_probability",
+    "physics_iv_input_state",
     "precor_intent", "sector", "sector_short", "gics_sector", "sector_name", "sector_etf", "sector_proxy", "industry", "macro_regime", "macro_regime_label",
     "regime_drift_status", "time_horizon", "horizon_bucket", "hold_label", "hold_urgency",
 }
@@ -2596,6 +2597,12 @@ def _governed_ui_projection(sig):
     }
     for target, sources in aliases.items():
         project(target, *sources)
+
+    iv_state = out.get("l3_iv_input_state") or out.get("garch__l3_iv_input_state")
+    if iv_state in {"IV_MISSING", "IV_DATA_DEFECT"}:
+        out["garch__l3_iv_tailwind_score"] = None
+        out["garch_iv_tailwind_score"] = None
+        out["l3_iv_tailwind_score"] = None
 
     enter_now = out.get("readiness_enter_now") is True or str(out.get("readiness_enter_now", "")).lower() == "true"
     out["sb_enter_now_stages"] = "4" if enter_now else ""
