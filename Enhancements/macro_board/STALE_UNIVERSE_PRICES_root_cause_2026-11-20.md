@@ -137,3 +137,32 @@ The store was read only, 20 Nov 2026:
 - The BITO split has not been checked against a splits feed. No provider calls were made.
 - Who replaced the universe on 16 May, and why, is not in git. Only file timestamps show it.
 - The next live build after T7 has not been inspected, because no build was run. The live T7 projection file (`etf_intelligence_latest.json`) does not exist yet.
+
+## 10. ACK decision and build (20 Nov 2026)
+
+**ACK chose option B** ("option B", 20 Nov 2026). Built in worktree branch `claude/vibrant-blackburn-eede6a` (based on `ff24d41`); not committed, not merged into the main checkout.
+
+**What was built**
+- `macro_board/store_writer.py` (new). A separate step; the board build stays read-only on the store.
+  - **Daily** (default): inserts the completed sessions the store lacks for the board universe (115 ETFs) from the board's grouped bars (cached sessions cost no call). It never revises a stored value. A gap above `max_daily_gap_sessions` (10) is left whole and reported for the backfill.
+  - **Splits:** one Polygon splits call covers the window. A listed split re-fetches that ticker's full adjusted history; the old rows become recorded revisions. Without the split check, nothing is written.
+  - **Unexplained jump:** a close ratio beyond `jump_hold_ratio` (1.45 either way) with no listed split is held, not written. ACK checks it, then `--refetch TICKER`.
+  - **Backfill** (one time): `--backfill` fetches each long-gap or never-stored ticker's adjusted history once and saves it with `review.json` (no store write). `--execute DIR` takes a SQLite backup and writes exactly the saved bars through `HistoricalPriceDatabase.ingest`, `source_kind = BOARD_UNIVERSE_BACKFILL`. `--accept` releases tickers held only for `INTERNAL_JUMP`, after ACK checks them. Execute refuses a store other than the one reviewed.
+  - Exit codes: 0 all written or up to date; 2 something held or left for the backfill (named in the receipt; the board is unaffected); 1 error.
+- `macro_board/config/board_store_writer_v1.json` (new): limits with rationale. Settle margin, history start and price store come from the board config (one owner).
+- `Run-MacroInputs.ps1`: one step, `store_writer`, just before `board` (skipped with `-SkipBoard`; exit 0 or 2 accepted).
+- `macro_board/tests/test_store_writer.py`: 14 business-rule tests, all pass. `test_market_prices.py` still passes (12).
+
+**Backfill dry run, 20 Nov 18:08 UTC** (`Enhancements/macro_board/store_backfill/20261120T180808Z/`): read-only on the store, 39 Polygon calls, 0 MarketData credits.
+- Scope is exactly the 39. History from 2021-11-22 (Polygon's 5-year limit), through 19 Nov. 48,876 rows.
+- 35 READY. 306 stored rows will become recorded revisions.
+- **Splits since the stored rows, now corrected:** BITO and BOIL (all 63 stored rows differ, ratio 2: 1-for-2 reverse splits), SOXS and TZA (ratio 10: 1-for-10). BITO's false +98% on the board goes once these are in the store.
+- **4 held for INTERNAL_JUMP, all checked as real moves:** SOXL +55% / SOXS −56% on 9 Apr 2025 (the tariff-pause day); SOXL −39% / SOXS +39% on 5 Nov 2026 (SMH −11%, SOXX −12% in the board's cache); BOIL/KOLD on 14 Jun 2022, 20 Jan 2026 and 2 Feb 2026, each mirrored by the other. Recommended: `--accept BOIL KOLD SOXL SOXS`.
+- Every ticker shows 2025-01-09 as a missing session: that day markets closed (national day of mourning), so this is the calendar counting it, not a data hole. GBTC also lacks 4 sessions in Dec 2022 (OTC era).
+
+**Still open**
+- The execute has not been run. It is ACK's to run, when no pipeline is writing the store.
+- The daily step's 1.45 hold will also hold real leveraged-ETF moves of that size (held and reported, never written wrong). Review on the receipts.
+- `macro_board/market_prices.py` docstring and the board config `prices.rationale` still say the store is never written; reword once this is merged.
+- `avshunter.shared.xnys_calendar` treats 2025-01-09 as a session (follow-up, not part of this fix).
+- `opportunity.py:40` (RSP vs SPY on as-of builds) is covered once RSP is in the store; check on the first as-of rebuild after the execute.

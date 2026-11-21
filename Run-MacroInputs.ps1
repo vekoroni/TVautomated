@@ -270,6 +270,10 @@ if (-not $SkipMacroJson -and -not $dataOnlyPublication) { $publish += New-Step "
 if (-not $SkipRotationFlag) {
     $publish += New-Step "rrf" "Rapid rotation flag" (Join-Path $repoRoot "rapid_rotation_flag.py") @() @(0, 1, 2) "exit 1/2 = flag level, not a failure"
 }
+# 20 Nov 2026 (ACK: option B, Enhancements/macro_board/STALE_UNIVERSE_PRICES_root_cause_2026-11-20.md): before the board
+# reads the price store, the board universe's completed sessions the store lacks are inserted (macro_board/store_writer.py;
+# a listed split re-fetches that ticker; an unexplained jump is held; long gaps wait for the one-time backfill).
+if (-not $SkipBoard)     { $publish += New-Step "store_writer" "Board universe -> price store" (Join-Path $repoRoot "macro_board\store_writer.py") @() @(0, 2) "exit 2 = tickers held or left for the backfill (named in the receipt); the board is unaffected" }
 if (-not $SkipBoard)     { $publish += New-Step "board"  "ETF macro board"                  (Join-Path $repoRoot "Run-MacroBoard.ps1")  @("-NoOpen") }
 # 20 Nov 2026 (AVS-MACRO-TRIAGE-001 T3, ACK): the new build's per-ETF intelligence is joined to the next session's
 # Lane B hand-off when it exists (skipped with a note otherwise); intelligence for the human triage, never a rank.
