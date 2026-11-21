@@ -8443,14 +8443,34 @@ def _thesis_alternatives_priceable(signal_row: Any) -> bool:
     return False
 
 
-def _layer3_atm_iv_fields(chain: pd.DataFrame, spot: float, session: Optional[date]) -> dict:
-    """Estimate constant 30-calendar-day ATM IV from governed chain observations."""
+def _layer3_iv_unavailable(state: str, reason: str) -> Dict[str, Any]:
+    """A 30-day IV benchmark that could not be estimated: the state and the reason, never a value."""
+    return {"atm_iv_30d_state": state, "atm_iv_30d_reason": str(reason)[:240]}
+
+
+def _layer3_atm_iv_fields(chain: Optional[pd.DataFrame], spot: float, session: Optional[date]) -> dict:
+    """Estimate constant 30-calendar-day ATM IV from governed chain observations.
+
+    VOL-03 (ACK 21 Nov 2026): the benchmark belongs to the ticker's chain, so it is assessed on
+    every path that read a chain, and every outcome carries atm_iv_30d_state / atm_iv_30d_reason.
+    The estimate is unchanged: spot +/-5% strikes, 3 to 90 days, IV 0.03 to 3.0, total-variance
+    interpolation to 30 days. Value fields are present only when the state is OK.
+    """
+    if chain is None or chain.empty:
+        return _layer3_iv_unavailable("NO_CHAIN", "no option chain rows for this ticker")
     dataset = chain.attrs.get("canonical_dataset_id")
     provider = chain.attrs.get("canonical_provider")
+    if not dataset or not provider:
+        return _layer3_iv_unavailable("MISSING_LINEAGE", "chain has no governed dataset or provider identity")
+    if not session:
+        return _layer3_iv_unavailable("SESSION_UNAVAILABLE", "no governed evidence session for the chain")
+    if not spot or spot != spot or spot <= 0:
+        return _layer3_iv_unavailable("SPOT_UNAVAILABLE", "no positive spot price to locate the at-the-money strike")
     expiry_column = "expiration_date" if "expiration_date" in chain else "expiry"
     columns = [expiry_column, "strike", "implied_vol"]
-    if not dataset or not provider or not session or not spot or not set(columns).issubset(chain):
-        return {}
+    missing = [column for column in columns if column not in chain]
+    if missing:
+        return _layer3_iv_unavailable("MISSING_COLUMNS", "chain lacks " + ", ".join(missing))
 
     quotes = chain[columns].copy()
     quotes["days"] = (
@@ -8459,19 +8479,22 @@ def _layer3_atm_iv_fields(chain: pd.DataFrame, spot: float, session: Optional[da
     ).dt.days
     quotes["strike"] = pd.to_numeric(quotes["strike"], errors="coerce")
     quotes["implied_vol"] = pd.to_numeric(quotes["implied_vol"], errors="coerce")
-    atm = quotes[
-        quotes["days"].between(3, 90)
-        & quotes["strike"].between(spot * 0.95, spot * 1.05)
-        & quotes["implied_vol"].between(0.03, 3.0)
-    ].copy()
+    in_band = quotes["days"].between(3, 90) & quotes["strike"].between(spot * 0.95, spot * 1.05)
+    if not in_band.any():
+        return _layer3_iv_unavailable(
+            "NO_ATM_QUOTES", "no strike within 5% of spot with 3 to 90 days to expiry")
+    atm = quotes[in_band & quotes["implied_vol"].between(0.03, 3.0)].copy()
     if atm.empty:
-        return {}
+        return _layer3_iv_unavailable(
+            "IV_OUT_OF_RANGE", "at-the-money quotes exist but none has implied volatility between 0.03 and 3.0")
     atm["distance"] = (atm["strike"] - spot).abs()
     atm = atm[atm["distance"].eq(atm.groupby("days")["distance"].transform("min"))]
     expiries = atm.groupby("days")["implied_vol"].median()
     lower, upper = expiries.loc[:30], expiries.loc[30:]
     if lower.empty or upper.empty:
-        return {}
+        side = "at or below" if lower.empty else "at or above"
+        return _layer3_iv_unavailable(
+            "NO_TENOR_BRACKET", f"no usable expiry {side} 30 days (have {sorted(int(d) for d in expiries.index)} days)")
     lo, hi = int(lower.index[-1]), int(upper.index[0])
     if lo == hi:
         iv = float(expiries.loc[lo])
@@ -8484,6 +8507,8 @@ def _layer3_atm_iv_fields(chain: pd.DataFrame, spot: float, session: Optional[da
         "atm_iv_30d_unit": "ANNUALISED_FRACTION",
         "atm_iv_30d_as_of": str(session),
         "atm_iv_30d_source": f"{provider}:{dataset}",
+        "atm_iv_30d_state": "OK",
+        "atm_iv_30d_reason": "",
     }
 
 
@@ -8515,7 +8540,10 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
 
     # Pipeline failure guard
     if not ticker or spot <= 0:
-        return _stand_down(ctx, 'Invalid ticker or spot price from pipeline')
+        return {
+            **_stand_down(ctx, 'Invalid ticker or spot price from pipeline'),
+            **_layer3_iv_unavailable('SPOT_UNAVAILABLE', 'invalid ticker or spot price from pipeline'),
+        }
 
     # Direction guard — no option-chain request is permitted until the GDR has
     # a validated long CALL/PUT side. STRANGLE and UNRESOLVED are retained for
@@ -8523,19 +8551,28 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
     # exotic structures.
     if ctx['direction'] not in GOVERNED_DIRECTED_SIDES:
         if not _thesis_alternatives_priceable(signal_row):
-            return _stand_down(
-                ctx,
-                'No governed long CALL/PUT direction; chain request suppressed',
-            )
+            return {
+                **_stand_down(
+                    ctx,
+                    'No governed long CALL/PUT direction; chain request suppressed',
+                ),
+                **_layer3_iv_unavailable(
+                    'CHAIN_REQUEST_SUPPRESSED', 'no governed side and no priceable thesis alternatives; no chain was requested'),
+            }
         # Phase 5.4 (ACK 8 Oct 2026): no ticker contract without a governed side, but the ticker's one chain is
         # acquired and recorded here so the candidate lane prices its adopted and conditional theses.
         try:
             _thesis_chain = fetch_chain(ticker)
         except Exception as e:
-            return _stand_down(ctx, f'No governed long CALL/PUT direction; thesis chain fetch failed: {e}')
+            return {
+                **_stand_down(ctx, f'No governed long CALL/PUT direction; thesis chain fetch failed: {e}'),
+                **_layer3_iv_unavailable('NO_CHAIN', f'thesis chain fetch failed: {e}'),
+            }
         return {
             **_stand_down(ctx, 'No governed long CALL/PUT direction; thesis alternatives priced in the candidate lane'),
             **_chain_lineage_fields(_thesis_chain),
+            # VOL-03: the chain was read, so its 30-day IV benchmark is assessed here too.
+            **_layer3_atm_iv_fields(_thesis_chain, spot, _CDS_V2_SESSION),
         }
 
     print(f"  [{ticker}] T{ctx['tier']} Ph{ctx['phase']} "
@@ -8593,6 +8630,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         return {
             **_stand_down(ctx, f'Chain fetch failed: {e}'),
             **_contract_rejection_fields('CHAIN_FETCH_FAILED', 'CHAIN_FETCH'),
+            **_layer3_iv_unavailable('NO_CHAIN', f'chain fetch failed: {e}'),
         }
 
     _chain_lineage = _chain_lineage_fields(chain)
@@ -8602,6 +8640,7 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
             **_stand_down(ctx, 'No options chain data available'),
             **_contract_rejection_fields('NO_OPTIONS_CHAIN_DATA', 'CHAIN_FETCH'),
             **_chain_lineage,
+            **_layer3_atm_iv_fields(chain, spot, _CDS_V2_SESSION),
         }
 
     # ── 2. GEX + walls + PCR ───────────────────────────────────────────────
@@ -8744,6 +8783,8 @@ def process_ticker(signal_row: pd.Series, macro_context: Optional[Dict[str, Any]
         resolve_iv_ownership(iv_ctx, None)   # Fix 2b: one owner, also when no contract is selected
         _base_no_contract = {**_stand_down(ctx, 'No contract passed quality gates'),
                 **_chain_lineage,
+                # VOL-03: no contract was selected, but the chain's 30-day IV benchmark still stands.
+                **_layer3_atm_iv_fields(chain, spot, _CDS_V2_SESSION),
                 'iv_rank'        : iv_ctx.get('iv_rank'),
                 'iv_percentile'  : iv_ctx.get('iv_percentile'),
                 'ivp_label'      : iv_ctx.get('ivp_label'),
@@ -11008,6 +11049,7 @@ def run_options_layer(
         # iv_engine fields
         'hv_30d','atm_iv','iv_vs_hv','iv_direction','iv_regime',
         'atm_iv_30d','atm_iv_30d_unit','atm_iv_30d_as_of','atm_iv_30d_source',
+        'atm_iv_30d_state','atm_iv_30d_reason',
         'iv_percentile_source','iv_history_samples','iv_vs_rv_range_252d','iv_vs_rv_range_30d',
         'ivp_source','iv_rank_definition','iv_rank_window_sessions','ivp_suppressed_sources',
         'iv_history_state','iv_history_first_date',
