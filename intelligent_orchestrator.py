@@ -5001,6 +5001,69 @@ def run_garch_layer(run_id: str) -> bool:
     return True
 
 
+def run_pre_options_forecast(run_id: str) -> str:
+    """VOL-02 (ACK 21 Nov 2026): the price forecast, before Options Intelligence values a contract.
+
+    The worklist is the run's Discovery candidates, the same file Options Intelligence reads, so no Options, SuperBrain
+    or execution-layer file is needed. Evidence only: a failure is recorded and the Evening continues. The later
+    Phase 10a still runs after the execution layer to add the 30-day IV comparison and deliver the columns; the result
+    of this stage is copied to qomega/pre_options/ so what the valuer could see is not overwritten.
+
+    Returns PUBLISHED or UNAVAILABLE. Never raises.
+    """
+    out_dir = cfg.RUNS_DIR / run_id / "qomega"
+    kept = out_dir / "pre_options"
+    forecasts = out_dir / f"garch_forecasts_{run_id}.csv"
+    receipt = out_dir / f"garch_forecast_receipt_{run_id}.json"
+
+    def record(state: str, reason: str = "", rows: int | None = None) -> str:
+        try:
+            kept.mkdir(parents=True, exist_ok=True)
+            (kept / "status.json").write_text(json.dumps({
+                "stage": "PRE_OPTIONS_FORECAST", "run_id": run_id, "state": state, "reason": str(reason)[:500],
+                "forecast_rows": rows, "authority": "EVIDENCE_ONLY",
+                "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+            }, sort_keys=True, indent=2), encoding="utf-8")
+        except Exception as _status_error:
+            logger.error("Pre-Options forecast status could not be recorded: %s", _status_error)
+        return state
+
+    try:
+        logger.info("=" * 80)
+        logger.info("PHASE 8a-pre: PRICE FORECAST BEFORE OPTIONS INTELLIGENCE (VOL-02)")
+        logger.info("=" * 80)
+        garch_script = cfg.BASE_DIR / "garch_runner.py"
+        worklist = _discovery_output_csv(run_id)
+        if not garch_script.exists():
+            raise FileNotFoundError(f"forecast runner not deployed: {garch_script}")
+        if not worklist.exists():
+            raise FileNotFoundError(f"Discovery worklist not found: {worklist}")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if forecasts.exists():
+            forecasts.unlink()                 # a rerun must not pass off an earlier attempt as this one
+        cmd = [sys.executable, str(garch_script), run_id,
+               "--worklist_csv", str(worklist),
+               "--output_dir", str(out_dir)]
+        if not _run("Pre-Options price forecast", cmd, critical=False):
+            raise RuntimeError("forecast runner returned a failure")
+        if not forecasts.exists():
+            raise RuntimeError("forecast runner finished without writing its forecast file")
+        kept.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(forecasts, kept / forecasts.name)
+        if receipt.exists():
+            shutil.copy2(receipt, kept / receipt.name)
+        with forecasts.open(encoding="utf-8-sig") as handle:
+            rows = max(0, sum(1 for _ in handle) - 1)
+        logger.info("Pre-Options price forecast: %d ticker rows available to the contract valuer", rows)
+        return record("PUBLISHED", rows=rows)
+    except Exception as _forecast_error:
+        logger.error(
+            "Pre-Options price forecast UNAVAILABLE for run %s (evidence only; Evening continues): %s",
+            run_id, _forecast_error,
+        )
+        return record("UNAVAILABLE", reason=f"{type(_forecast_error).__name__}: {_forecast_error}")
+
+
 def merge_garch_into_enriched(run_id: str) -> bool:
     """
     Phase 10b — FIX-05: Merge GARCH l3_ forecast fields into superbrain_enriched CSV.
@@ -6563,6 +6626,9 @@ def evening_workflow(
     # widen the Options scope for high-truth catalyst names that Vanguard marks
     # WEAK/NEGATIVE. This pre-options pass patches discovery/vanguard artifacts
     # so the options layer can give those names a monetisation review lane.
+    # VOL-02 (ACK 21 Nov 2026): the price forecast is produced before Options Intelligence, so the contract valuer
+    # finds this run's forecast. Evidence only: it never stops the Evening.
+    run_pre_options_forecast(canonical_run_id)
     run_position_lock_check(canonical_run_id)
     if not run_options_intelligence(
         canonical_run_id,
