@@ -70,6 +70,8 @@ def build_scorecard(run_dir: Path | str, *, run_id: str, phase: str, verify_root
         status = ("FAIL" if stop_total or verdict == "DO_NOT_TRADE" else
                   "REVIEW" if verdict in ("TRUST_WITH_CAVEATS", "UNVERIFIED", None) else "PASS")
         calc = _section(status, verifier_verdict=verdict, verifier_reason=(verify or {}).get("reason"),
+                        verification_scope=(verify or {}).get("verification_scope"),
+                        execution_permission=(verify or {}).get("execution_permission"),
                         station_stop_defects=stop_total, stations=sorted(stations))
 
     if manifest is None:

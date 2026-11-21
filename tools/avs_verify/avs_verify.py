@@ -27,7 +27,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-VERSION = "avs_verify_v1_3"
+VERSION = "avs_verify_v1_4"
 SEV = {"P0": 0, "P1": 1, "P2": 2}
 csv.field_size_limit(2**31 - 1)
 
@@ -110,14 +110,32 @@ class F:
 
 
 # ------------------------------------------------------------------ rules
-def r_self_report(man, cfg, phase, nrows, f: F):
+def evening_preparation_only(man, cfg, phase, nrows, tradeable_count):
+    """Recognise a verified EOD handoff, never an exemption from trade checks."""
+    return bool(
+        phase == "evening" and man and nrows > 0 and tradeable_count == 0
+        and man.get("run_tradeable") is False
+        and man.get("pipeline_technical_health") == "PASS"
+        and man.get("pipeline_semantic_health") == "PASS"
+        and not man.get("fatal_flags") and not man.get("conflict_flags")
+        and man.get("next_action") == "NEEDS_MORNING_VALIDATION"
+        and man.get("run_execution_permission") == "MORNING_VALIDATION_REQUIRED"
+        and man.get("morning_capital_permission") == "MORNING_VALIDATION_REQUIRED"
+        and dig(man, cfg["manifest_self_report"]["row_count_key"][phase]) == nrows
+    )
+
+
+def r_self_report(man, cfg, phase, nrows, f: F, *, tradeable_count=None):
     if not man:
         f.b("R00_PIPELINE_SELF_REPORT", "P1", "SKIPPED", "No final_run_manifest.json found.")
         return
     sr = cfg["manifest_self_report"]
+    preparation_only = evening_preparation_only(man, cfg, phase, nrows, tradeable_count)
     fails, warns = [], []
     for k, bad in sr["fail_if"].items():
         if k in man and man[k] in bad:
+            if k == "run_tradeable" and preparation_only:
+                continue
             fails.append(f"{k}={man[k]}")
     for k in sr["fail_if_nonempty"]:
         if man.get(k):
@@ -135,6 +153,9 @@ def r_self_report(man, cfg, phase, nrows, f: F):
         f.b("R00_PIPELINE_SELF_REPORT", "P0", "PASS", "Pipeline self-report clean.", {"warns": warns})
     if warns:
         f.b("R00_PIPELINE_HEALTH", "P1", "WARN", "; ".join(warns))
+    if preparation_only:
+        f.b("R00_MORNING_VALIDATION_PENDING", "P1", "WARN",
+            "Evening preparation only: Morning validation is still required; no trade permission.")
     rc = dig(man, sr["row_count_key"][phase])
     if isinstance(rc, (int, float)):
         f.b("R24_MANIFEST_RECONCILE", "P0", "PASS" if int(rc) == nrows else "FAIL",
@@ -418,7 +439,7 @@ def r_constant(header, rows, cfg, f: F):
 
 
 # ------------------------------------------------------------------ verdict
-def decide(f: F, trade_idx):
+def decide(f: F, trade_idx, *, preparation_only=False):
     p0 = [b for b in f.book if b["severity"] == "P0" and b["status"] == "FAIL"]
     if any(b["rule"] == "R03_CRITICAL_COLUMNS" and b["status"] == "FAIL" for b in f.book):
         return "UNVERIFIED", [], "Critical columns missing — fix the column map."
@@ -430,6 +451,10 @@ def decide(f: F, trade_idx):
     if p0_unc:  # missing evidence is never a pass
         return "UNVERIFIED", clean, "P0 evidence missing: " + ", ".join(b["rule"] for b in p0_unc)
     if not trade_idx:
+        if preparation_only:
+            return "TRUST_WITH_CAVEATS", clean, (
+                "Evening preparation verified; Morning validation required. No trade permission."
+            )
         return "DO_NOT_TRADE", clean, "No tradeable rows."
     if not clean:
         return "DO_NOT_TRADE", clean, "Every tradeable row has a row-level P0."
@@ -489,19 +514,23 @@ def main():
     f = F(cfg.get("known_defects", {}))
     if tcol not in first:
         f.b("R02_TRADEABLE_COLUMN", "P1", "WARN", f"Tradeable column '{tcol}' missing — checking every row.")
-    r_self_report(man, cfg, a.phase, len(rows), f)
+    preparation_only = evening_preparation_only(man, cfg, a.phase, len(rows), len(trade_idx))
+    r_self_report(man, cfg, a.phase, len(rows), f, tradeable_count=len(trade_idx))
     run_ts = r_timing(run_id, a.phase, man, cfg, f)
     r_structure(header, rows, raw, cm, cfg, trade_idx, f)
     r_contradictions(rows, header, cfg, f)
     r_rows(rows, trade_idx, cm, cfg, a.phase, run_ts, f)
     r_constant(header, rows, cfg, f)
-    verdict, clean, why = decide(f, trade_idx)
+    verdict, clean, why = decide(f, trade_idx, preparation_only=preparation_only)
 
     out = Path(a.out_root) / run_id / a.phase
     out.mkdir(parents=True, exist_ok=True)
     counts = Counter(rule for fl in f.row.values() for rule, _, _ in fl)
     checks = sorted(f.book, key=lambda b: (SEV.get(b["severity"], 3), b["status"] == "PASS", b["rule"]))
     rep = {"verifier": VERSION, "run_id": run_id, "phase": a.phase, "verdict": verdict, "reason": why,
+           "authority": "REPORT_ONLY", "can_grant_capital": False,
+           "verification_scope": "EOD_PREPARATION" if preparation_only else "TRADEABLE_ROWS",
+           "execution_permission": (man or {}).get("run_execution_permission", "NOT_VERIFIED"),
            "book_file": str(book), "book_sha256": h.hexdigest(),
            "rules_sha256": hashlib.sha256(Path(a.rules).read_bytes()).hexdigest(),
            "generated_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -521,6 +550,8 @@ def main():
                         " | ".join(f"{a_}: {m}" for a_, _, m in fl)])
 
     L = [f"# AVS-VERIFY — {run_id} · {a.phase}", "", f"**Verdict: {verdict}** — {why}", "",
+         f"Scope: {rep['verification_scope']}. Execution permission: {rep['execution_permission']}. "
+         "Report only; this verifier cannot grant capital permission.", "",
          f"`{book.name}` · {len(rows)} rows · {len(trade_idx)} tradeable · {len(clean)} clean · "
          f"sha256 `{rep['book_sha256'][:12]}` · {VERSION}", "",
          "## Book-level checks", "", "| Sev | Rule | Status | Detail |", "|---|---|---|---|"]

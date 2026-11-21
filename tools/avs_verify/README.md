@@ -1,4 +1,4 @@
-# AVS-VERIFY-001 v1.2: run verification agent
+# AVS-VERIFY-001 v1.4: run verification agent
 
 The verifier has two layers. Both are read-only and advisory; neither blocks the Lab.
 
@@ -23,6 +23,8 @@ Output goes to `audit\verify\<run_id>\<phase>\`: `verify_report.md`, `verify_rep
 | 2 | DO_NOT_TRADE | At least one book-level P0. |
 | 3 | UNVERIFIED | A critical column is missing, or a P0 check had no evidence (`UNCERTAIN`). Missing evidence is never a pass. |
 
+For an Evening book with zero tradeable rows, `TRUST_WITH_CAVEATS` can describe verified **EOD preparation only**. This requires matching Morning-candidate counts, technical and semantic PASS, no fatal/conflict flags, and explicit `MORNING_VALIDATION_REQUIRED` permissions. The report states `verification_scope=EOD_PREPARATION` and cannot grant capital. Morning validation remains required. Missing evidence, genuine P0 failures, actionable rows before validation, and Morning books do not receive this exception.
+
 ## What it checks
 Book-level checks cover the whole book. Row-level checks cover only tradeable rows: `final_action` BUY_* for the Lab book, `morning_gate_verdict` GO for Morning.
 
@@ -33,7 +35,7 @@ Book-level checks cover the whole book. Row-level checks cover only tradeable ro
 - R03: critical columns missing, or >2% null on tradeable rows
 - R16: spread unit missing or implausible
 - R20: two authorities disagree on ≥50% of tradeable rows (e.g. `final_action` BUY vs `lab_verdict` BLOCKED)
-- R24: manifest row count ≠ book row count
+- R24: manifest row count ≠ book row count (Evening uses `morning_candidates`; Morning uses `morning_validation`)
 - R19: quotes stale by both the independent age and the pipeline's own age
 
 - R15_HOLD_DERIVED: the hold must be an analysis output per trade (intraday to 20+ sessions, no cap). One value on every row, or a config-constant source such as `THESIS_WINDOW_D2`, fails. It is registered as a known defect until the hold wiring is fixed

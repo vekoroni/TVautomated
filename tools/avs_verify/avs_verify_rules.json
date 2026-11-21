@@ -311,7 +311,7 @@
       "conflict_flags"
     ],
     "row_count_key": {
-      "evening": "row_counts.morning_validation",
+      "evening": "row_counts.morning_candidates",
       "morning": "row_counts.morning_validation"
     }
   },
