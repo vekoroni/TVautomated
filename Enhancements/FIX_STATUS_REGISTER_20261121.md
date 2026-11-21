@@ -1,22 +1,28 @@
 # AVSHUNTER fix status register — 21 November 2026
 
-Read-only audit. Branch `laneb/lab-first-handoff`, HEAD `ff24d41`. No code, data, schedule or provider call was changed or made. No tests or pipelines were run.
+Original audit snapshot: branch `laneb/lab-first-handoff`, HEAD `ff24d41`. This register was subsequently amended on 21 November at ACK’s request. Original findings are retained with corrected status dimensions and implementation comments. This amendment changes documentation only; no fixes are built or activated. Original audit ran no tests; the independent assessment later ran the two narrow Phantom ownership tests recorded below.
 
-## How to read this
+## Status and evidence rules — supersedes the original three buckets
 
-Every fix identified in the repo's registers, designs, receipts and briefs was checked against the code, git history and the 19 Nov evening run (`20261119_234734`), not against what the documents claim.
+**ACK instruction, 21 November:** this is a whole-pipeline implementation register, not a targeted volatility review. The commit/baseline work had to finish before any fix build. The 21 November reconciliation observes the commit batch complete at `f3e199e`; residual files and baseline acceptance still need disposition. ACK explicitly says **do not start building yet**. See section 8. No fix, commit, merge or activation is started by this register.
 
-| Status | Meaning |
+Each fix row now has six independent status fields. A source file existing, a commit, a run call, a passing test, an accepted outcome result and permission to influence decisions are different evidence.
+
+| Dimension | Values and interpretation |
 |---|---|
-| **1. Outstanding** | Identified, designed or approved, but no working code exists. |
-| **2. Fixed but not implemented** | Fix code exists but is not properly live: uncommitted, on another branch, not called by the run, switched off, producing nothing in real runs, closed by a label only, or waiting on a manual step or real-session acceptance. |
-| **3. Fixed and implemented** | Committed on this branch and wired into the running path. |
+| Built | `YES-REPORTED`, `PARTIAL`, `NO-REPORTED`, `UNKNOWN`, `DESIGN-ONLY`; reported means original-register evidence, not independent recertification. |
+| Committed | `CITED`, `OTHER-BRANCH`, `RECHECK-BASELINE`, `NOT-APPLICABLE`; a cited hash is a historical claim, not proof the effective working tree matches it. |
+| Wired | `YES-REPORTED`, `PARTIAL/DEGRADED`, `NO-REPORTED`, `POLICY-DISABLED`, `UNKNOWN`; functioning output is additionally described in comments. |
+| Tested | `NOT-REVERIFIED`, `2-NARROW-PASS`, `NOT-APPLICABLE`; never infer passing tests from their presence or a commit. |
+| Validated | `NOT-EVIDENCED`, `REPLAY-REPORTED`, `FORWARD-PENDING`, `NOT-APPLICABLE`; run output/outcome counts are not economic acceptance. |
+| Authorised | `VERIFY-DECISION`, `SHADOW-ONLY`, `OBSERVATION-ONLY`, `DECISION-PENDING`, `NOT-APPLICABLE`; a status row itself grants no authority. |
 
-Three facts apply to every row:
+The old section 1/2/3 labels remain as **historical navigation buckets only**, not current conclusions. Use the six columns and implementation comments. Compound rows must be split into independently verifiable work items during baseline reconciliation where their components differ.
 
-- **Live runs execute the uncommitted working tree.** The 19 Nov run recorded `dirty: True` with a 426 KB code patch. About 220 files are modified or untracked. Items marked "uncommitted" in list 2 are running on this PC but are in no commit.
-- **Almost no fix has forward acceptance.** "Fixed and implemented" items have replay receipts at best. I found no outcome-scorer acceptance on forward sessions for any of them.
-- **Committed tests were taken as evidence that code exists, not that it passes.**
+- The 19 November run used a dirty working tree; current live execution and reproducible committed release are separate facts. The old ~220-file estimate is historical, not a current count.
+- A later independent review inspected HEAD `350e614`; selected volatility files then had no working-tree diff and macro triage/verifier commits existed. This is an intermediate observation, **not the completed commit baseline**. Recheck after ACK’s ongoing commit work finishes.
+- Forward acceptance was not evidenced for most inspected fixes. Do not infer its universal absence. Historical receipts, output correctness and forward economic validation have separate scopes.
+- Unless a row explicitly says otherwise, its tests/branch ancestry/full runtime impact have not been independently reverified. Unknown remains unknown.
 
 Sources audited: end-to-end fix design and addendum (Sep), decision path map DM-01..38, Phase 0–8 documents, 25 Sep change register, DIR-002, BEH-001, TEV-001, SOR-001, XLU register, 7 Oct redesign, output-trust items 1–11, trade-quality register (D2…T2), lessons L1–L8 / R1–R10, Lab-004 and source-of-truth validation, options valuation G1–G9 and UAT-01..07, Phantom change list 1–11, tradeability AVS-TRADE-001, ETF reliability E1–E24, Lane B Fix B and `needs_codex`, macro delivery/board/triage documents, and the two Codex plans of 21 Nov (section 4).
 
@@ -39,319 +45,319 @@ These are the items where the paperwork says one thing and the code or the live 
 | 9 | **Missing direction still defaults to CALL in one path** (H2). | `intelligent_orchestrator.py:1761-1765`. |
 | 10 | **Universe option chains are missing for 12, 16 and 20 Nov** (SPY and QQQ only), and nothing fails when that happens. | `phantom_pair_health`; readiness is a warning only. |
 | 11 | **Phantom score can never reach HIGH or CONVICTION.** Maximum possible score is 67.5 against thresholds of 70 and 85. | `scripts/phantom_engine.py:106-131`; formula confirmed in this audit. New finding from Codex. |
-| 12 | **All macro work since 14 Nov is uncommitted** (controlled scheduler, freshness gate, cost cap, triage integration T1–T7). | `Run-MacroSchedule.ps1`, `scripts/scheduled_macro_builds.py`, 9 `contracts/macro_*.py` files untracked. |
+| 12 | **Macro reproducibility needs post-commit reconciliation** (controlled scheduler, freshness gate, cost cap, triage integration T1–T7). | Historical untracked-file finding. Later macro triage/verifier commits exist; scheduler exact paths were untracked at the earlier review but are now tracked/clean at b44d96e. See section 8 for final-baseline qualifications. |
 | 13 | **Two fixes exist only on other branches.** Lab timing publication (`b48db74`) and the production eligibility gate (`eb50549`). | Not ancestors of HEAD. |
 | 14 | **Documents that are stale the other way** (say "not committed" or "open" but are done): G4 and G5 receipts, P0-8 §13, board gap G15, artifact-retention receipt, `pending_us_money_index_fix` folder, the weekend quote-age memory note. | Commits `666f09c`, `c175576`, `23ad527`, `1f37f1c`. |
 
 ---
 
-## 1. Outstanding
+## 1. Historical bucket: outstanding / incomplete
 
 ### 1.1 Run control, reproducibility, hygiene
 
-| ID | Fix | Evidence |
-|---|---|---|
-| S0.4 | Injected clock in legacy code; no `date.today()` | `avshunter_discovery_ULTIMATE.py:815`, `garch_runner.py:99`, `phantom_engine.py` `score_date` |
-| S0.5 / R7 | Replay runner | `intelligent_orchestrator.py:8676` raises on REPLAY |
-| S0.7a/b | Config-driven paths; package imports | 60 files hold the hardcoded user path; 108 use `sys.path.insert` |
-| P0-3 2a–2c | Single morning path integrity check; research operator mode; quarantine legacy launchers | Not built; launchers and `.bat` files tracked |
-| S18.3 / S18.4 / SA-5 | Golden replay of frozen runs; real-run gate after every run; signal-accuracy audit as a recurring check | Audit script last run 14 Sep; not called by the orchestrator |
-| R1, R3, R6 | Lint for missing-as-zero; units-in-names check; calibration check on anything called a probability | None found |
-| P0-5 / S1.1 / ADD-N6 | Point-in-time universe with delisted names | No code |
-| P0-6 / S17.1 | Ledger record contract (C11) | No `c11_ledger` |
-| S17.7 | Validation and calibration context (C13) | No module |
-| P0-10 | Stale and unservable universe symbols; mixed-date crash | Not fixed |
-| P0-11 / S7.1 / D11 | Actuarial builder in the repo, reading the same history store; outliers excluded | No builder tracked; 310 rows over 1,000% not remediated |
-| S7.5 / S7.7 | Actuarial staleness gate; retire `actuarial_live_updater.py` and empty sqlite | Refresh still manual |
-| PKG-002 P5 / S6 | Delete package mode and its scripts | `packages` mode still at `intelligent_orchestrator.py:653, 3753` |
-| F7-skipped | 58 tickers skipped in the daily history backfill | No follow-up |
-| TR-022/023, AVS-CHANGELOG-001 (rule) | Shared change log rule in agent instructions; register kept current | Log stops 18 Nov; rule not in `CLAUDE.md` |
-| RETENTION-BACKUPS | 710 backup files, none proven redundant | Receipt: 0 deleted |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| S0.4 | Injected clock in legacy code; no `date.today()` | `avshunter_discovery_ULTIMATE.py:815`, `garch_runner.py:99`, `phantom_engine.py` `score_date` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| S0.5 / R7 | Replay runner | `intelligent_orchestrator.py:8676` raises on REPLAY | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| S0.7a/b | Config-driven paths; package imports | 60 files hold the hardcoded user path; 108 use `sys.path.insert` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| P0-3 2a–2c | Single morning path integrity check; research operator mode; quarantine legacy launchers | Not built; launchers and `.bat` files tracked | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| S18.3 / S18.4 / SA-5 | Golden replay of frozen runs; real-run gate after every run; signal-accuracy audit as a recurring check | Audit script last run 14 Sep; not called by the orchestrator | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| R1, R3, R6 | Lint for missing-as-zero; units-in-names check; calibration check on anything called a probability | None found | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| P0-5 / S1.1 / ADD-N6 | Point-in-time universe with delisted names | No code | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| P0-6 / S17.1 | Ledger completeness and decision/outcome linkage (C11) | CORRECTED: `canonical_data/decision_outcome_ledger.py` and orchestrator calls exist. Audit required fields/population/lineage; absence of a module named `c11_ledger` is not absence of a ledger. | PARTIAL | RECHECK-BASELINE | YES-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | OBSERVATION-ONLY | P1 — Existing canonical ledger/learning owners; complete linkage/option labels/support/held-out evidence rather than duplicate C11/C13. |
+| S17.7 | Existing learning/validation path: support, labels and held-out acceptance | CORRECTED: `canonical_data/outcome_learning.py`, `domain/outcome_learning.py` and probability services exist and produce snapshots. Missing option labels/held-out metrics and short-horizon support remain; activation disabled. | PARTIAL | RECHECK-BASELINE | YES-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | OBSERVATION-ONLY | P1 — Existing canonical ledger/learning owners; complete linkage/option labels/support/held-out evidence rather than duplicate C11/C13. |
+| P0-10 | Stale and unservable universe symbols; mixed-date crash | Not fixed | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| P0-11 / S7.1 / D11 | Actuarial builder in the repo, reading the same history store; outliers excluded | No builder tracked; 310 rows over 1,000% not remediated | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| S7.5 / S7.7 | Actuarial staleness gate; retire `actuarial_live_updater.py` and empty sqlite | Refresh still manual | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| PKG-002 P5 / S6 | Delete package mode and its scripts | `packages` mode still at `intelligent_orchestrator.py:653, 3753` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| F7-skipped | 58 tickers skipped in the daily history backfill | No follow-up | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| TR-022/023, AVS-CHANGELOG-001 (rule) | Shared change log rule in agent instructions; register kept current | Log stops 18 Nov; rule not in `CLAUDE.md` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
+| RETENTION-BACKUPS | 710 backup files, none proven redundant | Receipt: 0 deleted | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Reproducibility/data clock/ledger; trace all downstream consumers before changing interfaces. |
 
 ### 1.2 Discovery, Vanguard, direction
 
-| ID | Fix | Evidence |
-|---|---|---|
-| D3 / D6 / D19 / OT-11 stations 2–5 / A-step 3 | Legacy Wyckoff phase, trigger category and composite tier out of options score, trap engine, trigger T3, EOD tier | `avshunter_trap_engine.py:114`, `trigger_layer.py:468`, `compute_ois` reads `ctx['phase']`, `eod_candidate_engine.py:2084` |
-| DV-6b | Vanguard/EV3 key labelled `LEGACY_STATE_KEY` | Zero hits |
-| Redesign Phase 6 | Scenario rules and contributors measured; legacy `assign_tier`, `calculate_win_probability` removed | Still called (`avshunter_discovery_ULTIMATE.py:1550, 1978`) |
-| S5.4 / DSC-16 | Wall-clock composite decay and tiers | `date.today()` decay at `:815, 910` |
-| D2 (design) / DM-04 | Retire catalyst and RS20 direction evidence | `direction_governance.py:636-672` |
-| S4.2 / DM-35 / VNG-10 | Vanguard regime floors and match key still use `macro_regime` | `edge_detector.py:174, 356, 421`; `actuarial_query.py:74, 227` |
-| Phase 4 `min_price` | Remove Vanguard `min_price: 10.0` (ACK 4 Oct: no price gate) | `vanguard/config.py:213`; effect not traced |
-| S1.3 | `scanner_data_quality=CONFIRMED` hardcoded | `intelligent_orchestrator.py:955, 6306` |
-| S2.1 | One bar reader; no stale-cache fallback | `STALE_CACHE` fallback at discovery `:1110` |
-| S5.2 | One Wyckoff engine | Dead copy still tracked |
-| H2 | Missing direction defaults to CALL | `intelligent_orchestrator.py:1761-1765` |
-| DWN-03, DWN-14, VNG-15, DSC-25 | EIL tests `edge_dir in {CALL, PUT}`; enrichment trend vocabulary; `win_probability` seeding; literals in domain code | Still present; some inert |
-| VNG-04 / VNG-09 / C-05 | v8 mirrored first-passage labels; per-candidate first-passage statistics | No v8 builder |
-| DIR-002 R-1…R-9 | Integrated acceptance of the direction cut-over | Only R-5 run (BEAR failed by 0.002); cut-over made under the 4 Oct waiver |
-| DV-1, DV-2, DV-7, A-steps 4–8 | Same-timeframe conflict keeps counter-side; both conditional triggers on the card; contributors as zero-weight fields; nesting; enhancers; Vanguard re-key | Designed 12 Oct; not built |
-| N3, N4, B1 (stage design), N1, N5–N10, N12 | Entry-policy registry; entry availability; three state dimensions; reading evidence fields | Modules do not exist |
-| T2 | Assessment id | Not found |
-| D4a, D5 | Lane C geometry not measured; "pooled probability" (never defined) | Identified only |
-| BEH evidence refresh | Duration-evidence builder inside the pipeline | Still offline |
-| R5/L4, R7/L8, L6/R9 | Weekend-carry line; next-leg targets; one slot per cluster | Not found. All 18 lessons are still OPEN in `trade_journal.db` |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| D3 / D6 / D19 / OT-11 stations 2–5 / A-step 3 | Legacy Wyckoff phase, trigger category and composite tier out of options score, trap engine, trigger T3, EOD tier | `avshunter_trap_engine.py:114`, `trigger_layer.py:468`, `compute_ois` reads `ctx['phase']`, `eod_candidate_engine.py:2084` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| DV-6b | Vanguard/EV3 key labelled `LEGACY_STATE_KEY` | Zero hits | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| Redesign Phase 6 | Scenario rules and contributors measured; legacy `assign_tier`, `calculate_win_probability` removed | Still called (`avshunter_discovery_ULTIMATE.py:1550, 1978`) | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| S5.4 / DSC-16 | Wall-clock composite decay and tiers | `date.today()` decay at `:815, 910` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| D2 (design) / DM-04 | Retire catalyst and RS20 direction evidence | `direction_governance.py:636-672` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| S4.2 / DM-35 / VNG-10 | Vanguard regime floors and match key still use `macro_regime` | `edge_detector.py:174, 356, 421`; `actuarial_query.py:74, 227` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| Phase 4 `min_price` | Remove Vanguard `min_price: 10.0` (ACK 4 Oct: no price gate) | `vanguard/config.py:213`; effect not traced | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| S1.3 | `scanner_data_quality=CONFIRMED` hardcoded | `intelligent_orchestrator.py:955, 6306` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| S2.1 | One bar reader; no stale-cache fallback | `STALE_CACHE` fallback at discovery `:1110` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| S5.2 | One Wyckoff engine | Dead copy still tracked | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| H2 | Missing direction defaults to CALL | `intelligent_orchestrator.py:1761-1765` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| DWN-03, DWN-14, VNG-15, DSC-25 | EIL tests `edge_dir in {CALL, PUT}`; enrichment trend vocabulary; `win_probability` seeding; literals in domain code | Still present; some inert | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| VNG-04 / VNG-09 / C-05 | v8 mirrored first-passage labels; per-candidate first-passage statistics | No v8 builder | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| DIR-002 R-1…R-9 | Integrated acceptance of the direction cut-over | Only R-5 run (BEAR failed by 0.002); cut-over made under the 4 Oct waiver | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| DV-1, DV-2, DV-7, A-steps 4–8 | Same-timeframe conflict keeps counter-side; both conditional triggers on the card; contributors as zero-weight fields; nesting; enhancers; Vanguard re-key | Designed 12 Oct; not built | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| N3, N4, B1 (stage design), N1, N5–N10, N12 | Entry-policy registry; entry availability; three state dimensions; reading evidence fields | Modules do not exist | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| T2 | Assessment id | Not found | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| D4a, D5 | Lane C geometry not measured; "pooled probability" (never defined) | Identified only | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| BEH evidence refresh | Duration-evidence builder inside the pipeline | Still offline | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| R5/L4, R7/L8, L6/R9 | Weekend-carry line; next-leg targets; one slot per cluster | Not found. All 18 lessons are still OPEN in `trade_journal.db` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
 
 ### 1.3 Options valuation and contract selection
 
-| ID | Fix | Evidence |
-|---|---|---|
-| G1 | Exit IV from the stored surface, not held flat | `domain/anticipated_move.py:253` `IV_HELD` |
-| G2 | Spread model from recorded quotes; exit on the bid | `domain/option_valuation.py:153` |
-| G3 / G8 | Fill probability; predicted option price per session, scored against closes | No code |
-| G7 | Event-variance split instead of flat IV × 0.8 | `anticipated_move.py:242-258` |
-| D2 (valuation) | IV re-implied from the mid (approved 17 Oct, due 24 Oct) | No function |
-| M3–M9, G9-extra, G5 switch | Seven remaining Black-Scholes copies onto the one pricer; European/American switch | No owner imports; guard test only stops new copies |
-| G6 | DOI dividend basis; exit rule for ITM puts and ex-dividend | Unchanged |
-| G4-open a–c | Missing-Greek defaults (θ −0.01, vega 0.05, Δ 0.35); 2,172 unverifiable rows; deep-ITM puts with 300–700% IV | `avshunter_options_intelligence.py:7222, 5753` |
-| OT-4b/4c, OT-7a/7b | Callers pass the observed rate everywhere; discrete dividends; wall thresholds calibrated; Morning recomputes walls | Not found |
-| S10.1b / DM-18 | Quote freshness measured, not assumed `SESSION_ALIGNED` | `:6519` |
-| XLU-D05 | Selection rewards vega regardless of IV level | `:5785` |
-| B2 (delta bands), B3, B4, C2 | Delta band pre-selection; long shares as an expression; duplicate hold band; asymmetry constants | Not built |
-| OA slices 3–5 | Move-to-return table; implied vs forecast move ratio; slippage and P&L attribution | No code |
-| A1 | Selected contract outlasts the hold | Measured only: 1,124 contracts expire before the median move |
-| W3, W4 | Pipeline `trade_window_state` and `premium_cap_state` flags (approved 12–13 Nov) | No code; Lane B proxies only |
-| E9, E12 | Both index-ETF contract alternatives; ETF review view (approved D-14.3, D-14.4) | No code |
-| TR-020 | PUT base rates | `ev_engine_v2.py:92-94` unchanged |
-| DM-10, DM-13 / S15.5, S13.4, S13.6 / DM-11, H4, H5, S1-3, S1-5b | Vanguard target = entry price; Morning replaces thesis entry with live price; invented exit targets (1.03/0.97); zero or −1 for missing; target precedence; bid/ask fallbacks; router no-op; DTE buffer units | Lines cited in the foundation audit; all unchanged |
-| S12.2 / D9 | No EOD synthetic EIL verdicts | `execution_intelligence_runner.py:346` |
-| S12.4, S11.6, ADD §7.1, TEV "cut" items | Retire WBS scoring, monetisation policy copies, SuperBrain passthrough, legacy EV engines, duplicate estimator modules | All tracked. Note ACK's "repair, don't delete" rule |
-| TEV P0(a) | Advisory publishers never abort the Evening | Not built |
-| TEV Slices C, E, G | C4 base-rate packet; C8 valuation; release proof | `NOT_ESTIMABLE` hard-coded; C8 never valued |
-| D-14.7 | Codex code review of the crossing build before commit | Review file absent; `fc5faee` committed anyway |
-| Design 15.10 | Measured clock by historical replay | No note |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| G1 | Exit IV from the stored surface, not held flat | `domain/anticipated_move.py:253` `IV_HELD` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| G2 | Spread model from recorded quotes; exit on the bid | `domain/option_valuation.py:153` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| G3 / G8 | Fill probability; predicted option price per session, scored against closes | No code | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| G7 | Event-variance split instead of flat IV × 0.8 | `anticipated_move.py:242-258` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| D2 (valuation) | IV re-implied from the mid (approved 17 Oct, due 24 Oct) | No function | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| M3–M9, G9-extra, G5 switch | Seven remaining Black-Scholes copies onto the one pricer; European/American switch | No owner imports; guard test only stops new copies | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| G6 | DOI dividend basis; exit rule for ITM puts and ex-dividend | Unchanged | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| G4-open a–c | Missing-Greek defaults (θ −0.01, vega 0.05, Δ 0.35); 2,172 unverifiable rows; deep-ITM puts with 300–700% IV | `avshunter_options_intelligence.py:7222, 5753` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| OT-4b/4c, OT-7a/7b | Callers pass the observed rate everywhere; discrete dividends; wall thresholds calibrated; Morning recomputes walls | Not found | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| S10.1b / DM-18 | Quote freshness measured, not assumed `SESSION_ALIGNED` | `:6519` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| XLU-D05 | Selection rewards vega regardless of IV level | `:5785` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| B2 (delta bands), B3, B4, C2 | Delta band pre-selection; long shares as an expression; duplicate hold band; asymmetry constants | Not built | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| OA slices 3–5 | Move-to-return table; implied vs forecast move ratio; slippage and P&L attribution | No code | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| A1 | Selected contract outlasts the hold | Measured only: 1,124 contracts expire before the median move | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| W3, W4 | Pipeline `trade_window_state` and `premium_cap_state` flags (approved 12–13 Nov) | No code; Lane B proxies only | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| E9, E12 | Both index-ETF contract alternatives; ETF review view (approved D-14.3, D-14.4) | No code | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| TR-020 | PUT base rates | `ev_engine_v2.py:92-94` unchanged | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| DM-10, DM-13 / S15.5, S13.4, S13.6 / DM-11, H4, H5, S1-3, S1-5b | Vanguard target = entry price; Morning replaces thesis entry with live price; invented exit targets (1.03/0.97); zero or −1 for missing; target precedence; bid/ask fallbacks; router no-op; DTE buffer units | Lines cited in the foundation audit; all unchanged | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| S12.2 / D9 | No EOD synthetic EIL verdicts | `execution_intelligence_runner.py:346` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| S12.4, S11.6, ADD §7.1, TEV "cut" items | Retire WBS scoring, monetisation policy copies, SuperBrain passthrough, legacy EV engines, duplicate estimator modules | All tracked. Note ACK's "repair, don't delete" rule | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| TEV P0(a) | Advisory publishers never abort the Evening | Not built | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| TEV Slices C, E, G | C4 base-rate packet; C8 valuation; release proof | `NOT_ESTIMABLE` hard-coded; C8 never valued | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| D-14.7 | Codex code review of the crossing build before commit | Review file absent; `fc5faee` committed anyway | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
+| Design 15.10 | Measured clock by historical replay | No note | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Valuation/contract/exit economics -> cards/Lane B/Morning; quantify before/after at identical inputs. |
 
 ### 1.4 GEX
 
-| ID | Fix | Evidence |
-|---|---|---|
-| GEX-D2, D3, D8 | Correct units and net GEX per ticker; replace ad-hoc flip confidence; proximity units | `compute_gex:3257`; `execution_intelligence.py:178` |
-| S3.4 / GEX-D10 | Missing GEX never becomes neutral 0.50 | `regime_consensus.py:241-243` |
-| S3.6 / GEX-D7, S3.1 / GEX-L4 | Retire the EIL synthetic GEX map; one engine per ticker | `execution_intelligence.py:254, 648` |
-| S3.3 | GEX freshness: STALE, not COMPLETE | `build_local_gex.py:203, 219` |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| GEX-D2, D3, D8 | Correct units and net GEX per ticker; replace ad-hoc flip confidence; proximity units | `compute_gex:3257`; `execution_intelligence.py:178` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Dealer-positioning evidence -> walls/reachability/review; verify units and active consumers, no new capital gate. |
+| S3.4 / GEX-D10 | Missing GEX never becomes neutral 0.50 | `regime_consensus.py:241-243` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Dealer-positioning evidence -> walls/reachability/review; verify units and active consumers, no new capital gate. |
+| S3.6 / GEX-D7, S3.1 / GEX-L4 | Retire the EIL synthetic GEX map; one engine per ticker | `execution_intelligence.py:254, 648` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Dealer-positioning evidence -> walls/reachability/review; verify units and active consumers, no new capital gate. |
+| S3.3 | GEX freshness: STALE, not COMPLETE | `build_local_gex.py:203, 219` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Dealer-positioning evidence -> walls/reachability/review; verify units and active consumers, no new capital gate. |
 
 ### 1.5 Phantom and options data
 
-| ID | Fix | Evidence |
-|---|---|---|
-| PH-gap / BF-12Nov | Universe chains missing for 12, 16, 20 Nov (and 28 Sep, 30 Sep, 5 Oct on samples) | SPY and QQQ only on those sessions |
-| DF-5 / S2.4 / PF-3 | Run fails loudly, or flags consumers, when capture coverage drops | Warning only |
-| S2.3 / ADD-N1 | Fixed nightly capture panel independent of candidates | Not built as an owned job |
-| UAT-04, UAT-05 | Weekly maintenance on a legacy-schema database; readiness says FRESH with incomplete Greeks | Unchanged since `7effc2b` |
-| PH-6 (cause) | About 1,300 rows per night arrive with no underlying price | Labelled, cause not investigated |
-| BF-old, PH-9b | Old backfill runners still unsafe; rehydrate scripts mislabelled | Unchanged |
-| D16 / ADD-N2 | IV history depth; daily constant-maturity IV series for 252 sessions | Label only; see Codex VOL-04 |
-| F7 (19 Sep) | Options flow half-built (`NO_PCR_DATA`) | `:9875` |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| PH-gap / BF-12Nov | Universe chains missing for 12, 16, 20 Nov (and 28 Sep, 30 Sep, 5 Oct on samples) | SPY and QQQ only on those sessions | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| DF-5 / S2.4 / PF-3 | Run fails loudly, or flags consumers, when capture coverage drops | Warning only | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| S2.3 / ADD-N1 | Fixed nightly capture panel independent of candidates | Not built as an owned job | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| UAT-04, UAT-05 | Weekly maintenance on a legacy-schema database; readiness says FRESH with incomplete Greeks | Unchanged since `7effc2b` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| PH-6 (cause) | About 1,300 rows per night arrive with no underlying price | Labelled, cause not investigated | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| BF-old, PH-9b | Old backfill runners still unsafe; rehydrate scripts mislabelled | Unchanged | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| D16 / ADD-N2 | IV history depth; daily constant-maturity IV series for 252 sessions | Label only; see Codex VOL-04 | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
+| F7 (19 Sep) | Options flow half-built (`NO_PCR_DATA`) | `:9875` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Capture -> Phantom/IV/forecast/outcomes; distinguish acquisition, derivation and consumer completeness. |
 
 ### 1.6 Lane B, ledger, Lab
 
-| ID | Fix | Evidence |
-|---|---|---|
-| needs_codex 1.1 | Lab publishes the monetisation fields Lane B reads | Names differ; `NOT_PUBLISHED` on 2,593 rows |
-| needs_codex 1.3 / A4 | One repair state per row | `lb_repair_conflict` on 459 rows |
-| needs_codex 1.5, 1.6 | Publication stage in the manifest; cluster field on the card | Absent |
-| B8, B9 | Deep dive starts from the Lab card; fallback contract from Lab alternatives | Launcher unchanged since 20 Oct |
-| TR-041 | Option closes carry a session-close flag | No column |
-| A11, C1 | Projection issue flag (`NAN:EVENT_MISSING_FROM_PROJECTION`); Lab macro context degraded | Still in the manifest |
-| AVS-LEDGER-001 L2–L5 | `card_outcomes.py`, backfill, daily run, summary | Script absent |
-| Lab CORS/auth | Open CORS and no authentication (bind is now 127.0.0.1) | `intelligence_lab.py:124` |
-| Lab-004 acceptance | Real-run cold-load acceptance, manual proving, ACK release | No receipt |
-| ARCH-LB fix list (21 Nov) | Lane B to intelligence-mining list, about 50 items | Marked "nothing to be built yet" |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| needs_codex 1.1 | Lab publishes the monetisation fields Lane B reads | Names differ; `NOT_PUBLISHED` on 2,593 rows | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| needs_codex 1.3 / A4 | One repair state per row | `lb_repair_conflict` on 459 rows | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| needs_codex 1.5, 1.6 | Publication stage in the manifest; cluster field on the card | Absent | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| B8, B9 | Deep dive starts from the Lab card; fallback contract from Lab alternatives | Launcher unchanged since 20 Oct | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| TR-041 | Option closes carry a session-close flag | No column | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| A11, C1 | Projection issue flag (`NAN:EVENT_MISSING_FROM_PROJECTION`); Lab macro context degraded | Still in the manifest | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| AVS-LEDGER-001 L2–L5 | `card_outcomes.py`, backfill, daily run, summary | Script absent | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| Lab CORS/auth | Open CORS and no authentication (bind is now 127.0.0.1) | `intelligence_lab.py:124` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| Lab-004 acceptance | Real-run cold-load acceptance, manual proving, ACK release | No receipt | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
+| ARCH-LB fix list (21 Nov) | Lane B to intelligence-mining list, about 50 items | Marked "nothing to be built yet" | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Published fields -> Lab -> Lane B -> records/outcomes; reconcile producer/consumer names and row grain. |
 
 ### 1.7 Macro
 
-| ID | Fix | Evidence |
-|---|---|---|
-| TRIAGE-T7-DISPLAY | Board template shows the T7 intelligence items | No template code |
-| USMI-SCORE-EMPTY | Money Index has no score or components since the 10 Nov rebaseline | ChatGPT side |
-| GATE-DIRECT-BUILDER | Direct `build_macro_json.py` call bypasses the freshness gate | Documented limitation |
-| STALE-RSP-BREADTH, STALE-DEPTH | RSP breadth not labelled stale on as-of builds; 37 ETFs lack 200-day depth | `macro_board/opportunity.py:40` |
-| G10, G16, G17 | Yield split into real/breakeven/term premium on the board; shared-event flag; SPY/QQQ intraday | Series collected, not used |
-| REPLAY-HOLDOUT | "✓ holdout" still shown as a positive chip | Template 242–243 |
-| MDI-14 | Retire or rebuild `macro_module_contract.json` | Still written |
-| XLU-D16, NF-1 | USMI age check; finaliser re-reads macro from the live folder | Not found |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| TRIAGE-T7-DISPLAY | Board template shows the T7 intelligence items | No template code | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| USMI-SCORE-EMPTY | Money Index has no score or components since the 10 Nov rebaseline | ChatGPT side | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| GATE-DIRECT-BUILDER | Direct `build_macro_json.py` call bypasses the freshness gate | Documented limitation | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| STALE-RSP-BREADTH, STALE-DEPTH | RSP breadth not labelled stale on as-of builds; 37 ETFs lack 200-day depth | `macro_board/opportunity.py:40` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| G10, G16, G17 | Yield split into real/breakeven/term premium on the board; shared-event flag; SPY/QQQ intraday | Series collected, not used | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| REPLAY-HOLDOUT | "✓ holdout" still shown as a positive chip | Template 242–243 | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| MDI-14 | Retire or rebuild `macro_module_contract.json` | Still written | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
+| XLU-D16, NF-1 | USMI age check; finaliser re-reads macro from the live folder | Not found | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Macro capture/delivery -> board/triage/intelligence; retain no standalone trade-authority effect. |
 
 ### 1.8 Waiting on an ACK decision
 
-| ID | Decision needed |
-|---|---|
-| STALE-A / B / C, STALE-BITO | Which fix for the 39 ETFs with no stored prices, and the BITO split (+98% shown on 19 Nov) |
-| TRIAGE-11-UNIVERSE | Add 11 ETFs to the board universe |
-| FUNDFLOW-SOURCE | A verified ETF net-flow source |
-| COST-CAP | Decided by ACK on 21 Nov: USD 4 a day. Tests now read the cap from config; runbook corrected |
-| RECOV-FUNDING | API credit shortfall for FULL builds |
-| MDI-12 | MOVE, dispersion and correlation measures |
-| Dec 4, 5, 7, 8, 9 (AVS-TRADE-001) | Value selection SHADOW→ACTIVE; rank by return per premium dollar; tastytrade live quotes on cards; in-window names first; success tests as expectancy |
-| TR-005 | Delayed feed (72–76 min) fails the freshness rule and gives DO_NOT_TRADE on 14, 18, 19 Nov |
-| TR-013, needs_codex §4 | Retire the 25% spread test and old-layout scripts |
-| BF-A | Wider backfill chains |
-| OT-4d | Fee schedule |
-| Dev plan v0.2 (AR22, R0–R3, BG01–BG10), Decision Register docx decisions 1–10 | Whole plan is "proposed"; none approved |
-| Codex plans (section 4) | Approval of root cause and design before any build |
+| ID | Decision needed | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|
+| STALE-A / B / C, STALE-BITO | Which fix for the 39 ETFs with no stored prices, and the BITO split (+98% shown on 19 Nov) | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| TRIAGE-11-UNIVERSE | Add 11 ETFs to the board universe | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| FUNDFLOW-SOURCE | A verified ETF net-flow source | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| COST-CAP | Decided by ACK on 21 Nov: USD 4 a day. Tests now read the cap from config; runbook corrected | YES-REPORTED | ANCESTOR-VERIFIED f3e199e | YES-REPORTED | COMMIT-REPORTED 16/16 | NOT-EVIDENCED | USD4-CONFIG-DECISION | VERIFY — Cap question resolved by ACK; cost tests reported passed in commit, not rerun here. No new budget authority from this register. |
+| RECOV-FUNDING | API credit shortfall for FULL builds | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| MDI-12 | MOVE, dispersion and correlation measures | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| Dec 4, 5, 7, 8, 9 (AVS-TRADE-001) | Value selection SHADOW→ACTIVE; rank by return per premium dollar; tastytrade live quotes on cards; in-window names first; success tests as expectancy | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| TR-005 | Delayed feed (72–76 min) fails the freshness rule and gives DO_NOT_TRADE on 14, 18, 19 Nov | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| TR-013, needs_codex §4 | Retire the 25% spread test and old-layout scripts | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| BF-A | Wider backfill chains | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| OT-4d | Fee schedule | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| Dev plan v0.2 (AR22, R0–R3, BG01–BG10), Decision Register docx decisions 1–10 | Whole plan is "proposed"; none approved | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
+| Codex plans (section 4) | Approval of root cause and design before any build | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
 
 ---
 
-## 2. Fixed but not implemented
+## 2. Historical bucket: built with delivery, release or acceptance gaps
 
 ### 2.1 Built and wired, but producing nothing in real runs
 
-| ID | Fix | What the run shows |
-|---|---|---|
-| B1 / `675b5e3` | Shadow contract value selection | 100% `VALUE_INPUTS_UNAVAILABLE` |
-| F1 | Legacy vs shadow selection pair | Shadow half empty because B1 is dead |
-| C1 | Scenario payoffs on every row | 100% `NOT_ASSESSED` |
-| XLU-D03 / E2 | Sector and USMI alignment overlay | 100% `UNAVAILABLE` |
-| A12 / W1 | Monetisation clock per row | 100% `UNASSESSED_NOT_PUBLISHED`; run never supplies the packet |
-| Design v4 scenario | Per-contract crossing scenario at EOD and Morning | `THESIS_NOT_ACTIVE` on 2,036 rows; 2 assessed |
-| A3 | Hold counts down | Remaining = planned on 2,032 of 2,032 |
-| A8 / needs_codex 1.2 | Contract alternatives | Published on 2,032 rows; no consumer reads that field name |
-| AVS-LEDGER-001 L1 | Stock outcomes on every ledger | Lapsed after 12 Nov |
+| ID | Fix | What the run shows | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| B1 / `675b5e3` | Shadow contract value selection | 100% `VALUE_INPUTS_UNAVAILABLE` | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | SHADOW-ONLY | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| F1 | Legacy vs shadow selection pair | Shadow half empty because B1 is dead | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | SHADOW-ONLY | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| C1 | Scenario payoffs on every row | 100% `NOT_ASSESSED` | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| XLU-D03 / E2 | Sector and USMI alignment overlay | 100% `UNAVAILABLE` | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| A12 / W1 | Monetisation clock per row | 100% `UNASSESSED_NOT_PUBLISHED`; run never supplies the packet | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| Design v4 scenario | Per-contract crossing scenario at EOD and Morning | `THESIS_NOT_ACTIVE` on 2,036 rows; 2 assessed | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| A3 | Hold counts down | Remaining = planned on 2,032 of 2,032 | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| A8 / needs_codex 1.2 | Contract alternatives | Published on 2,032 rows; no consumer reads that field name | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
+| AVS-LEDGER-001 L1 | Stock outcomes on every ledger | Lapsed after 12 Nov | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Observed empty/degraded output; root-cause producer, branch and consumer before proposing a fix. |
 
 ### 2.2 Label-only or display-only closures
 
-| ID | Fix | What was actually done |
-|---|---|---|
-| D2 / OT-1 | Stop CONFIRMED direction with zero evidence | Display rename; source still writes `DIRECTION_CONFIRMED` |
-| R6 / "expires before the median move" | Contract family by thesis timing | Flag `CONTRACT_EXPIRES_BEFORE_MEDIAN_TIME` only |
-| OT-10.1 | Per-setup within-hold rates | Display only; lane and geometry not switched (ACK decision held) |
-| R12 / S2.4 / DF-3 | Freshness gate | Report only, never blocks (ACK 19 Sep) |
-| S11.5 / O2 / Item 2 | One valuation core | Shadow valuers only, no authority (by rule 5) |
-| E11, R3 | Quote provenance | Evening shadow only; Morning unwired |
+| ID | Fix | What was actually done | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| D2 / OT-1 | Stop CONFIRMED direction with zero evidence | Display rename; source still writes `DIRECTION_CONFIRMED` | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
+| R6 / "expires before the median move" | Contract family by thesis timing | Flag `CONTRACT_EXPIRES_BEFORE_MEDIAN_TIME` only | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
+| OT-10.1 | Per-setup within-hold rates | Display only; lane and geometry not switched (ACK decision held) | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
+| R12 / S2.4 / DF-3 | Freshness gate | Report only, never blocks (ACK 19 Sep) | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
+| S11.5 / O2 / Item 2 | One valuation core | Shadow valuers only, no authority (by rule 5) | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
+| E11, R3 | Quote provenance | Evening shadow only; Morning unwired | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
 
 ### 2.3 Built but not the running path, or switched off
 
-| ID | Fix | Evidence |
-|---|---|---|
-| S0.1–S0.3 / P0-3 inc. 1 / R8 | One launcher, RunContext, pre-flight gate | `avshunter/c0_run/` (`198598a`); runs start with `python intelligent_orchestrator.py` |
-| OT-10x | Exact-option outcome capture | Env switch default "0" |
-| F2, POB 1, POB 1B | Broker-side quote check; tastytrade read-only bridge | Scripts exist; nothing calls them |
-| USMI-VALIDATE-STEP | Validate each USMI packet before the Evening | Script exists; no runner step |
-| SOR feature reader, mode/phase key | As-of feature window; `wyckoff_mode_phase_key` | No production importer |
-| DSC-01/02/03/07/10/11/12/19/24, VNG-03, `side_assign_v1` | DIR-002 symmetric evidence on the legacy stack | Shadow; stack retired from authority on 7 Oct |
-| TEV Slice D, register 9 | C6 in one owner; Morning revision service | Two modules remain |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| S0.1–S0.3 / P0-3 inc. 1 / R8 | One launcher, RunContext, pre-flight gate | `avshunter/c0_run/` (`198598a`); runs start with `python intelligent_orchestrator.py` | YES-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
+| OT-10x | Exact-option outcome capture | Env switch default "0" | YES-REPORTED | RECHECK-BASELINE | POLICY-DISABLED | NOT-REVERIFIED | NOT-EVIDENCED | OBSERVATION-ONLY | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
+| F2, POB 1, POB 1B | Broker-side quote check; tastytrade read-only bridge | Scripts exist; nothing calls them | YES-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
+| USMI-VALIDATE-STEP | Validate each USMI packet before the Evening | Script exists; no runner step | YES-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
+| SOR feature reader, mode/phase key | As-of feature window; `wyckoff_mode_phase_key` | No production importer | YES-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
+| DSC-01/02/03/07/10/11/12/19/24, VNG-03, `side_assign_v1` | DIR-002 symmetric evidence on the legacy stack | Shadow; stack retired from authority on 7 Oct | YES-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
+| TEV Slice D, register 9 | C6 in one owner; Morning revision service | Two modules remain | YES-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Prove actual launch/call/config path and missing output; preserve deliberate policy disablement. |
 
 ### 2.4 Only on another branch
 
-| ID | Fix | Evidence |
-|---|---|---|
-| LAB-TIMING | Timing stage skipped on the trusted-receipt path | `b48db74` on `fix/lab-timing-publication-20261116`; also uncommitted in the working tree |
-| TR-016 | Production eligibility gate | `eb50549` on `fix/production-eligibility-20261112` |
-| G1 note | IV-surface root-cause note and characterisation test | Untracked in worktree `nice-wozniak-f2ce1d` |
-| Phantom findings doc | Change list 1–11 | Untracked in worktree `affectionate-brattain-10941c`; in no branch |
+| ID | Fix | Evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| LAB-TIMING | Timing stage skipped on the trusted-receipt path | `b48db74` on `fix/lab-timing-publication-20261116`; also uncommitted in the working tree | YES-REPORTED | OTHER-BRANCH-VERIFIED | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P0-BASELINE — Reconcile branch ancestry, patch and interfaces after commit completion; no blind cherry-pick. |
+| TR-016 | Production eligibility gate | `eb50549` on `fix/production-eligibility-20261112` | YES-REPORTED | OTHER-BRANCH-VERIFIED | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P0-BASELINE — Reconcile branch ancestry, patch and interfaces after commit completion; no blind cherry-pick. |
+| G1 note | IV-surface root-cause note and characterisation test | Untracked in worktree `nice-wozniak-f2ce1d` | YES-REPORTED | OTHER-BRANCH | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P0-BASELINE — Reconcile branch ancestry, patch and interfaces after commit completion; no blind cherry-pick. |
+| Phantom findings doc | Change list 1–11 | Untracked in worktree `affectionate-brattain-10941c`; in no branch | YES-REPORTED | OTHER-BRANCH | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P0-BASELINE — Reconcile branch ancestry, patch and interfaces after commit completion; no blind cherry-pick. |
 
-### 2.5 Running locally but uncommitted (macro, 14–20 Nov)
+### 2.5 Historical local/uncommitted findings — reconciled to `f3e199e` where evidenced
 
-| ID | Fix |
-|---|---|
-| TRIAGE-T1, T2, T3, T5, T6, T7a–d, PEER, RETENTION | Board per-ETF intelligence file, join to the hand-off, `avs_day` and runner wiring, `check_triage` macro check, Day story names, T7 intelligence, `EW_SECTORS` peer, 10-session clean-up |
-| SCHED-CONTROLLED, PREOPEN-1200, POSTCLOSE, EARLYCLOSE | One controlled scheduler, 12:00 UK pre-open, +30 min post-close, exchange-calendar guard. The scheduler is firing from untracked files |
-| GATE-FRESHNESS, BUDGET-PAID-SLOT, BUDGET-AXJO, BUDGET-MISSING-CLOCK | FULL build stops on a stale refresh; preflight stops cost nothing; ^AXJO dropped; missing bar clock handled |
-| COST-CAP, COST-PROMPT, CASHIDX, FUNDFLOW-CONTRACT | Daily API cap; prompt compaction; cash index collector; fund-flow file contract (no source file yet) |
-| RECOV-USMI-PARTIAL, RECOV-CHAT-ALIASES, RECOV-PICKUP | USMI PARTIAL label accepted; producer chat aliases; 10-minute pickup window |
-| BOARD-DISPLAY-1117, FRED-TEST | Absolute returns first and stale banner; corrected FRED test |
-| IVH-3 | 30-day constant-maturity ATM IV (`_layer3_atm_iv_fields`, `garch_runner._layer3_iv_observation`) |
-| avs_verify v1.4 | Phase contract and R24 rule (reports already stamped v1.4) |
-| B7 `_b1` path fix | `today_context` paths blank on 20 Nov although the files exist |
+| ID | Fix | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|
+| TRIAGE-T1, T2, T3, T5, T6, T7a–d, PEER, RETENTION | Board per-ETF intelligence file, join to the hand-off, `avs_day` and runner wiring, `check_triage` macro check, Day story names, T7 intelligence, `EW_SECTORS` peer, 10-session clean-up | YES-REPORTED | ANCESTOR-VERIFIED c0d5a45 | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Committed board-to-triage source; real-session population/display acceptance remains separate. |
+| SCHED-CONTROLLED, PREOPEN-1200, POSTCLOSE, EARLYCLOSE | One controlled scheduler, 12:00 UK pre-open, +30 min post-close, exchange-calendar guard. Source files now tracked at `b44d96e`; actual scheduled firing/acceptance remains separate | YES-REPORTED | ANCESTOR-VERIFIED b44d96e | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Scheduler source now tracked/clean; do not infer scheduler registration or first scheduled-run acceptance from commit. |
+| GATE-FRESHNESS, BUDGET-PAID-SLOT, BUDGET-AXJO, BUDGET-MISSING-CLOCK | FULL build stops on a stale refresh; preflight stops cost nothing; ^AXJO dropped; missing bar clock handled | YES-REPORTED | ANCESTOR-VERIFIED b44d96e | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Tracked source and commit-reported aggregate tests; unchanged policy/actual runtime effects need scoped acceptance. |
+| COST-CAP, COST-PROMPT, CASHIDX, FUNDFLOW-CONTRACT | Daily API cap; prompt compaction; cash index collector; fund-flow file contract (no source file yet) | YES-REPORTED | ANCESTOR-VERIFIED b44d96e | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Source committed; cap decision confirmed USD 4 by f3e199e. A contract file does not supply absent fund-flow data. |
+| RECOV-USMI-PARTIAL, RECOV-CHAT-ALIASES, RECOV-PICKUP | USMI PARTIAL label accepted; producer chat aliases; 10-minute pickup window | YES-REPORTED | ANCESTOR-VERIFIED b44d96e | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Recovery source committed; unattended originals/producer-delivery acceptance remains separate. |
+| BOARD-DISPLAY-1117, FRED-TEST | Absolute returns first and stale banner; corrected FRED test | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P0-BASELINE — Recheck final commit/file status and scheduler imports after ongoing commits; not a current blanket uncommitted claim. |
+| IVH-3 | 30-day constant-maturity ATM IV (`_layer3_atm_iv_fields`, `garch_runner._layer3_iv_observation`) | YES-REPORTED | ANCESTOR-VERIFIED 5b3d518 | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — IV30 implementation committed, but late success-only estimator/forecast delivery gaps remain VOL-02/03; do not close by commit. |
+| avs_verify v1.4 | Phase contract and R24 rule (reports already stamped v1.4) | YES-REPORTED | ANCESTOR-VERIFIED b4ad1b5 | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Verifier source tracked/clean; does not certify fixes or baseline forward performance. |
+| B7 `_b1` path fix | `today_context` paths blank on 20 Nov although the files exist | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P0-BASELINE — Recheck final commit/file status and scheduler imports after ongoing commits; not a current blanket uncommitted claim. |
 
 ### 2.6 Waiting on a manual step or real-session acceptance
 
-| ID | What is owed |
-|---|---|
-| TRIAGE-T4, USMI-TEXTFLAG-PROMPT | ACK pastes the prompt text into the chat automations; no evidence it was done |
-| TRIAGE-E2E | T3–T5 acceptance on one real session (20 Nov context was written after the triage ran) |
-| UAT-01/02/03 | Close-capture rules live only in the retired local script; the post-close monitor prompt has not adopted them |
-| DELIV-CLOUD, RECOV-PICKUP | Unattended cloud-to-local export not yet observed |
-| SCHED-PREOPEN-1200 | First scheduled 12:00 UK run is Mon 23 Nov |
-| MPW / Dec 6 | Morning gate any time in market hours: five-session forward acceptance owed |
-| E1 (remainder) | Instrument identity first increment is live, but 2,206 of 2,746 rows are `UNASSESSED_CLASSIFICATION_DATES` |
-| Open 5 (17 Sep) | Acceptance against reality on forward sessions for the September fixes |
+| ID | What is owed | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|
+| TRIAGE-T4, USMI-TEXTFLAG-PROMPT | ACK pastes the prompt text into the chat automations; no evidence it was done | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| TRIAGE-E2E | T3–T5 acceptance on one real session (20 Nov context was written after the triage ran) | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| UAT-01/02/03 | Close-capture rules live only in the retired local script; the post-close monitor prompt has not adopted them | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| DELIV-CLOUD, RECOV-PICKUP | Unattended cloud-to-local export not yet observed | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| SCHED-PREOPEN-1200 | First scheduled 12:00 UK run is Mon 23 Nov | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| MPW / Dec 6 | Morning gate any time in market hours: five-session forward acceptance owed | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| E1 (remainder) | Instrument identity first increment is live, but 2,206 of 2,746 rows are `UNASSESSED_CLASSIFICATION_DATES` | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
+| Open 5 (17 Sep) | Acceptance against reality on forward sessions for the September fixes | YES-REPORTED | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Acceptance/operational evidence owed; do not equate pending real-session evidence with absent implementation. |
 
 ---
 
-## 3. Fixed and implemented
+## 3. Historical bucket: reported committed and wired
 
-Committed on this branch and wired. Replay evidence only unless stated.
+Original audit reported committed on this branch and wired. Reconcile against the final baseline. This is not a passing-test or forward-acceptance certification.
 
 ### 3.1 Contract and options
 
-| ID | Fix | Commit |
-|---|---|---|
-| E1/E2 (Sep), S10.4, DM-16 | Only two-sided contracts within the spread limit | `7210a50` |
-| E3/E4, E5, E7, L1–L3, DM-22, S10.6 | Missing prices stay missing; wrong-side contract removed; invalidation side-checked; fields describe the written contract | `45bcd7d`, `ff2c035`, `e0fa763` |
-| E6, D3, S9.5, DM-06, XLU-D01 | No invented 3R target; reachable target published | `7210a50`, `d1ee309` |
-| R:R removal, XLU-D13 | R:R out of every score and gate | `d1ee309` |
-| G4 / D4a / DM-14 / OA 1e | Provider Greeks published; Heston display-only; source labelled | `666f09c` (live: `PROVIDER_EOD_CHAIN` on 2,032 rows) |
-| G5 items 1–2, UAT-06/07 | Card and Lane B priced American with the run's live rate; owned CRR tree; `--as-of` | `c175576`, `5b4fc6a`, `245e87c` |
-| G9-GUARD | Test blocks any new pricer | `c175576` |
-| S10.1c, DM-20, DI Fix 2, XLU-NF-2 | True IV percentile, one owner | `61c16b9`, `f368d47` |
-| DI Fix 1b, 3, 4, D5; GEX-D1 | `rr_options` state; side-constrained walls; gamma flip from signed gamma; sizing reads IV percentile | `f9a7985`, `f368d47` |
-| OT-3, OT-4, OT-5, OT-6, OT-7 | Geometry block; one card valuation engine; SPY gamma alias removed; IV labels; gamma-weighted walls | `1f37f1c` |
-| OA 1a–1d, Slice 2 | Vega risk units; put "too late" check; signed breakeven; EV v2 off display; contract analytics block | `d1ee309` |
-| Anticipated move steps 1–5 | Earnings as disclosure; anticipated fields; runway on the anticipated level; "does the move pay" flag | `d1ee309` |
-| EV3-OPT3 D1/D2, MEM-swap, MEM-weekend | EV3 at hold plus move window; Morning swap writes new strike/expiry/DTE; quote age is a label | `d1ee309` |
-| GARCH-D1 / D13 / TR-008 | Cumulative expected moves at 5, 10, 20 sessions | `3bd7ecf` |
-| L3-a/b, V5–V7, DQ-12 | Forecast fallback chain; governed bounds; structural-break history | `202836b`, `db2d807`, `e1ce260` |
-| Design v4 shadow, R1, Design 15.7 | Crossing shadow comparison; unrounded return; crossed quote graded C | `fc5faee` |
-| Dec 6 / MPW | Morning gate runs any time in market hours | `d1c770c` |
-| XLU-D04, D10, D11 | Compression flags rich IV; phase/event categorise only; confirmation needs a material move | `d1ee309` |
+| ID | Fix | Commit | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| E1/E2 (Sep), S10.4, DM-16 | Only two-sided contracts within the spread limit | `7210a50` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| E3/E4, E5, E7, L1–L3, DM-22, S10.6 | Missing prices stay missing; wrong-side contract removed; invalidation side-checked; fields describe the written contract | `45bcd7d`, `ff2c035`, `e0fa763` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| E6, D3, S9.5, DM-06, XLU-D01 | No invented 3R target; reachable target published | `7210a50`, `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| R:R removal, XLU-D13 | R:R out of every score and gate | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| G4 / D4a / DM-14 / OA 1e | Provider Greeks published; Heston display-only; source labelled | `666f09c` (live: `PROVIDER_EOD_CHAIN` on 2,032 rows) | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| G5 items 1–2, UAT-06/07 | Card and Lane B priced American with the run's live rate; owned CRR tree; `--as-of` | `c175576`, `5b4fc6a`, `245e87c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| G9-GUARD | Test blocks any new pricer | `c175576` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| S10.1c, DM-20, DI Fix 2, XLU-NF-2 | Source-aware IV-percentile owner; full comparable daily history still outstanding | `61c16b9`, `f368d47` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | VERIFY — Resolver exists; cited run: 2,181 IV_HISTORY all SHORT_HISTORY, 2 RV_RANGE_PROXY, 2 unavailable, 561 blank. Daily comparable IV30 still VOL-04. |
+| DI Fix 1b, 3, 4, D5; GEX-D1 | `rr_options` state; side-constrained walls; gamma flip from signed gamma; sizing reads IV percentile | `f9a7985`, `f368d47` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| OT-3, OT-4, OT-5, OT-6, OT-7 | Geometry block; one card valuation engine; SPY gamma alias removed; IV labels; gamma-weighted walls | `1f37f1c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| OA 1a–1d, Slice 2 | Vega risk units; put "too late" check; signed breakeven; EV v2 off display; contract analytics block | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| Anticipated move steps 1–5 | Earnings as disclosure; anticipated fields; runway on the anticipated level; "does the move pay" flag | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| EV3-OPT3 D1/D2, MEM-swap, MEM-weekend | EV3 at hold plus move window; Morning swap writes new strike/expiry/DTE; quote age is a label | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| GARCH-D1 / D13 / TR-008 | Cumulative expected moves at 5, 10, 20 sessions | `3bd7ecf` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| L3-a/b, V5–V7, DQ-12 | Forecast fallback chain; governed bounds; structural-break history | `202836b`, `db2d807`, `e1ce260` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| Design v4 shadow, R1, Design 15.7 | Crossing shadow comparison; unrounded return; crossed quote graded C | `fc5faee` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| Dec 6 / MPW | Morning gate runs any time in market hours | `d1c770c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
+| XLU-D04, D10, D11 | Compression flags rich IV; phase/event categorise only; confirmation needs a material move | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported live contract/valuation fix: recheck effective code, consumer outputs and narrow acceptance scope. |
 
 ### 3.2 Discovery, Vanguard, thesis
 
-| ID | Fix | Commit |
-|---|---|---|
-| P0-01, 03, 04, 06, 07, 09; redesign Phases 1–5 | One story per thesis; thesis owns side; event triggers; Vanguard as context; no 2,000 cap; drop-off audit | `1f37f1c`, `2efec78` |
-| E11b / R11 / O5 | One rank owner `domain/opportunity_rank.py` | `1f37f1c` |
-| OT-11 station 1 | Discovery tier, order and horizon from the thesis | `1f37f1c`, `08c5a26` |
-| VNG-01, 02, 05, 06, 11, 12, 17; DM-02 | Thesis context into Vanguard; no CALL default; point-in-time query; typed empty samples | `d1ee309`, `1f37f1c` |
-| DWN-01, 02, 04, 05, 06, 08, 12, 13, 16 | Options and C5 read the thesis side; retired vote families | `d1ee309` |
-| BEH-001 A2-2, R-01..05, C-01..04, C-07, RQ-1/2 | Weekly and monthly timeframes; candidate ledger; no fixed 20-session hold; no price gate | `d1ee309`, `f8dd20a` |
-| DSC-13, 15, 20, 21 | Tier-0 never overwrites; typed eligibility codes; scan errors as rows; macro to advisory fields | `d1ee309` |
-| `308c166`, `43356a8` / DM-38, `2c224e9`, `dc0e5af`, `2102fd8` / DM-03, DM-27, `39f1ca8` | Field ownership; Discovery owns horizon; sector/momentum inputs; physics on measured inputs; vol regime rule | as listed |
-| M-REVIEW-01 | Morning authority from the thesis | `1f37f1c` |
-| Phase 8 F1–F5, A-step 2, B4.2 / R1, R3 / L7 | Intraday coverage states and catch-up; OBSERVED/INFERRED labels; event clocks; opportunity ledger | `2efec78` |
-| A2, D2, D3 (25 Sep), INT-001 H1/H2 | No-quote label; manifest grain; book-stability diagnostic | `34c0fef`, `8ecb831`, `bb4cf50` |
-| OT-8, OT-9, OT-10.2/10.3/10.4, TR-015 | Disposition journal; earnings tiers; station inspections and quarantine; scorecard; forward calibration report | `1f37f1c`, `ff694d7` |
+| ID | Fix | Commit | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-01, 03, 04, 06, 07, 09; redesign Phases 1–5 | One story per thesis; thesis owns side; event triggers; Vanguard as context; no 2,000 cap; drop-off audit | `1f37f1c`, `2efec78` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| E11b / R11 / O5 | One rank owner `domain/opportunity_rank.py` | `1f37f1c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| OT-11 station 1 | Discovery tier, order and horizon from the thesis | `1f37f1c`, `08c5a26` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| VNG-01, 02, 05, 06, 11, 12, 17; DM-02 | Thesis context into Vanguard; no CALL default; point-in-time query; typed empty samples | `d1ee309`, `1f37f1c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| DWN-01, 02, 04, 05, 06, 08, 12, 13, 16 | Options and C5 read the thesis side; retired vote families | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| BEH-001 A2-2, R-01..05, C-01..04, C-07, RQ-1/2 | Weekly and monthly timeframes; candidate ledger; no fixed 20-session hold; no price gate | `d1ee309`, `f8dd20a` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| DSC-13, 15, 20, 21 | Tier-0 never overwrites; typed eligibility codes; scan errors as rows; macro to advisory fields | `d1ee309` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| `308c166`, `43356a8` / DM-38, `2c224e9`, `dc0e5af`, `2102fd8` / DM-03, DM-27, `39f1ca8` | Field ownership; Discovery owns horizon; sector/momentum inputs; physics on measured inputs; vol regime rule | as listed | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| M-REVIEW-01 | Morning authority from the thesis | `1f37f1c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| Phase 8 F1–F5, A-step 2, B4.2 / R1, R3 / L7 | Intraday coverage states and catch-up; OBSERVED/INFERRED labels; event clocks; opportunity ledger | `2efec78` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| A2, D2, D3 (25 Sep), INT-001 H1/H2 | No-quote label; manifest grain; book-stability diagnostic | `34c0fef`, `8ecb831`, `bb4cf50` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
+| OT-8, OT-9, OT-10.2/10.3/10.4, TR-015 | Disposition journal; earnings tiers; station inspections and quarantine; scorecard; forward calibration report | `1f37f1c`, `ff694d7` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported discovery/direction fix: verify propagation into cards/Morning and interactions with retained legacy code. |
 
 ### 3.3 Measurement, data, Phantom
 
-| ID | Fix | Commit / evidence |
-|---|---|---|
-| P0-2 | Configuration registry (all values PROVISIONAL) | `8635ca1` |
-| P0-8, S17.2–4, C4 labels, R10 | Outcome scorer runs after every Evening | `1912f75` … `6d73429` |
-| P0-4 slice 1, S2.2, GEX-D9 | Open tickets keep daily marks; chain adapter date rule | `8a4b011`, `5f23e40` |
-| P0-1, F7 data, IVH-1 | History backfills (data) | Receipts |
-| S2.6, `cdedf20` | IV history every evening; readiness report | `cdedf20` |
-| PH-1, 3 (6/7/14 Oct), 4, 5, 7, 8, 10; MEM-backfill | Missing Greeks computed (5.5M rows); provenance labels; every write path completes Greeks and IV; open-interest policy recorded | `7effc2b`, `79c5983`; 0 `PENDING_IV` live |
-| IVH-2 / DF-1 | Evening captures about 2,650 tickers on run nights | Since 19 Oct |
-| BF-safe, BF-B, BF-path, MR-1111 | Guarded backfill for 20 Oct and 9 Nov; named-contract and path supplements; 11 Nov repair | `79c5983`; receipts |
-| GEX fallback | Chain session roll with labelled sentinel | `gamma_exposure_store.py:174` |
-| PKG-002 P1–P4c | Manifest mode, package-free Evening | `1a06988`, `913b8ce` |
-| Artifact retention | Artifact-level retention | `23ad527` |
-| S0.7c, S16.2 | Untracked production import committed; old UI copies quarantined | `d1a1a09`, `43136b1` |
+| ID | Fix | Commit / evidence | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| P0-2 | Configuration registry (all values PROVISIONAL) | `8635ca1` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| P0-8, S17.2–4, C4 labels, R10 | Outcome scorer runs after every Evening | `1912f75` … `6d73429` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| P0-4 slice 1, S2.2, GEX-D9 | Open tickets keep daily marks; chain adapter date rule | `8a4b011`, `5f23e40` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| P0-1, F7 data, IVH-1 | History backfills (data) | Receipts | YES-REPORTED | EVIDENCE-NO-HASH | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| S2.6, `cdedf20` | IV history every evening; readiness report | `cdedf20` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| PH-1, 3 (6/7/14 Oct), 4, 5, 7, 8, 10; MEM-backfill | Missing Greeks computed (5.5M rows); provenance labels; every write path completes Greeks and IV; open-interest policy recorded | `7effc2b`, `79c5983`; 0 `PENDING_IV` live | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| IVH-2 / DF-1 | Evening captures about 2,650 tickers on run nights | Since 19 Oct | YES-REPORTED | EVIDENCE-NO-HASH | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| BF-safe, BF-B, BF-path, MR-1111 | Guarded backfill for 20 Oct and 9 Nov; named-contract and path supplements; 11 Nov repair | `79c5983`; receipts | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| GEX fallback | Chain session roll with labelled sentinel | `gamma_exposure_store.py:174` | YES-REPORTED | EVIDENCE-NO-HASH | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| PKG-002 P1–P4c | Manifest mode, package-free Evening | `1a06988`, `913b8ce` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| Artifact retention | Artifact-level retention | `23ad527` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
+| S0.7c, S16.2 | Untracked production import committed; old UI copies quarantined | `d1a1a09`, `43136b1` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported measurement/data fix: verify lineage, completeness, actual receipt scope and quality on final baseline. |
 
 ### 3.4 Lab, Lane B
 
-| ID | Fix | Commit |
-|---|---|---|
-| LAB-004 S1–S3, accuracy 1–6, H1 | Review projection and UI; accuracy fixes; execution-gate columns | `5864ff1` |
-| Lab bind | Served on 127.0.0.1 at the root page | `2efec78` |
-| B0–B7, B10, TR-012, focus list, X17 tiers (TR-004) | Hand-off built from the Lab; packs; decision records; focus list; 11 Nov tiers | `1e43e6b` … `208e1d2` |
-| E1/E17 increment 1, E16 | Instrument identity fields; leveraged/inverse labelled research-only | `4010d4d` |
-| AVS-TRACE-001, usmi duplicates | Traceability review; duplicate book columns | `3d460c9`, `4f56bc8` |
-| S1-2a/2b | Dead Phantom layer removed; Phantom writes only its own fields | 7 Oct |
+| ID | Fix | Commit | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| LAB-004 S1–S3, accuracy 1–6, H1 | Review projection and UI; accuracy fixes; execution-gate columns | `5864ff1` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported UI/handoff fix: cold-load/consumer/record consistency; live output does not establish outcome benefit. |
+| Lab bind | Served on 127.0.0.1 at the root page | `2efec78` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported UI/handoff fix: cold-load/consumer/record consistency; live output does not establish outcome benefit. |
+| B0–B7, B10, TR-012, focus list, X17 tiers (TR-004) | Hand-off built from the Lab; packs; decision records; focus list; 11 Nov tiers | `1e43e6b` … `208e1d2` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported UI/handoff fix: cold-load/consumer/record consistency; live output does not establish outcome benefit. |
+| E1/E17 increment 1, E16 | Instrument identity fields; leveraged/inverse labelled research-only | `4010d4d` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported UI/handoff fix: cold-load/consumer/record consistency; live output does not establish outcome benefit. |
+| AVS-TRACE-001, usmi duplicates | Traceability review; duplicate book columns | `3d460c9`, `4f56bc8` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported UI/handoff fix: cold-load/consumer/record consistency; live output does not establish outcome benefit. |
+| S1-2a/2b | Dead Phantom layer removed; Phantom writes only its own fields | 7 Oct | YES-REPORTED | EVIDENCE-NO-HASH | YES-REPORTED | 2-NARROW-PASS | NOT-EVIDENCED | OBSERVATION-ONLY | VERIFY — Two Phantom ownership tests passed in 20.69s; no score-threshold or economic validation implied. |
 
 ### 3.5 Macro
 
-| ID | Fix | Commit |
-|---|---|---|
-| DELIV-INTAKE, DELIV-USMI-V2, USMI-TEXTFLAG-CONTRACT | Manifest intake and receipts; USMI v2 schema; text flags through a fixed vocabulary | `ca060b7`, `1f37f1c` |
-| FRED-TERMPREM, FRED-USSLIND | FRED latest-public-release policy | `ca060b7` |
-| Board gaps G1–G9, G11–G15, G18 | Dates, labels, archive, implied move, intervals, holdings, desk card | `46d28f7`, `c086806`, `1789870` |
-| REPLAY-H10 | Dollar condition respects its release day | `278d8b8` |
-| MDI-P0, MDI-09, MDI-11 | Input manifest and hashes; breadth input; events through the delivery ledger | committed |
-| OWN-PER-ETF, OWN-CANDIDATE-MAP, OWN-LOCAL-SPLIT, OWN-LATEST-WINS | Plan and Money Index per ETF with measured correlation; candidates mapped to their ETF; measured sheet local; newest packet wins | `bad3355`, `ca060b7` |
-| E1 (25 Sep), D6/D7, Scenario M8 | Unsourced convexity hidden; GEX no longer scales size | `ad04778` |
+| ID | Fix | Commit | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| DELIV-INTAKE, DELIV-USMI-V2, USMI-TEXTFLAG-CONTRACT | Manifest intake and receipts; USMI v2 schema; text flags through a fixed vocabulary | `ca060b7`, `1f37f1c` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
+| FRED-TERMPREM, FRED-USSLIND | FRED latest-public-release policy | `ca060b7` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
+| Board gaps G1–G9, G11–G15, G18 | Dates, labels, archive, implied move, intervals, holdings, desk card | `46d28f7`, `c086806`, `1789870` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
+| REPLAY-H10 | Dollar condition respects its release day | `278d8b8` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
+| MDI-P0, MDI-09, MDI-11 | Input manifest and hashes; breadth input; events through the delivery ledger | committed | YES-REPORTED | EVIDENCE-NO-HASH | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
+| OWN-PER-ETF, OWN-CANDIDATE-MAP, OWN-LOCAL-SPLIT, OWN-LATEST-WINS | Plan and Money Index per ETF with measured correlation; candidates mapped to their ETF; measured sheet local; newest packet wins | `bad3355`, `ca060b7` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
+| E1 (25 Sep), D6/D7, Scenario M8 | Unsourced convexity hidden; GEX no longer scales size | `ad04778` | YES-REPORTED | ANCESTOR-VERIFIED | YES-REPORTED | NOT-REVERIFIED | REPLAY-REPORTED | VERIFY-DECISION | VERIFY — Reported macro fix: validate timestamps, delivery and intelligence scope; do not silently alter trade decisions. |
 
 ---
 
@@ -374,25 +380,25 @@ Files: `Documents\Codex\2026-11-21\re\outputs\GARCH_ordering_and_IV_benchmark_fi
 
 ### 4.2 Items and how they map to this register
 
-| ID | Fix | Existing register items it closes or overlaps |
-|---|---|---|
-| VOL-01 | Freeze contracts, cutoffs, fixtures | S0.2 RunContext (built, not wired) |
-| VOL-02 | Price-only forecast before Options Intelligence; current forecast injected into the valuer | **B1, F1** (dead shadow selection); B1 RCA of 25 Sep already named this as the long-term shape; S0.4 clock |
-| VOL-03 | Typed IV result at the chain boundary, on every return path | IVH-3 (uncommitted); gap 1 |
-| VOL-04 | 1/5/20-session measures; daily IV30 history; IV percentile with honest coverage | D16, ADD-N2, OT-6, DI Fix 2 (existing IV-percentile owner must be reused) |
-| VOL-05 | Better ATM estimator (fixed ±5% band fails on 498 names) | New |
-| VOL-06 | Horizon-specific forecast challengers; HAR fit-window audit | C3 (validate the forecast), GARCH-D1, Phase 6 IV/HAR-RV finding |
-| VOL-07 | One assessment id consumed by OI, C7/C8, DOI, learning | TEV Slice E, O2, C1 |
-| VOL-08 | Release and monitoring | Rule 5 gates |
-| PHANTOM-A | Normalise the score in shadow; versioned thresholds | New |
-| PHANTOM-B1 | Truthful coverage health per session and scope | DF-5, UAT-05, S2.4 |
-| PHANTOM-B2 | Bounded, credit-capped recovery of missing sessions; generalise the guarded runner | PH-gap, BF-12Nov, BF-old |
-| PHANTOM-B3 | Owned recurring fixed-panel acquisition | S2.3, ADD-N1 |
+| ID | Fix | Existing register items it closes or overlaps | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|---|
+| VOL-01 | Freeze contracts, cutoffs, fixtures | S0.2 RunContext (built, not wired) | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P1 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-02 | Price-only forecast before Options Intelligence; current forecast injected into the valuer | **B1, F1** (dead shadow selection); B1 RCA of 25 Sep already named this as the long-term shape; S0.4 clock | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P1 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-03 | Typed IV result at the chain boundary, on every return path | IVH-3 (uncommitted); gap 1 | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P1 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-04 | 1/5/20-session measures; daily IV30 history; IV percentile with honest coverage | D16, ADD-N2, OT-6, DI Fix 2 (existing IV-percentile owner must be reused) | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P2 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-05 | Better ATM estimator (fixed ±5% band fails on 498 names) | New | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P2 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-06 | Horizon-specific forecast challengers; HAR fit-window audit | C3 (validate the forecast), GARCH-D1, Phase 6 IV/HAR-RV finding | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P2 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-07 | One assessment id consumed by OI, C7/C8, DOI, learning | TEV Slice E, O2, C1 | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P2 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| VOL-08 | Release and monitoring | Rule 5 gates | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P2 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| PHANTOM-A | Normalise the score in shadow; versioned thresholds | New | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | SHADOW-ONLY | P2 — Unreachable scale confirmed; normalization remains a proposed versioned shadow experiment, not validated threshold economics. |
+| PHANTOM-B1 | Truthful coverage health per session and scope | DF-5, UAT-05, S2.4 | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P1 — Design proposal only; dependency and impact review before implementation; no approved blanket build. |
+| PHANTOM-B2 | Bounded, credit-capped recovery of missing sessions; generalise the guarded runner | PH-gap, BF-12Nov, BF-old | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P1-PLAN — Acquisition dependencies: final roster/request scope, reuse receipts, explicit cap/recurring allowance; do not call providers under this document. |
+| PHANTOM-B3 | Owned recurring fixed-panel acquisition | S2.3, ADD-N1 | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P1-PLAN — Acquisition dependencies: final roster/request scope, reuse receipts, explicit cap/recurring allowance; do not call providers under this document. |
 
 ### 4.3 Review comments before assigning to Codex
 
 1. **The diagnosis is sound and explains a live gap.** VOL-02 is the root cause of B1 producing nothing since at least 14 Nov. That makes VOL-02 and VOL-03 repairs of existing functionality, not new features.
-2. **The files it must edit have uncommitted changes.** `garch_runner.py`, `intelligent_orchestrator.py` and `scripts/avshunter_options_intelligence.py` are all modified in the working tree, and the benchmark function itself is uncommitted. Commit a baseline first, or Codex and this checkout will overwrite each other.
+2. **Reconcile the completed baseline before editing.** Those three files were clean relative to HEAD at the later `350e614` inspection. ACK says additional commit work is in progress. Wait for it to finish, record the final revision/effective files, preserve concurrent work and recheck the intended changes. Do not commit or overwrite unrelated work to satisfy this register.
 3. **Split the package.** VOL-01 to VOL-03 are plumbing with the method unchanged (about one to two weeks by Codex's own estimate). VOL-04 to VOL-06 are method changes and research; they need pre-registered hypotheses and overlap earlier work (7 Oct direction research, Phase 6, branch `claude/ivs-001-iv-surface`, the G1 note). Check those before the brief goes out.
 4. **Two points conflict with standing decisions.** The plan gates quote inputs on freshness and adds a maximum-age policy; ACK's rule is to flag quote age, never gate on it. The IV solver fallback must go through the one pricer (`domain/option_valuation.py`), which today has no implied-vol function (D2 valuation, outstanding), and the guard test will reject a new solver elsewhere.
 5. **Authority is respected.** Both plans keep selection SHADOW and Phantom evidence-only, and require rule 5 gates before any decision change.
@@ -403,18 +409,18 @@ Files: `Documents\Codex\2026-11-21\re\outputs\GARCH_ordering_and_IV_benchmark_fi
 
 ## 5. Closed by decision or superseded (not counted as outstanding)
 
-| Items | Closed by |
-|---|---|
-| Strangler contexts C2–C10, C14, RAEV/EV_LB, OpportunityBook, Phases 1–5 of the September design, S18.1–2 | D1 (17 Sep), then TEV-001, DIR-002, BEH-001 and the 7 Oct redesign |
-| D4b physics retired | Reversed: physics repaired (`dc0e5af`) |
-| D7 hold, A2 planned-hold rule, 5b0d826 | ACK 28 Sep, 4 Oct, 12–13 Nov (hold stays as thesis runway) |
-| S4.1, D10/D11 (addendum), E5, DM-34, REPLAY-VERDICT | Rule 6 amendment 20 Nov; "latest macro wins" |
-| DM-25 EV3 coverage, D3 (valuation) | EV3 authority stays retired and frozen |
-| ADD-N4 borrow data, B3 short side | No short shares |
-| F3 sizing, Design 15.8 adoption, PH6 exits | Out of scope or tested with no benefit |
-| DSC-04/05/06/08/09/14/17/18/22/23, D1 (25 Sep), SOR S3–S8, WP1 ENV/RAEV | 7 Oct redesign |
-| X17-02 25% spread gate, G5 item 4 local close capture | 11 Nov tiers; post-close monitor is the one writer |
-| H6, G4-open-d, OT-4a, N11 | Recorded as accepted or deferred |
+| Items | Closed by | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
+|---|---|---|---|---|---|---|---|---|
+| Strangler contexts C2–C10, C14, RAEV/EV_LB, OpportunityBook, Phases 1–5 of the September design, S18.1–2 | D1 (17 Sep), then TEV-001, DIR-002, BEH-001 and the 7 Oct redesign | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| D4b physics retired | Reversed: physics repaired (`dc0e5af`) | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| D7 hold, A2 planned-hold rule, 5b0d826 | ACK 28 Sep, 4 Oct, 12–13 Nov (hold stays as thesis runway) | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| S4.1, D10/D11 (addendum), E5, DM-34, REPLAY-VERDICT | Rule 6 amendment 20 Nov; "latest macro wins" | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| DM-25 EV3 coverage, D3 (valuation) | EV3 authority stays retired and frozen | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| ADD-N4 borrow data, B3 short side | No short shares | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| F3 sizing, Design 15.8 adoption, PH6 exits | Out of scope or tested with no benefit | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| DSC-04/05/06/08/09/14/17/18/22/23, D1 (25 Sep), SOR S3–S8, WP1 ENV/RAEV | 7 Oct redesign | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| X17-02 25% spread gate, G5 item 4 local close capture | 11 Nov tiers; post-close monitor is the one writer | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
+| H6, G4-open-d, OT-4a, N11 | Recorded as accepted or deferred | UNKNOWN | NOT-APPLICABLE | UNKNOWN | NOT-APPLICABLE | NOT-APPLICABLE | VERIFY-DECISION | HOLD — Closed/superseded by a decision: verify exact decision before reopening or building. |
 
 ---
 
@@ -427,3 +433,175 @@ Files: `Documents\Codex\2026-11-21\re\outputs\GARCH_ordering_and_IV_benchmark_fi
 - **Scheduler deferrals:** 122–185 "DEFERRED: writer active" lines a day on 18–20 Nov; normal contention or a defect is not established.
 - **Whether legacy tier and ladder code still reaches the card** after the 9 Oct "legacy classifiers inactive" decision.
 - **Uncommitted diffs inside files that also carry committed fixes** were not read, so a cited line may come from the working tree rather than the commit named.
+
+## 7. ACK implementation instruction and whole-pipeline impact review
+
+**Instruction recorded on 21 November:** complete the commit work already in progress before building fixes. This is a whole-pipeline review and prioritisation, not a targeted volatility-only assignment. Updating this document is authorised; starting builds, changing schedules, spending credits, activating models and committing unrelated work are not authorised by the status update.
+
+### 7.1 P0 — mandatory baseline gate before any fix build
+
+Current state: **COMMIT BATCH OBSERVED COMPLETE at `f3e199e`; BUILD HELD BY ACK; BASELINE ACCEPTANCE/DIRTY-RESIDUAL DISPOSITION INCOMPLETE.** See section 8 for the evidence and remaining qualifications.
+
+1. Finish the existing commit work with its current owner; do not interrupt, stage unrelated changes, switch branches or cherry-pick fixes underneath it.
+2. After completion, record final branch/HEAD, relevant tracked/untracked/dirty files, release/config identity and effective import paths. Compare with the original `ff24d41` and intermediate `350e614` snapshots; neither is automatically the final baseline.
+3. Reconcile all rows' Committed fields against that completed baseline, including other-branch changes and new macro/verifier commits. `CITED` means a historical commit reference; `RECHECK-BASELINE` is deliberately unresolved until this step. A clean working tree does not prove correctness, and a running dirty file is not unwired merely because it is uncommitted.
+4. Preserve the effective source patch/content hashes for representative Evening and Morning runs, the expected roster and all output/input dataset/config versions. Confirm no pipeline/backfill/maintenance writer before implementation or data work.
+5. Read the applicable current business decisions, including amendments that supersede older designs. Attach approved root cause/design and precise acceptance to the first build slice. This register does not reopen closed decisions or approve every proposed fix.
+6. Verify a reproducible baseline with relevant existing tests and saved real-session outputs. Record exact commands/results; separate baseline failures from new regressions. Capture producer/consumer missingness and current decision behaviour before changing it.
+
+Build-start evidence to be filled after commits finish: `[final HEAD] [owner/completion time] [effective source/config hashes] [remaining unrelated changes] [baseline commands/results] [approved first slice]`. Do not mark this gate complete on elapsed time or on this documentation edit alone.
+
+### 7.2 Whole-pipeline impact map — required before implementation
+
+The following is a dependency/risk map, not a claim that every runtime branch has already been independently traced. Each work item must attach its own verified path and observed effect after P0.
+
+| Context / station | Current gaps to reconcile | Potential effect on current pipeline | What must be proved before changing it |
+|---|---|---|---|
+| Launch, RunContext, scheduling and release | S0.*, P0-3, replay, scheduler/untracked imports, writer contention | Wrong session/config or competing writers can invalidate every downstream result | Actual launch/import/config path for Evening, Morning and scheduled jobs; final source identity; reproducible session clock; no competing writer |
+| Universe, prices, canonical market data | P0-5/10/11, outliers, stale caches, fixed capture panel | Missing/stale/invalid inputs change who is assessed and contaminate historical evidence | Expected population and exclusions, point-in-time identity, adjustment/outlier handling, exact source cutoff; no guessed symbol aliases |
+| Discovery and thesis/direction | DIR/DV/BEH, no-CALL-default paths, phase/tier leakage, missing geometry | Incorrect side/horizon/levels can propagate into contract selection and Morning | Trace accepted thesis -> Vanguard -> OI -> EIL/card -> Morning; count and explain any direction/horizon/level change; verify whether legacy branches are actually reached |
+| Vanguard and actuarial evidence | Builder ownership, outliers, floors/match keys, sample freshness | Unsupported probability/evidence or defaults may affect scoring and confidence | Effective query/builder inputs, clean history, missing/sample states, live consumers; no scalar probability renamed as calibration |
+| Options acquisition, Phantom, IV/GEX and forecast | Capture gaps, missing underlying, benchmark early returns, VOL-02, units/defaults | Available evidence is discarded, stale evidence substituted, or forecasts arrive after valuation | Separate acquisition/projection/derivation/consumption; same-session data identities; explicit unusable states; source units and GEX convention; independent fixed-panel denominator |
+| Contract valuation and economics | B1/F1, C1, shared solver/pricer, exit IV/spreads/dividends, expiry/runway | Option payoff, attractiveness and selected-versus-alternative comparison may be wrong or unassessed | Same contract/thesis/clock/costs before/after; actual consumed forecast and quote; valid source-aware Greeks; shadow versus active consumer; quantify payoff/selection differences |
+| EIL, execution readiness and Morning | CALL fallback, synthetic verdicts, clock/trigger/crossing defects, advisory aborts | Could alter readiness or stop a run without a business-authorised reason | Reachability of each branch, authoritative field owner, no silent direction reset; distinguish diagnostic failure, data unavailability and a new trade gate |
+| Lab, Lane B and handoff | Naming mismatch, absent clock/scenarios, repair conflicts, cached displays | Card/handoff can hide or misstate already computed evidence; downstream research may consume the wrong fields | Producer -> projection -> API/template -> Lane B field names/grain; cold-load actual session; compare displayed and source values; downstream records/outcomes linked |
+| Decision ledger, outcomes and learning | Existing C11/C13 completeness; option capture disabled; support/metrics absent | Cannot reliably learn option economics or validate improvements despite many underlying records | Exact assessment/contract linkage, target-specific maturity/fit support, hypothetical vs fills, held-out metrics and authority; reuse existing owners |
+| Macro, events, USMI, board and triage | Freshness/delivery/funding, component gaps, T7 display, scheduled acceptance | Intelligence may be missing/stale even when analysis exists; scheduler/cost changes can affect run availability | Validate source/observation times and delivery before display; preserve current intelligence scope; separate permitted review ordering from changes to pipeline direction/score/rank/selection |
+| Retention, UI security and hygiene | Backups, CORS, launchers, duplicates, hardcoded imports/paths | Lost reproducibility, accidental exposure or deletion; wide changes can break unrelated paths | Inventory references and actual access before changes; prove restoration/replay; do not delete 'redundant' data or bulk-retire legacy code merely from an old register label |
+
+For each candidate build, attach: producer, consumers, live entry point, impacted population and count, fields/units, existing behaviour, intended behaviour, outputs that should change, outputs/authority that must be preserved, downstream tests, rollback and observable business acceptance. An empty column or static code match is a symptom until the producer-to-consumer cause is traced.
+
+### 7.3 Implementation priority — after the P0 gate
+
+Priority denotes dependency and consequence, not permission to build. Unknown impact gets an investigation task before a production patch. Not every P1 item should be built simultaneously.
+
+| Order | Work package / register items | Why this order and current-pipeline impact | Acceptance before proceeding |
+|---|---|---|---|
+| P0 | Finish commit baseline and reconcile status/decisions across the register | Avoid implementing against moving/uncommitted interfaces or rebuilding superseded work | Final baseline receipt and exact approved first slice; no implicit completion |
+| P1-A | Trace decision-integrity paths: H2 CALL fallback, active direction/geometry/default branches, quote/contract identity, synthetic EOD readiness, advisory abort paths | Highest potential consequence is a wrong side/contract/readiness decision or avoidable run abort. Presence alone does not prove the branch is hit | Saved real-session path trace, affected rows and precise root cause; failing characterisation/business test; no new veto or authority introduced |
+| P1-B | Data-truth/control: capture health/panel, source clocks/outliers, Phantom provenance/missing underlying, baseline source/config receipts | Bad input invalidates forecasts, valuation and outcome evidence; solve observable control/measurement before tuning models | All expected populations accounted for by scope/session, source quality explicit, no hidden defaults; paid recovery scoped/capped separately |
+| P1-C | Restore existing evidence delivery: VOL-01..03/B1/F1; diagnose C1 scenarios, crossing, A12 clock and XLU-D03 alignment through their consumers | Dead outputs mean the pipeline cannot use data already collected. Current forecasts before OI are a concrete repair, not permission to activate shadow selection | Current forecast consumed before dependent valuation; all IV paths publish reasoned states; each other dead output has its own cause/consumer test and saved-session acceptance |
+| P1-D | Operationalise existing outcome path: exact-option capture/linkage, actual source snapshots, target-specific mature outcomes | Needed to tell whether P1 fixes improved option decisions, not just labels; existing underlying records are not option P&L | Reconciled eligible/observed/missing outcomes, exact identity and cutoffs; no guessed losses/returns; support and authority explicit |
+| P2-A | Shared valuation/IV inversion, dividend/exit-IV/spread issues, expiry/hold compatibility | Correct inputs must pass through consistent economics; otherwise improving a forecast cannot establish a better contract assessment | Approved shared owner/API; matched-input payoff replay and real observations/costs; keep selector SHADOW unless separately approved |
+| P2-B | VOL-04..06: exact 1/5/20 measures, comparable daily IV30/percentiles, ATM interpolation and horizon-specific model challengers; Phantom score-scale shadow experiment | Measurement/model changes need clean data and known baseline; normalising a score is not proof of calibrated decisions | Pre-registered method comparison, chronological/forward evidence, units/cadence/support disclosed; changes isolated from plumbing |
+| P2-C | Lab/Lane B publication conflicts, alternatives/cluster/clock names, macro intelligence display and delivery gaps | Ensure evidence reaches the human and downstream record correctly; independently urgent reliability defects can move earlier with evidence | Source-to-display and handoff equality on real sessions; scope/authority preserved; cold-load acceptance; scheduler acceptance separate |
+| P3 | Independent model/economic acceptance, approved release, monitoring and rollback per context | Prevent tested code or richer output being mistaken for improved decisions | Held-out and prospective evidence matched to the specific change; operator approval and versioned rollback; no automatic authority |
+| P4 | Broad refactors/deletions, hardcoded-path/import cleanup, legacy engine retirement and backup removal | Large blast radius and weak immediate benefit unless an actual live failure is demonstrated | Baseline coverage, verified references/dependencies and approved retention/retirement criteria. Escalate a specific live risk by evidence rather than postpone it categorically |
+
+Parallel investigation/design is possible after scope is agreed; shared-file implementation must be coordinated against the completed baseline. Fix one approved causal slice at a time, preserve unrelated changes and rerun the necessary downstream checks. Do not blindly merge other-branch fixes or switch every disabled feature on.
+
+### 7.4 Independent-review comments incorporated
+
+1. **Ledger and learning correction:** C11/C13 implementations and orchestrator calls exist. On 19 November the learning snapshot contains 255,772 completed records (not independent trades), 20,457 fit-eligible, all `UNDERLYING_ONLY`, zero option labels; held-out metrics missing, short-horizon strata deficient, activation disabled. This validates specific outstanding linkage/support/acceptance work, not building a duplicate ledger or learner.
+2. **IV-percentile qualification:** the resolver is implemented, but `iv_percentile` can still carry a labelled RV-range proxy. Cited run: 2,181 `IV_HISTORY` rows, all `SHORT_HISTORY`; two `RV_RANGE_PROXY`, two unavailable, 561 blank. Keep source/cadence/support in every consumer. A full comparable daily series remains outstanding.
+3. **Volatility evidence:** 1,075 missing benchmarks/426 arithmetic recovery candidates come from the previous archived diagnostic, subject to source/quality validation. They are not 426 provider-verified values. Stage-order repair is confirmed, but other missing geometry/model inputs may remain after it; do not promise B1 is wholly resolved by ordering alone.
+4. **Quote age and current evidence:** respect the standing 'flag quote age, never gate on it' business decision. No new age-only trade/contract exclusion is approved here. Explicit source age/session and refusal to label old data 'current' remain necessary. Any proposed model-use rule that changes an existing consumer's decision must identify the policy conflict for decision; future-data/identity/crossed-quote defects are distinct integrity issues.
+5. **One pricing owner:** local IV solving must use/migrate to the approved shared `domain/option_valuation.py` owner; its shared inversion API is a dependency, not an excuse to add another solver. The G9 guard recognises price inversions and listed legacy copies. Keep legacy migration and new estimator method changes separately testable.
+6. **Status evidence:** two existing Phantom ownership tests passed in 20.69 seconds in the independent assessment. They prove only that tested ownership behaviour; they do not validate score thresholds or trading benefit. No full-suite or universal forward-acceptance claim is made.
+7. **Baseline protection:** a cited commit and a dirty live run describe different releases. Intermediate `350e614` corrected some historical uncommitted warnings; ACK's ongoing commits still must finish before builds. This document must be reconciled against the final result, not used to force a bulk commit.
+8. **Authority:** intentionally shadow/observation-only functionality can be correctly built and wired. Do not turn it active to make the status green. Keep model/score/selection/execution authority per context and business decision.
+9. **No targeted blind spot:** the earlier independent review was targeted; this amendment does not pretend it certified every runtime path. It expands the register and implementation prerequisites to the whole pipeline and requires each affected producer/consumer path to be assessed before patching. Section 6's unverified areas remain explicit work, not silent closures.
+10. **Credits and external systems:** acquisition, recurring schedules, broker integrations and cloud prompt changes retain their existing permissions. A proposed fix, dependency or priority is not permission to spend, send, trade, delete data or edit external automation prompts.
+
+### 7.5 Closure contract for every fix
+
+A row can be closed for its **declared scope** only with a root cause, approved intended behaviour, completed source baseline, producer/consumer impact assessment, versioned implementation, passing relevant tests, recorded real-session/replay acceptance, any required forward/economic acceptance, exact authority and rollback. Administrative/documentation fixes may have narrower acceptance than predictive changes; do not demand predictive edge from intelligence-only display work.
+
+Record actual before/after counts and decisions, not only a green test result. Preserve the original run and append corrected assessment revisions. If the fix changes direction, contract selection, ranking, sizing or execution permission, identify and obtain the required business authority before release. If it merely corrects displayed facts, verify equality to source and consumer behaviour under the applicable rule.
+
+**Next action after reconciliation: resolve remaining baseline qualifications and review the proposed first build slices in section 8. ACK’s instruction remains: do not start building yet.**
+
+## 8. Reconciled committed baseline and proposed first build slices — 21 November
+
+**Observed commit baseline:** `laneb/lab-first-handoff` at `f3e199e636d93591065ebd6d0a2b6c4c6435f028`, committed 11:33:59 UTC. Repeated checks showed stable HEAD, nothing staged, no index lock and no Git process on the later snapshot. The commit batch **appears complete**; no external owner completion receipt was supplied. This is an observed committed-code baseline, not a clean-release or investment-validity certification.
+
+**Build state: HOLD — ACK explicitly requested no building yet.** No code, model, agent, schedule or provider work was started by this reconciliation. If HEAD/relevant source changes, requalify the baseline.
+
+### 8.1 Status reconciliation
+
+64 distinct backticked commit references resolved: 62 are ancestors of HEAD, two exist but are not ancestors (`b48db74`, `eb50549`). `ANCESTOR-VERIFIED` in a row verifies the cited history relationship only; it does not certify runtime wiring, effective source equality, test success or outcomes. `EVIDENCE-NO-HASH` means an original reported closure has no independently resolved row-level commit reference. `OTHER-BRANCH-VERIFIED` is not permission to cherry-pick. Preserve the other six status meanings.
+
+| Change | Reconciled commit/source state | What remains open |
+|---|---|---|
+| IV30/GARCH source | `5b3d518`; runner/OI files tracked and clean at inspection | Ordering/early-return/method/quality gaps remain; committed is not repaired |
+| Final code receipt / Lab publish ordering | `b5d346d`; orchestrator tracked/clean | Verify actual consumed input/output receipts and real-run acceptance |
+| Verifier phase/scope v1.4 | `b4ad1b5`; tracked/clean | Not proof every upstream fix passes |
+| Macro triage T1–T7 | `c0d5a45` exists on HEAD history | Per-field output/display and scheduled acceptance remain distinct |
+| Scheduler/refresh/budget/recovery | `b44d96e`; `Run-MacroSchedule.ps1`, `scripts/scheduled_macro_builds.py`, `contracts/macro_api_cost.py` now tracked/clean | Actual registration, first-run acceptance and known baseline test issue |
+| Daily API cap | `f3e199e`; ACK decision USD 4/day; cost tests reported 16/16 in commit | No new provider budget or recurring authorisation is granted by this review |
+| Lab timing / production eligibility | `b48db74` / `eb50549` not ancestors | Check equivalent committed/working-tree implementation and compatibility; no blind merge |
+| Isolated trading-SME agents | External candidate source exists; exact production paths `contracts/lab_trading_sme.py` / `contracts/lab_main_idea_workflow.py` not tracked | Candidate freeze, qualification/evaluation/domain acceptance and explicit deployment approval |
+
+Residual tracked changes: this register, two 2 October outcome reports, three interpreter-backup file deletions. Untracked research/data/prototypes and `data/scratch/workaround/strategy_layer.py` remain. Do not stage/discard/restore/delete them here. The baseline receipt records their paths; investigate runtime relevance rather than assume untracked means unused. A completely clean repository has **not** been established.
+
+`b44d96e` reports 220 passing tests in 17 files and two known failing files. `f3e199e` addresses the three API-cap test failures and reports 16/16 passing. No later closure evidence found for the reported `test_macro_completion` fixture missing `config/macro_delivery_v1.json`; verify it in isolation before release. These are commit-reported results, not a fresh test run in this task. Existing two narrow Phantom ownership passes remain the only independently rerun tests cited by this review.
+
+### 8.2 First fixes proposed, with current pipeline impact
+
+| Sequence | Fix / work item | Impact on the current pipeline | Build boundary / prerequisite |
+|---|---|---|---|
+| 0 — qualify | Residual-file disposition, final source/config hashes and known baseline test failure | Prevents apparent regressions from mixed source versions or incomplete fixtures | Verification first; do not change production behaviour to satisfy a broken fixture. User build hold remains |
+| 0 — risk trace | H2 CALL fallback, active direction/identity/default branches and advisory abort paths | Potential wrong side/contract/readiness or avoidable run abort has highest consequence | Trace saved inputs and active callers first. A confirmed reachable wrong-side defect takes priority; no speculative blanket patch |
+| 1 — first concrete engineering slice | VOL-01..03 / B1/F1: price-only current forecast before OI; typed IV assessment on all chain paths | Restores evidence for shadow contract valuation, reachability and DOI; stops a later merge pretending an earlier assessment used current data | Method unchanged, current session/cutoff/consumed IDs; preserve direction/selection/authority. Other geometry/model inputs may remain unavailable |
+| 2 — truthful delivery | PHANTOM-B1 plus individually diagnosed C1/crossing/A12/alignment/Lab-Lane B field gaps | Distinguishes unassessed/missing from negative signals and exposes which evidence reaches cards/handoffs | Separate producer/consumer root cause for each dead output; no manufactured scenarios. Paid capture separate |
+| 3 — outcome linkage | Existing OT-10x/C11/C12/C13 exact-contract linkage/capture policy | Enables validation of option economics and selected/nonselected comparisons, rather than relying only on stock outcomes | Reuse existing owner; no blind env-flag activation. Identity/maturity/data-availability/costs explicit |
+| 4 — shared economics | G5/G9/D2 shared IV inversion, dividends/exit/quote cost semantics | One basis for pricing/IV and interpretation of whether a move pays | Approved shared pricer API; preserve quote-age policy. Not needed just to carry existing vendor IV through an early return |
+| Later, separate experiment | VOL-04..06 / Phantom scale shadow | Better 1/5/20 measurements, history/percentiles, ATM estimate and forecast models | Clean baseline, pre-registered out-of-time/forward comparisons; no mixing formula/model/authority changes with plumbing |
+
+This is an implementation proposal, not authorisation to start. Backend fixes need not wait for agent deployment. Conversely, agent prose must not be used to disguise missing backend capability.
+
+## 9. Agentic build reconciliation — incorporate fixes through facts, roles and acceptance
+
+### 9.1 Actual candidate and limits
+
+Reviewed the isolated `AVSHUNTER_Trading_SME_v1_2026-11-19` package, Personas v2, `TRADING_SME_CURRENT_SCOPE.md`, `TRADING_SME_ACCEPTANCE_v1.json`, `src/contracts/lab_trading_sme.py`, `CONTEXT_CONTRACT_README.md` and `MAIN_IDEA_DEPLOYMENT_PATH.json` in the architecture-review chat outputs. This is the relevant agent candidate, not a fresh swarm or the older August automation options paper.
+
+- Interpreter: evidence-led trading-SME analyst. Challenger: independent trading-risk SME.
+- Three bounded passes, blind commitment then independent interpretation then exact-response critique.
+- All 50 facts retained; 32 claims, 600-codepoint narrative, 1,500 output tokens, 32,000-byte request and 131,072-byte response limits retained. Largest reported synthetic request is 30,964 bytes; only 1,036 bytes below that request bound, **not guaranteed spare capacity for new fields**.
+- Reports 39 synthetic tests passed. This is prior reported structure evidence, not a rerun, model/domain acceptance or trading expertise certification. The 12-case human review matrix is unscored.
+- Deployment path is `PROPOSED_NOT_AUTHORIZED`, no scheduled hook installed, Worker3 not reactivated, no trade/capital/thesis-transition authority. Earlier bounded evaluation receipts do not approve this candidate's deployment.
+
+### 9.2 Proposed integration register
+
+These are proposed consumer/acceptance refinements. Existing mandate already covers some of them; prefer failure-case tests to duplicated prompt text. No persona, schema or runtime implementation is changed by adding these rows.
+
+| ID / linked fixes | Deterministic prerequisite | Interpreter / Challenger use | Built | Committed | Wired | Tested | Validated | Authorised | Priority / impact |
+|---|---|---|---|---|---|---|---|---|---|
+| AG-F01 / S0.4, DF-5, PHANTOM-B1, macro delivery | Qualified run/revision, source time/session/purpose and readiness/reasons | Explain relevant evidence/limits; challenge false-current/complete claims and incompatible clocks | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | First evidence contract: prevents interpreting partial or old inputs as a complete current panel |
+| AG-F02 / VOL-02..07, IVH-3, D16 | Computed RV/IV30/IVP source/window/count/cadence and matched forecast horizon | Distinguish low historical IV from forecast-relative cheapness; challenge proxy, unit and tenor errors | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | Backend first; do not ask an agent to calculate missing volatility or claim a bottom |
+| AG-F03 / B1/F1, C1, G1/G2/G5/G9, runway | Exact expression, quote/cost/expiry/exit and approved valuation evidence | Explain monetisation requirements; challenge stock-right/option-loses, IV/theta/spread and absent cost evidence | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | Existing SME05/06 expectations; numerical economics remains with shared owner |
+| AG-F04 / H2, D2, crossing, A3/A12 | Canonical direction and supplied approved rule/state/clock | Describe existing thesis/review state; challenge contradictions without inventing triggers or CALL defaults | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | High decision-integrity value; backend proves state before agents discuss it |
+| AG-F05 / XLU-D03/E2, T7, AR22 | Qualified exposure/mapping, source independence and clocks | Supported conditional transmission; genuine counter-case rather than false balance or correlation-as-causation | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | Reuse SME01..09, qualify missing QQQ/ETF relationships rather than invent them |
+| AG-F06 / OT-10x, C13, VOL-08 | Frozen prediction, mature exact outcome, cost/baseline and cohort support | Explain later errors and unknowns; challenge hindsight/cherry-picking/agreement-as-proof | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | Outcome review, not autonomous prompt/model/weight updates or self-approval |
+| AG-F07 / needs_codex, B7, A8, phase contract | Exact source-to-card field/run/revision and lossless bounded packet/peer binding | Report unpublished facts/holds; critique omitted evidence without filling missing fields | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | Test empty today_context, renamed alternatives, mixed revisions and dropped facts |
+
+### 9.3 Smarter build rules and proposed acceptance cases
+
+1. Preserve two roles/three passes and the original candidate. No new agents or tools merely to cover more register rows.
+2. Separate **backend fact correctness** from **agent reasoning usefulness**. Agents consume/critique owner-calculated evidence; no independent GARCH fit, IV solver, price engine, data repair, thesis transition or outcome fabrication inside a prompt.
+3. Audit which qualified facts exist within the fixed 50-fact contract. Missing new options/volatility facts mean unassessed. A new packet version/metadata sidecar or changed limits require separate scope/compatibility/capacity design; do not truncate/replace the original facts or attach the whole fix register as market evidence.
+4. Add proposed frozen acceptance cases: low IV percentile but IV above forecast; weekly/short history presented as daily; usable forecast/missing IV; weekend evidence not live; direction unresolved but alternative thesis valid; absent exact contract/fees/exit; stock wins/option loses; duplicated source reports; THESIS_NOT_ACTIVE disagreement; blank published handoff. Preserve hashes, cutoffs, independent blind responses and authority invariance.
+5. Extend the existing SME rubric only where a precise gap is demonstrated. Current main-idea quality/domain acceptance remains open; avoid an unbounded feature stream before the frozen candidate has a bounded approved evaluation.
+6. Test candidate deltas offline first, then separately approved bounded model/domain evaluation against existing report/deterministic baselines. The same packet/horizon/exposure and costs must underpin comparisons. Synthetic passes/citations do not certify trading expertise.
+7. Keep quote-age flagging policy; missing/incompatible source should be explained, not converted into a new age-only trading veto. Preserve approved intelligence scope and human authority.
+8. Link every proposed agent capability to its backend owner, register IDs, versioned facts, exact failure tests and independent acceptance. Release backend repairs independently where approved; agent deployment is not a prerequisite to fixing a broken data handoff.
+
+**Current disposition:** commit batch appears finished and register history reconciled to `f3e199e`; baseline qualifications remain recorded; first slices and agent integration opportunities are now explicit. No fixes, agents, evaluation calls, schedules or deployment started.
+
+## 10. ACK acceptance and amendments — 21 November
+
+**ACK, 21 November:** sections 7 to 9 and `BASELINE_and_agentic_build_integration_plan_20261121.txt` are accepted as the working plan, with the six amendments below (Claude Code review of the same day). **The build hold stands.** Acceptance of the plan approves no root cause, design, spend, merge or activation; each slice still needs its own approved design and a failing test first.
+
+| # | Amendment | Evidence | Effect on the plan |
+|---|---|---|---|
+| A1 | This file is the register of record. Codex wrote the reconciled version over the repo copy; it is uncommitted until ACK asks. | `git diff --stat`: 446 insertions, 285 deletions against `f3e199e` | Step 0: ACK decides when to commit it. Concurrent editors must not overwrite each other's sections. |
+| A2 | The production eligibility gate (`eb50549`) is decided before slice 1, not after. | It changes 55 lines of `intelligent_orchestrator.py`, the file VOL-02 edits; also `orchestrator/production_eligibility.py`, `avshunter/c0_run/canonical_manifest.py`, `orchestrator/dynamic_dispatcher.py` | Step 0: merge, re-apply or drop, by ACK decision. |
+| A3 | The Lab timing fix is on HEAD by test, not by text. | `b5d346d` carries the same `tests/test_lab_timing_publication_paths.py` as `b48db74` (0 differing lines; 2 passed on 21 Nov). `contracts/lab_review_sources.py` and `contracts/lab_review_projection.py` differ from the branch version by 43 and 12 lines. The `b5d346d` message says "same repair", which overstates it. | Branch `fix/lab-timing-publication-20261116` is not merged. Real-run acceptance of the timing publication is still owed. |
+| A4 | The legacy Interpreter package is in step 0, with the publication and handoff work (AG-F07), not in P4. The agent role named "Interpreter" is a different thing from the `pipeline_interpreter` package. | Nine wiring points: five sync hooks (`eod_candidate_engine.py:3453`, `execution_intelligence_runner.py:3415` and `:3706`, `morning_validation.py:1167`, `contracts/lab_control.py:5177`, `morning_handoff_finalizer.py:735`), the Evening snapshot (`intelligent_orchestrator.py:8037`), the Lab desk and war view (`intelligence_lab.py:180`, `:189`), the manifest flag (`lab_control.py:2466`). About 900 MB copied per run; the inputs folder was 4.3 GB on 20 Nov. Last classic report: 10 Aug. | Needs an approved decommission design. Open point for ACK: whether the Lab desk and war view go with it or stay until agents replace them. "Repair, don't delete" points to switching wiring off and keeping code. |
+| A5 | Two step-0 qualifications are closed. | Five residual files: the backup folder left disk on 15 Nov (day of the instructed clean-up; the log does not name the folder; content is in `c808b45`); the 2 Oct outcome report was regenerated by the scorer on 5 Oct with 815 more `NOT_YET_SCORED` records, scored counts unchanged. `test_macro_completion`: `FileNotFoundError` for `config/macro_delivery_v1.json` in the temporary folder, a fixture fault. | ACK decides whether to commit the five files. The test fixture needs a fix; production behaviour is not changed for it. |
+| A6 | Slice 3 (outcome linkage) names the existing writers before any design. | The post-close monitor is the one writer of `monitor/option_closes.csv` (ACK 17 Oct); AVS-LEDGER-001 covers card outcomes; `AVSHUNTER_OPTION_OUTCOME_CAPTURE_ENABLED` defaults to "0" (`intelligent_orchestrator.py:2825`). | No second option-close writer. |
+
+Decisions still with ACK before any build: commit of this register and the five residual files (A1, A5); `eb50549` (A2); the delayed-feed rule TR-005, which gave Morning DO_NOT_TRADE on 14, 18 and 19 Nov and conflicts with "flag quote age, never gate"; the Interpreter decommission scope (A4); a versioned agent packet, since the present one has 1,036 bytes of headroom.
+
+Known limits of this register as it stands: the six status columns hold the same placeholder values on most rows, and rows marked `RECHECK-BASELINE` or `NOT-REVERIFIED` have not been refreshed against `f3e199e` or the test results recorded in the 21 Nov commit messages. Sections 7.3 and 8.2 carry the real priorities.

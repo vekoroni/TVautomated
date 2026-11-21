@@ -8,15 +8,15 @@ Measurement only: nothing here changes a pipeline decision. Legacy predictions a
 
 ## Coverage
 
-- **provenance_class**: RECORDED_AT_RUN 38506, RETROSPECTIVE_UNVERIFIED 763
-- **evidence_session_source**: DERIVED_FROM_RUN_ID 9965, RUN_META 2782, THESIS_ID 26522
-- **invalidation_state**: MISSING 6141, VALID 33128
-- **target_state**: INVALID_LEGACY 8452, LEVEL 24358, NONE 6459
-- **contract_state**: MISSING 7706, SIDE_MISMATCH 1361, VALID 30202
-- **direction**: BEAR 9789, BULL 26358, None 3122
-- **base_state**: NOT_SCORABLE 5508, NO_ATR 12, None 1557, OK 32192
-- **macro_freshness**: CURRENT 38576, STALE 693
-- **outcome_state**: AMBIGUOUS 450, DATA_GAP 27, NOT_SCORABLE 5508, NOT_YET_SCORED 1557, OPEN_CENSORED 12621, STOP_FIRST 13920, TARGET_FIRST 2097, TIMEOUT 3089
+- **provenance_class**: RECORDED_AT_RUN 39321, RETROSPECTIVE_UNVERIFIED 763
+- **evidence_session_source**: DERIVED_FROM_RUN_ID 9965, RUN_META 3471, THESIS_ID 26648
+- **invalidation_state**: MISSING 6828, VALID 33256
+- **target_state**: INVALID_LEGACY 8452, LEVEL 24470, NONE 7162
+- **contract_state**: MISSING 8397, SIDE_MISMATCH 1361, VALID 30326
+- **direction**: BEAR 9880, BULL 26395, None 3809
+- **base_state**: NOT_SCORABLE 5508, NO_ATR 12, None 2372, OK 32192
+- **macro_freshness**: CURRENT 39391, STALE 693
+- **outcome_state**: AMBIGUOUS 450, DATA_GAP 27, NOT_SCORABLE 5508, NOT_YET_SCORED 2372, OPEN_CENSORED 12621, STOP_FIRST 13920, TARGET_FIRST 2097, TIMEOUT 3089
 
 Comparisons below include only predictions with both a scored outcome and a matched base rate.
 

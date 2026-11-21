@@ -6,41 +6,41 @@
   "config_snapshot_id": "0cf80a4fff424d5f1a70e13920a5a7a888042f9365024ab9d73bfbb17855bfce",
   "coverage": {
     "provenance_class": {
-      "RECORDED_AT_RUN": 38506,
+      "RECORDED_AT_RUN": 39321,
       "RETROSPECTIVE_UNVERIFIED": 763
     },
     "evidence_session_source": {
       "DERIVED_FROM_RUN_ID": 9965,
-      "THESIS_ID": 26522,
-      "RUN_META": 2782
+      "THESIS_ID": 26648,
+      "RUN_META": 3471
     },
     "invalidation_state": {
-      "VALID": 33128,
-      "MISSING": 6141
+      "VALID": 33256,
+      "MISSING": 6828
     },
     "target_state": {
-      "LEVEL": 24358,
+      "LEVEL": 24470,
       "INVALID_LEGACY": 8452,
-      "NONE": 6459
+      "NONE": 7162
     },
     "contract_state": {
-      "VALID": 30202,
+      "VALID": 30326,
       "SIDE_MISMATCH": 1361,
-      "MISSING": 7706
+      "MISSING": 8397
     },
     "direction": {
-      "BULL": 26358,
-      "BEAR": 9789,
-      "None": 3122
+      "BULL": 26395,
+      "BEAR": 9880,
+      "None": 3809
     },
     "base_state": {
       "OK": 32192,
       "NO_ATR": 12,
       "NOT_SCORABLE": 5508,
-      "None": 1557
+      "None": 2372
     },
     "macro_freshness": {
-      "CURRENT": 38576,
+      "CURRENT": 39391,
       "STALE": 693
     },
     "outcome_state": {
@@ -51,7 +51,7 @@
       "AMBIGUOUS": 450,
       "NOT_SCORABLE": 5508,
       "OPEN_CENSORED": 12621,
-      "NOT_YET_SCORED": 1557
+      "NOT_YET_SCORED": 2372
     }
   },
   "timing": {
