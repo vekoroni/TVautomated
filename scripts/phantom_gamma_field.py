@@ -39,9 +39,20 @@ def compute_gamma_trajectory(row: Dict[str, Any], db: Any) -> Dict[str, Any]:
     oi = _float(row, "contract_oi", "open_interest", default=0.0)
 
     latest_rows = db.latest_chain_rows(ticker) if ticker else []
+    coverage = db.scoring_coverage(ticker) if hasattr(db, 'scoring_coverage') else {'state':'UNVERIFIED'}
+    qualified = [r for r in latest_rows if r.get('gamma') is not None
+                 and math.isfinite(float(r['gamma'])) and float(r['gamma']) >= 0
+                 and r.get('open_interest') is not None
+                 and math.isfinite(float(r['open_interest'])) and float(r['open_interest']) >= 0
+                 and str(r.get('side','')).lower() in {'call','put'}]
+    available = bool(qualified) and coverage.get('state') == 'QUALIFIED'
+    symbol = row.get('contract_symbol') or row.get('contract_occ_symbol') or row.get('option_symbol')
+    selected = next((r for r in qualified if r.get('option_symbol') == symbol), None) if symbol else None
+    contract_gamma = float(selected['gamma']) if selected else 0.0
+    oi = float(selected['open_interest']) if selected else 0.0
     net_gex = 0.0
     if latest_rows:
-        for r in latest_rows:
+        for r in qualified:
             gamma = float(r["gamma"] or 0.0)
             open_interest = float(r["open_interest"] or 0.0)
             side_sign = 1.0 if str(r["side"]).lower() == "call" else -1.0
@@ -49,7 +60,7 @@ def compute_gamma_trajectory(row: Dict[str, Any], db: Any) -> Dict[str, Any]:
 
     direction_sign = 1.0 if direction == "CALL" else (-1.0 if direction == "PUT" else 0.0)
     net_gex_sign = 1.0 if net_gex > 0 else (-1.0 if net_gex < 0 else 0.0)
-    aligned = direction_sign != 0.0 and (net_gex_sign == 0.0 or direction_sign == net_gex_sign)
+    aligned = available and direction_sign != 0.0 and net_gex_sign != 0.0 and direction_sign == net_gex_sign
 
     proximity_score = max(0.0, 45.0 - gap * 6.0)
     island_score = min(20.0, max(0.0, island_strength * 100.0))
@@ -62,9 +73,11 @@ def compute_gamma_trajectory(row: Dict[str, Any], db: Any) -> Dict[str, Any]:
     signed = score if direction == "CALL" else (-score if direction == "PUT" else 0.0)
 
     return {
-        "gamma_score": round(score, 2),
-        "gamma_trajectory_signed": round(signed, 2),
-        "gamma_net_gex_proxy": round(net_gex, 4),
-        "gamma_direction_aligned": bool(aligned),
+        "gamma_score": round(score, 2) if available else None,
+        "gamma_trajectory_signed": round(signed, 2) if available else None,
+        "gamma_net_gex_proxy": round(net_gex, 4) if available else None,
+        "gamma_direction_aligned": bool(aligned) if available else None,
+        "gamma_evidence_available": available,
+        "gamma_coverage": coverage,
     }
 

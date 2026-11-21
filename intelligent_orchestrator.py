@@ -4236,6 +4236,11 @@ def run_core_intel_exporter(run_id: str, strict: bool = False) -> bool:
         )
         if candidates:
             options_csv = candidates[0]
+        # Retain the validated evidence copy when Phantom itself is bypassed.
+        from contracts.actuarial_evidence import preferred_options_input
+        _preferred_options = preferred_options_input(cfg.RUNS_DIR / run_id)
+        if _preferred_options.is_file():
+            options_csv = _preferred_options
 
     cmd = [sys.executable, str(cfg.CORE_INTEL_EXPORTER), "--run-id", run_id]
     if options_csv:
@@ -4533,7 +4538,8 @@ def run_superbrain_passthrough(run_id: str) -> bool:
 
     oi_csv_original = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_{run_id}.csv"
     oi_csv_phantom  = cfg.RUNS_DIR / run_id / "options" / f"options_intelligence_phantom_{run_id}.csv"
-    oi_csv = oi_csv_phantom if oi_csv_phantom.exists() else oi_csv_original
+    from contracts.actuarial_evidence import preferred_options_input
+    oi_csv = preferred_options_input(cfg.RUNS_DIR / run_id)
     if oi_csv == oi_csv_phantom:
         logger.info("PHANTOM handoff active: using %s", oi_csv.name)
     sb_dir = cfg.RUNS_DIR / run_id / "superbrain"
@@ -6816,6 +6822,17 @@ def evening_workflow(
     _phantom_input  = cfg.RUNS_DIR / canonical_run_id / "options" / f"options_intelligence_{canonical_run_id}.csv"
     _phantom_output = cfg.RUNS_DIR / canonical_run_id / "options" / f"options_intelligence_phantom_{canonical_run_id}.csv"
     _phantom_db     = cfg.PHANTOM_DB_PATH
+
+    # Produce a new artifact; never patch historical OI inputs or snapshots.
+    try:
+        if _phantom_input.exists():
+            from contracts.actuarial_evidence import prepare_phantom_handoff
+            _actuarial_input, _actuarial_receipt = prepare_phantom_handoff(
+                cfg.RUNS_DIR / canonical_run_id, _phantom_input)
+            _phantom_input = _actuarial_input
+            logger.info('Actuarial→Phantom hand-off: %s', _actuarial_receipt)
+    except Exception as _actuarial_handoff_error:
+        logger.warning('Actuarial hand-off unavailable: %s; comparison remains fail-closed', _actuarial_handoff_error)
 
     try:
         if _phantom_input.exists():

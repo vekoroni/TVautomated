@@ -37,8 +37,12 @@ def compute_criticality(row: Dict[str, Any]) -> Dict[str, Any]:
     accel_bonus = 0.10 if iv_accel else 0.0
     criticality = max(0.0, min(1.0, 0.45 * phase_transition + 0.25 * instability + 0.20 * compression + phase_bonus + accel_bonus))
     score = criticality * 100.0
+    available = any(math.isfinite(_float(row,k,default=float('nan'))) for k in (
+        'phase_transition_probability','regime_instability_score','compression_score','vol_compression_score')) or any(
+        str(row.get(k) if row.get(k) is not None else '').strip().lower() not in {'','nan','none','null'}
+        for k in ('iv_accel_detected','phase','phase_best','layer2__phase_v2'))
     return {
-        "criticality_score": round(score, 2),
-        "criticality_order_parameter": round(criticality, 4),
+        "criticality_score": round(score, 2) if available else None,
+        "criticality_order_parameter": round(criticality, 4) if available else None,
     }
 

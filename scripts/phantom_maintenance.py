@@ -16,9 +16,11 @@ import shutil
 import sqlite3
 
 try:
+    from .phantom_option_quality import quote_assessment
     from .options_db_writer import ensure_computed_greeks_schema, upsert_greek_records, hydrate_chain_snapshots
     from .phantom_compute_historical_greeks import compute_record
 except ImportError:
+    from phantom_option_quality import quote_assessment
     from options_db_writer import ensure_computed_greeks_schema, upsert_greek_records, hydrate_chain_snapshots
     from phantom_compute_historical_greeks import compute_record
 
@@ -26,6 +28,7 @@ GREEKS = ('iv','delta','gamma','theta','vega')
 KEY = ('ticker','quote_date','option_symbol')
 MODEL_RATE = 0.045
 RATE_POLICY = 'FIXED_MODEL_ASSUMPTION_NOT_HISTORICAL_RATE_OBSERVATION'
+COMPUTE_POLICY_VERSION = 'QUALIFIED_QUOTE_BS_V2'
 
 def now():
     return datetime.now(timezone.utc).isoformat()
@@ -51,6 +54,10 @@ def ensure_schema(c):
     c.execute('''CREATE TABLE IF NOT EXISTS phantom_pair_health(ticker TEXT,quote_date TEXT,
        chain_rows INTEGER,needs_greeks INTEGER,incomplete_greeks INTEGER,missing_underlying INTEGER,
        updated_at_utc TEXT,PRIMARY KEY(ticker,quote_date))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS phantom_computed_invalidation_audit(
+       id INTEGER PRIMARY KEY,ticker TEXT,quote_date TEXT,option_symbol TEXT,
+       old_input_hash TEXT,new_input_hash TEXT,preimage_json TEXT NOT NULL,
+       invalidated_fields_json TEXT NOT NULL,created_at_utc TEXT NOT NULL)''')
 
 def _row(c, key):
     cur=c.execute('SELECT * FROM chain_snapshots WHERE ticker=? AND quote_date=? AND option_symbol=?',key)
@@ -90,7 +97,11 @@ def complete_greeks_and_queue_iv(c, rows):
         row=_row(c,key)
         if row is None:
             raise ValueError('Maintenance cannot invent a missing chain identity')
-        signature={k:incoming.get(k) for k in (*KEY,'underlying_price','strike','dte','side','bid','ask','mid','last','source',*GREEKS)}
+        signature={k:row.get(k) for k in (*KEY,'underlying_price','strike','dte','side','bid','ask','mid','last','source','updated_ts','underlying_updated_ts')}
+        signature['policy_version']=COMPUTE_POLICY_VERSION
+        signature['model_inputs']={'risk_free_rate':MODEL_RATE,'dividend_yield':0.0,
+                                   'exercise_model':'EUROPEAN_BS','rate_policy':RATE_POLICY}
+        signature['incoming_greeks']={k:incoming.get(k) for k in GREEKS}
         incoming_sources=input_field_sources(incoming)
         signature['field_sources']=incoming_sources
         digest=hashlib.sha256(json.dumps(signature,sort_keys=True,default=str,allow_nan=True).encode()).hexdigest()
@@ -99,22 +110,57 @@ def complete_greeks_and_queue_iv(c, rows):
             continue
         vendor=str(incoming.get('source') or '').upper() in {'MARKETDATA','MARKETDATA.APP','MARKETDATA_OPTIONS_QUOTES','MARKETDATA_CACHED'}
         sources=json.loads(prior[1]) if prior else {}
+        # A raw quote upsert preserves old numerics via COALESCE. Only positively
+        # identified computed fields may be invalidated; vendor/unknown stays.
+        stale=[]
         for name in GREEKS:
-            if finite(incoming.get(name)):
+            incoming_computed = finite(incoming.get(name)) and incoming_sources[name]=='COMPUTED_BS'
+            origin=str(incoming_sources[name] if incoming_computed else sources.get(name) or row.get('greeks_source') or '').upper()
+            is_computed=any(token in origin for token in ('COMPUTED','BSM','SOLVED','BLACK_SCHOLES'))
+            if is_computed and (not finite(incoming.get(name)) or incoming_computed) and finite(row.get(name)):
+                stale.append(name)
+        if stale:
+            history=c.execute('SELECT * FROM options_greeks_history WHERE ticker=? AND snapshot_date=? AND contract_symbol=?',key)
+            old=history.fetchone()
+            saved_history=dict(zip([d[0] for d in history.description],old)) if old else None
+            preimage={'chain':row,'field_sources':sources,'computed_history':saved_history}
+            c.execute('''INSERT INTO phantom_computed_invalidation_audit
+              (ticker,quote_date,option_symbol,old_input_hash,new_input_hash,preimage_json,invalidated_fields_json,created_at_utc)
+              VALUES(?,?,?,?,?,?,?,?)''',(*key,prior[0] if prior else None,digest,
+              json.dumps(preimage,sort_keys=True,default=str),json.dumps(stale),now()))
+            c.execute('UPDATE chain_snapshots SET '+','.join(name+'=NULL' for name in stale)+
+                      ',greeks_quality=NULL WHERE ticker=? AND quote_date=? AND option_symbol=?',key)
+            for name in stale:
+                row[name]=None
+                sources.pop(name,None)
+        for name in GREEKS:
+            if finite(incoming.get(name)) and name not in stale:
                 sources[name]=incoming_sources[name]
             elif finite(row.get(name)):
                 sources.setdefault(name,str(row.get('greeks_source') or 'EXISTING_UNVERIFIED'))
         missing=[name for name in GREEKS if not finite(row.get(name))]
         if missing:
-            record=compute_record(row,MODEL_RATE)
-            record['quality_flags']=';'.join(filter(None,[record.get('quality_flags'),RATE_POLICY]))
-            upsert_greek_records(c,[record])
-            hydrate_chain_snapshots(c,[record])
-            computed+=1
-            if str(record.get('quality_status','')).startswith('OK'):
-                for name in missing:
-                    if finite(record.get(name)):
-                        sources[name]='COMPUTED_BS'
+            protected=[name for name in GREEKS if finite(row.get(name))]
+            if protected:
+                # Do not splice a newly solved IV/Greeks vector into protected
+                # vendor or unverified measurements from another model/mark.
+                mark,_,flags=quote_assessment(row)
+                quality='UNASSESSED_MIXED_PROTECTED_GREEKS'
+                if mark is None:
+                    quality+=';'+ ';'.join(flags)
+                c.execute('UPDATE chain_snapshots SET greeks_quality=? WHERE ticker=? AND quote_date=? AND option_symbol=?',(quality,*key))
+                if stale:
+                    c.execute("UPDATE options_greeks_history SET quality_status='STALE_INPUTS_PROTECTED_FIELDS' WHERE ticker=? AND snapshot_date=? AND contract_symbol=?",key)
+            else:
+                record=compute_record(row,MODEL_RATE)
+                record['quality_flags']=';'.join(filter(None,[record.get('quality_flags'),RATE_POLICY]))
+                upsert_greek_records(c,[record])
+                hydrate_chain_snapshots(c,[record])
+                computed+=1
+                if str(record.get('quality_status','')).startswith('OK'):
+                    for name in missing:
+                        if finite(record.get(name)):
+                            sources[name]='COMPUTED_BS'
         values=set(sources.values())
         label=next(iter(values)) if len(values)==1 else 'MIXED_FIELD_SOURCES' if values else None
         if label:

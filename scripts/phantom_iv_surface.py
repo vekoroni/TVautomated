@@ -28,6 +28,7 @@ def _entropy(values: List[float]) -> float:
 
 def compute_iv_surface(row: Dict[str, Any], db: Any) -> Dict[str, Any]:
     ticker = str(row.get("ticker") or "").upper()
+    coverage = db.scoring_coverage(ticker) if hasattr(db, 'scoring_coverage') else {'state':'UNVERIFIED'}
     current_iv = _float(row.get("contract_iv"), _float(row.get("atm_iv"), _float(row.get("iv"), 0.0)))
     iv_rank = _float(row.get("iv_rank"), _float(row.get("iv_percentile"), 50.0))
     if iv_rank <= 1.0:
@@ -39,6 +40,17 @@ def compute_iv_surface(row: Dict[str, Any], db: Any) -> Dict[str, Any]:
 
     latest_rows = db.latest_chain_rows(ticker) if ticker else []
     surface_ivs = [float(r["iv"]) for r in latest_rows if r["iv"] is not None and float(r["iv"]) > 0]
+    # Frozen row-level IV/rank may come from a different, unqualified mark.
+    # Use qualified stored evidence, and disclose when the selected contract is
+    # outside the stored scope instead of presenting a proxy as its own IV.
+    symbol = row.get('contract_symbol') or row.get('contract_occ_symbol') or row.get('option_symbol')
+    selected = next((r for r in latest_rows if r.get('option_symbol') == symbol), None) if symbol else None
+    current_iv = float(selected['iv']) if selected else (median(surface_ivs) if surface_ivs else 0.0)
+    hist_med = median(hist) if hist else None
+    iv_rank = _float(row.get('iv_rank'), _float(row.get('iv_percentile'), 50.0))
+    if iv_rank <= 1.0:
+        iv_rank *= 100.0
+    available = bool(surface_ivs and hist) and coverage.get('state') == 'QUALIFIED'
     surface_entropy = _entropy(surface_ivs)
 
     kl_proxy = 0.0
@@ -56,11 +68,15 @@ def compute_iv_surface(row: Dict[str, Any], db: Any) -> Dict[str, Any]:
     quality = "DB_SURFACE" if len(surface_ivs) >= 10 and len(hist) >= 100 else ("ROW_LEVEL" if current_iv else "MISSING")
 
     return {
-        "iv_entropy_score": round(score, 2),
-        "iv_kl_divergence": round(kl_proxy, 5),
-        "iv_surface_entropy": round(surface_entropy, 5),
-        "iv_hist_entropy": round(hist_entropy, 5),
-        "iv_hist_median": round(hist_med or 0.0, 5),
-        "iv_data_quality": quality,
+        "iv_entropy_score": round(score, 2) if available else None,
+        "iv_kl_divergence": round(kl_proxy, 5) if available else None,
+        "iv_surface_entropy": round(surface_entropy, 5) if available else None,
+        "iv_hist_entropy": round(hist_entropy, 5) if available else None,
+        "iv_hist_median": round(hist_med, 5) if hist_med is not None else None,
+        "iv_data_quality": quality if available else coverage.get('state', 'MISSING'),
+        "iv_evidence_available": available,
+        "iv_coverage": coverage,
+        "iv_history_observation_unit": "CONTRACT_OBSERVATIONS_NOT_SESSIONS",
+        "iv_current_basis": "QUALIFIED_EXACT_CONTRACT" if selected else "QUALIFIED_SURFACE_MEDIAN_PROXY",
     }
 

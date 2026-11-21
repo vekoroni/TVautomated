@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import logging
 from datetime import date, datetime
 from time import perf_counter
 from pathlib import Path
@@ -19,12 +20,19 @@ from phantom_gamma_field import compute_gamma_trajectory
 from phantom_info_flow import compute_info_flow
 from phantom_iv_surface import compute_iv_surface
 
+import sys
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from contracts.actuarial_evidence import wire_frame
+from contracts.phantom_advisory_policy import (SCORE_VERSION, PROMOTIONS_ENABLED,
+    legacy_composite, ceiling, composite, qualified_score)
+from contracts.phantom_prospective_evidence import capture_candidates, capture_predictions
 
-# PHANTOM_AUTHORITY_MODE controls whether Phantom overwrites
-# execution_permission or operates in advisory mode.
-# Set to "FULL_PROMOTION" after phantom_history.db is
-# validated with at least one week of live trading data.
+
+# No FULL_PROMOTION switch exists. Score bands are uncalibrated advisory
+# evidence; a separately approved authority implementation would be required.
 PHANTOM_AUTHORITY_MODE = "ADVISORY_PROMOTION"
+logger = logging.getLogger(__name__)
 
 
 TRUE_HARD_VETO_KEYWORDS = {
@@ -123,17 +131,20 @@ def _weights(row: Dict[str, Any]) -> Dict[str, float]:
 
 
 def _composite(scores: Dict[str, float], weights: Dict[str, float]) -> float:
-    product = 1.0
-    for key, weight in weights.items():
-        s = max(0.0, min(1.0, scores.get(key, 0.0) / 100.0))
-        product *= max(0.0, 1.0 - weight * s)
-    return max(0.0, min(100.0, 100.0 * (1.0 - product)))
+    return composite(scores, weights)
 
 
 def score_row(row: Dict[str, Any], db: PhantomDatabase, run_id: str) -> Dict[str, Any]:
     iv = compute_iv_surface(row, db)
     gamma = compute_gamma_trajectory(row, db)
-    bayes = compute_bayesian_edge(row)
+    bayes_row = dict(row, run_id=run_id)
+    symbol = row.get('contract_symbol') or row.get('contract_occ_symbol') or row.get('option_symbol')
+    selected = next((r for r in db.latest_chain_rows(str(row.get('ticker') or ''))
+                     if r.get('option_symbol') == symbol), None) if symbol else None
+    # Unqualified/stale row-level delta cannot manufacture a market probability.
+    delta = selected.get('delta') if selected and iv['iv_evidence_available'] else None
+    bayes_row.update(contract_delta=delta, delta=delta)
+    bayes = compute_bayesian_edge(bayes_row)
     info = compute_info_flow(row)
     critical = compute_criticality(row)
 
@@ -144,21 +155,34 @@ def score_row(row: Dict[str, Any], db: PhantomDatabase, run_id: str) -> Dict[str
         "info": info["info_flow_score"],
         "critical": critical["criticality_score"],
     }
+    scores = {key: qualified_score(value) for key, value in scores.items()}
     weights = _weights(row)
     score = _composite(scores, weights)
-    convergence = sum(1 for value in scores.values() if value >= 70.0)
-    decision = _decision(score)
+    convergence = sum(1 for value in scores.values() if value is not None and value >= 70.0)
+    evidence_complete = all(value is not None for value in scores.values())
+    any_evidence = any(value is not None for value in scores.values())
+    decision = _decision(score) if any_evidence else 'UNASSESSED'
     hard_veto, hard_veto_reason = _true_hard_veto(row)
 
     ois_original = _float(row.get("options_score"), 0.0)
-    ois_adjustment = 15.0 if score >= 70.0 and not hard_veto else 0.0
+    # This release never grants promotion or score-bonus authority, including
+    # fully evidenced scores above the newly reachable thresholds.
+    ois_adjustment = 0.0
     ois_adjusted = min(100.0, ois_original + ois_adjustment)
 
     payload: Dict[str, Any] = {
         "run_id": run_id,
         "ticker": row.get("ticker"),
         "score_date": str(date.today()),
-        "phantom_score": round(score, 2),
+        "phantom_score": round(score, 2) if any_evidence else None,
+        "phantom_score_legacy": round(legacy_composite(scores, weights), 6) if any_evidence else None,
+        "phantom_score_legacy_ceiling": round(ceiling(weights), 6),
+        "phantom_score_version": SCORE_VERSION,
+        "phantom_score_basis": "FULL_CONFIGURED_NOISY_OR_CEILING_NORMALISED_NOT_PROBABILITY",
+        "phantom_score_calibrated": False,
+        "phantom_promotions_enabled": PROMOTIONS_ENABLED,
+        "phantom_evidence_state": "QUALIFIED_ADVISORY_NO_PROMOTION" if evidence_complete else "PARTIAL_NO_PROMOTION",
+        "phantom_missing_components": [k for k,v in scores.items() if v is None],
         "phantom_decision": decision,
         "phantom_iv_entropy": iv["iv_entropy_score"],
         "phantom_gamma_trajectory": gamma["gamma_trajectory_signed"],
@@ -181,17 +205,10 @@ def score_row(row: Dict[str, Any], db: PhantomDatabase, run_id: str) -> Dict[str
     reason = ""
     if hard_veto:
         reason = f"Hard veto respected: {hard_veto_reason}"
-    elif score >= 85.0:
-        promotion = "EXECUTE"
-        reason = "PHANTOM CONVICTION: multi-mechanism mispricing; OIS adjusted"
-    elif score >= 70.0:
-        promotion = "EXECUTE"
-        reason = "PHANTOM HIGH: score >=70; OIS adjusted"
-    elif score >= 55.0:
-        promotion = "ARMED"
-        reason = "PHANTOM MODERATE: promote watch/stand-down to ARMED review"
+    elif not evidence_complete:
+        reason = "Missing/unqualified components: " + ', '.join(payload['phantom_missing_components']) + "; no promotion or OIS bonus"
     else:
-        reason = "PHANTOM did not meet promotion threshold"
+        reason = "Promotions disabled: advisory-only, score scale and bands not economically calibrated"
 
     payload["phantom_promoted_verdict"] = promotion
     payload["phantom_promotion_reason"] = reason
@@ -210,18 +227,44 @@ def apply_payload(row: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any
     return out
 
 
+def resolve_evidence_session(repo_root: Path, run_id: str) -> Tuple[str, str]:
+    path = Path(repo_root) / 'data/output/runs' / run_id / 'run_meta.json'
+    if path.exists():
+        meta = json.loads(path.read_text(encoding='utf-8-sig'))
+        session = meta.get('session_date')
+        # A present but invalid authority must not silently fall back to wall time.
+        return date.fromisoformat(session).isoformat(), 'RUN_META_SESSION_DATE'
+    return datetime.strptime(run_id[:8], '%Y%m%d').date().isoformat(), 'RUN_ID_DATE_FALLBACK'
+
+
 def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, repo_root: Path) -> Dict[str, Any]:
     db = PhantomDatabase(db_path=db_path, repo_root=repo_root)
     db.initialise()
     df = pd.read_csv(input_csv, low_memory=False, keep_default_na=False, na_values=[''])
+    evidence_session, session_basis = resolve_evidence_session(repo_root, run_id)
+    df, actuarial_receipt = wire_frame(df, Path(repo_root)/'data/output/runs'/run_id, evidence_session)
     records = df.to_dict(orient="records")
 
-    unique_tickers = list({str(r.get("ticker") or "").upper() for r in records if r.get("ticker")})
+    # Finish any local index maintenance before fingerprinting quote inputs;
+    # creating an index is not a change to their economic values.
     started = perf_counter()
     index_created = db.ensure_scoring_index()
     index_seconds = perf_counter() - started
+
+    # Freeze the full candidate set and exact-session quote inputs BEFORE the
+    # long history preload or scoring. Failures stay visible; never backdate
+    # a receipt or grant authority when capture is unavailable.
+    candidate_capture = {"status": "FAILED"}
+    try:
+        candidate_capture = capture_candidates(Path(repo_root)/'data/output/runs'/run_id,
+            input_csv, records, run_id=run_id, session=evidence_session,
+            database=db_path, score_version=SCORE_VERSION)
+    except Exception as exc:
+        candidate_capture = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:500]}
+        logger.warning('PHANTOM prospective candidate capture FAILED: %s', candidate_capture['error'])
+
+    unique_tickers = list({str(r.get("ticker") or "").upper() for r in records if r.get("ticker")})
     preload_started = perf_counter()
-    evidence_session = datetime.strptime(run_id[:8], '%Y%m%d').date().isoformat()
     db.preload_tickers(unique_tickers, as_of=evidence_session)
     preload_seconds = perf_counter() - preload_started
 
@@ -238,8 +281,18 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
             promoted += 1
         if payload.get("phantom_hard_veto_respected"):
             hard_vetoes += 1
-        scores.append(float(payload.get("phantom_score") or 0.0))
+        if payload.get('phantom_score') is not None:
+            scores.append(float(payload['phantom_score']))
         rows_out.append(apply_payload(record, payload))
+
+    prediction_capture = {"status": "BLOCKED_NO_CANDIDATE_CAPTURE"}
+    if candidate_capture['status'] == 'CAPTURED':
+        try:
+            prediction_capture = capture_predictions(Path(repo_root)/'data/output/runs'/run_id,
+                candidate_capture, [payload for _, payload in score_payloads], run_id=run_id)
+        except Exception as exc:
+            prediction_capture = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:500]}
+            logger.warning('PHANTOM prospective publication capture FAILED: %s', prediction_capture['error'])
 
     db.batch_write_phantom_scores(run_id, score_payloads)
 
@@ -249,13 +302,22 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
     summary = {
         "run_id": run_id,
         "rows_processed": len(out_df),
+        "score_version": SCORE_VERSION,
+        "score_calibrated": False,
+        "promotions_enabled": PROMOTIONS_ENABLED,
+        "prospective_candidate_capture": candidate_capture,
+        "prospective_prediction_capture": prediction_capture,
+        "prospective_capture_state": "CAPTURED" if prediction_capture['status']=='CAPTURED' else "INCOMPLETE",
         "promoted_count": promoted,
         "hard_veto_respected_count": hard_vetoes,
-        "score_min": min(scores) if scores else 0,
-        "score_max": max(scores) if scores else 0,
-        "score_mean": sum(scores) / len(scores) if scores else 0,
+        "unscored_rows": len(rows_out) - len(scores),
+        "score_min": min(scores) if scores else None,
+        "score_max": max(scores) if scores else None,
+        "score_mean": sum(scores) / len(scores) if scores else None,
         "output_csv": str(output_csv),
         "evidence_session": evidence_session,
+        "evidence_session_basis": session_basis,
+        "actuarial_handoff": actuarial_receipt,
         "preload_seconds": round(preload_seconds, 3),
         "elapsed_seconds": round(perf_counter() - started, 3),
         "provider_calls": 0,

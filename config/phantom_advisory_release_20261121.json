@@ -1,0 +1,13 @@
+{
+  "release_id": "PHANTOM-ADVISORY-CAPTURE-20261121",
+  "scope": "Phantom advisory scoring, source qualification, actuarial evidence and prospective local capture",
+  "score_version": "phantom_noisy_or_ceiling_normalised_v2",
+  "score_calibrated": false,
+  "promotions_enabled": false,
+  "authority": "EVIDENCE_ONLY",
+  "source_baseline": "01b00d96972a4b641f78c7256ac9eb907b8b1143",
+  "live_data_policy": "Use existing canonical stores; never copy, replace or recreate live databases",
+  "lane_b_policy": "Committed baseline unchanged; unrelated development changes excluded",
+  "provider_authority_change": false,
+  "pipeline_started_by_deployment": false
+}

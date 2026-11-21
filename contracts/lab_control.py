@@ -16,6 +16,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+from contracts.actuarial_evidence import FIELDS as ACTUARIAL_EVIDENCE_FIELDS, carry_fields as actuarial_evidence_fields
 
 from contracts.direction_governance import validate_direction_record
 from contracts.dynamic_options_policy import eil_advisory_flags
@@ -569,6 +570,7 @@ FINAL_BOOK_FIELDS = [
     "win_prob_predicted",
     "actuarial_match_method",
     "actuarial_match_type",
+    *ACTUARIAL_EVIDENCE_FIELDS,
     "actuarial_ev_weight",
     "behaviour_state_key",
     "behaviour_state_hash",
@@ -3859,6 +3861,7 @@ def opportunity_book_row(
         "win_prob_predicted": first(sig, "win_prob_predicted", "ev2_p_win_blended", "win_rate_20d", "win_rate_10d"),
         "actuarial_match_method": first(sig, "actuarial_match_method", "layer2__state_match_method", "vg__layer2__state_match_method"),
         "actuarial_match_type": first(sig, "actuarial_match_type", "vg__actuarial_match_type"),
+        **actuarial_evidence_fields(sig),
         "actuarial_ev_weight": first(sig, "actuarial_ev_weight", "vg__actuarial_ev_weight"),
         "behaviour_state_key": first(sig, "behaviour_state_key", "vg__behaviour_state_key"),
         "behaviour_state_hash": first(sig, "behaviour_state_hash", "vg__behaviour_state_hash"),

@@ -18,8 +18,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
+try:
+    from .phantom_option_quality import benchmark_record_eligible
+except ImportError:
+    from phantom_option_quality import benchmark_record_eligible
+
 
 SCHEMA_VERSION = 1
+
+# Identical predicate in the partial covering index and history reader lets
+# SQLite qualify history without random lookups into archived raw payload pages.
+SCORING_QUALIFICATION_SQL = (
+    "iv BETWEEN 0.01 AND 5.0 AND strike>0 AND underlying_price>0 AND bid>0 AND ask>=bid"
+    " AND (mid IS NULL OR mid<=0 OR (mid>=bid-1e-8 AND mid<=ask+1e-8))"
+    " AND (greeks_quality IN ('OK','VENDOR_COMPLETE','COMPLETE_COMPUTED_EXISTING')"
+    " OR greeks_quality LIKE 'OK;%' OR greeks_quality LIKE 'VENDOR_COMPLETE;%'"
+    " OR greeks_quality LIKE 'COMPLETE_COMPUTED_EXISTING;%')")
+SCORING_HISTORY_COLUMNS = ('ticker,quote_date,option_symbol,dte,iv,strike,underlying_price,'
+                           'bid,ask,mid,updated_ts,greeks_quality')
 
 
 def utc_now() -> str:
@@ -134,6 +150,16 @@ class PhantomDatabase:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._iv_cache: Dict[str, List[float]] = {}
         self._chain_cache: Dict[str, List[Dict[str, Any]]] = {}
+
+    @contextmanager
+    def read_connection(self) -> Iterable[sqlite3.Connection]:
+        conn = sqlite3.connect(self.db_path.resolve().as_uri()+'?mode=ro', uri=True, timeout=30)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute('PRAGMA query_only=ON')
+            yield conn
+        finally:
+            conn.close()
 
     @contextmanager
     def connect(self) -> Iterable[sqlite3.Connection]:
@@ -331,7 +357,7 @@ class PhantomDatabase:
         ticker_up = ticker.upper()
         if not quote_date and ticker_up in self._chain_cache:
             return self._chain_cache[ticker_up]
-        with self.connect() as conn:
+        with self.read_connection() as conn:
             if quote_date:
                 cur = conn.execute(
                     "SELECT * FROM chain_snapshots WHERE ticker=? AND quote_date=?",
@@ -345,21 +371,21 @@ class PhantomDatabase:
                     """,
                     (ticker_up, ticker_up),
                 )
-            return [dict(r) for r in cur.fetchall()]
+            return [dict(r) for r in cur.fetchall() if benchmark_record_eligible(dict(r))]
 
     def historical_iv_values(self, ticker: str, dte_min: float = 7, dte_max: float = 60) -> List[float]:
         ticker_up = ticker.upper()
         if ticker_up in self._iv_cache:
             return self._iv_cache[ticker_up]
-        with self.connect() as conn:
+        with self.read_connection() as conn:
             cur = conn.execute(
                 """
-                SELECT iv FROM chain_snapshots
+                SELECT * FROM chain_snapshots
                 WHERE ticker=? AND iv IS NOT NULL AND dte BETWEEN ? AND ?
                 """,
                 (ticker_up, dte_min, dte_max),
             )
-            return [float(r["iv"]) for r in cur.fetchall() if r["iv"] is not None]
+            return [float(r['iv']) for r in cur if benchmark_record_eligible(dict(r))]
 
     def ensure_scoring_index(self, *, min_free_gib: float = 15) -> bool:
         """One-time covering index; never changes a chain fact or score model.
@@ -368,7 +394,7 @@ class PhantomDatabase:
         existing disk reserve is crossed, including temporary sort/WAL growth.
         """
         with self.connect() as conn:
-            if conn.execute("SELECT 1 FROM sqlite_master WHERE name='idx_chain_scoring_iv'").fetchone():
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE name='idx_chain_scoring_qualified_v2'").fetchone():
                 return False
             last_check = 0.0
             stopped = False
@@ -383,8 +409,8 @@ class PhantomDatabase:
                 raise RuntimeError('Phantom scoring index stopped at disk reserve')
             conn.set_progress_handler(guard, 100000)
             try:
-                conn.execute('CREATE INDEX idx_chain_scoring_iv ON chain_snapshots'
-                             '(ticker,quote_date,option_symbol,dte,iv) WHERE iv IS NOT NULL')
+                conn.execute('CREATE INDEX idx_chain_scoring_qualified_v2 ON chain_snapshots ('+
+                             SCORING_HISTORY_COLUMNS+') WHERE '+SCORING_QUALIFICATION_SQL)
             finally:
                 conn.set_progress_handler(None, 0)
         return True
@@ -401,24 +427,42 @@ class PhantomDatabase:
         unique = sorted({t.upper() for t in tickers if t})
         if not unique:
             return
-        with self.connect() as conn:
+        with self.read_connection() as conn:
             cutoff = " AND quote_date<=?" if as_of else ""
             for ticker in unique:
                 date_params = [ticker, as_of] if as_of else [ticker]
-                self._iv_cache[ticker] = [float(row[0]) for row in conn.execute(
-                    "SELECT iv FROM chain_snapshots WHERE ticker=? AND iv IS NOT NULL"
+                columns = ('ticker,quote_date,option_symbol,side,iv,delta,gamma,open_interest,'
+                           'strike,underlying_price,dte,bid,ask,mid,updated_ts,greeks_quality')
+                history = conn.execute(
+                    "SELECT " + SCORING_HISTORY_COLUMNS + " FROM chain_snapshots WHERE ticker=? AND " + SCORING_QUALIFICATION_SQL +
                     " AND dte BETWEEN ? AND ?" + cutoff + " ORDER BY quote_date,option_symbol",
                     [ticker, dte_min, dte_max] + ([as_of] if as_of else []),
-                )]
+                )
+                self._iv_cache[ticker] = [float(row['iv']) for row in history
+                                          if benchmark_record_eligible(dict(row))]
                 latest = conn.execute(
                     "SELECT MAX(quote_date) FROM chain_snapshots WHERE ticker=?" + cutoff,
                     date_params,
                 ).fetchone()[0]
                 self._chain_cache[ticker] = [dict(row) for row in conn.execute(
-                    "SELECT ticker,quote_date,option_symbol,side,iv,gamma,open_interest"
+                    "SELECT " + columns +
                     " FROM chain_snapshots WHERE ticker=? AND quote_date=? ORDER BY option_symbol",
                     (ticker, latest),
-                )] if latest else []
+                ) if benchmark_record_eligible(dict(row))] if latest else []
+                if not hasattr(self, '_coverage_cache'):
+                    self._coverage_cache = {}
+                self._coverage_cache[ticker] = {
+                    'requested_session': as_of, 'latest_stored_session': latest,
+                    'qualified_latest_rows': len(self._chain_cache[ticker]),
+                    'qualified_history_observations': len(self._iv_cache[ticker]),
+                    'state': ('MISSING' if not latest else 'STALE' if as_of and latest < as_of
+                              else 'UNAVAILABLE' if not self._chain_cache[ticker] else 'QUALIFIED'),
+                }
+
+    def scoring_coverage(self, ticker: str) -> Dict[str, Any]:
+        return getattr(self, '_coverage_cache', {}).get(ticker.upper(), {
+            'state': 'UNVERIFIED', 'requested_session': None,
+            'latest_stored_session': None})
 
     def batch_write_phantom_scores(self, run_id: str, scores: List[tuple]) -> None:
         """Write all phantom scores for a run in a single transaction."""

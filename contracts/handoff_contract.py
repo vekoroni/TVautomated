@@ -13,6 +13,7 @@ import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, Optional
+from contracts.actuarial_evidence import FIELDS as ACTUARIAL_EVIDENCE_FIELDS
 
 
 FIELD_STATUSES = {"CONFIRMED", "PARTIAL", "INFERRED", "MISSING", "STALE", "CONFLICTED", "INVALID"}
@@ -132,6 +133,7 @@ TRUTH_PACKET_FIELD_GROUPS = {
         "lane_tag", "reasons_top3", "predictability_score", "bmps", "flow_score",
     ],
     "vanguard": [
+        *ACTUARIAL_EVIDENCE_FIELDS,
         "state_v2", "state_hash", "behaviour_state_key", "behaviour_state_hash",
         "actuarial_match_type", "actuarial_ev_weight",
         "future_momentum_bucket", "preferred_horizon",

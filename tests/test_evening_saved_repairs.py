@@ -40,20 +40,22 @@ def test_scoring_preload_keeps_exact_scores_without_raw_payloads_or_future_rows(
                           chain(symbol='B', raw_json='y' * 20000)])
     row = dict(ticker='NAN', direction='CALL', contract_iv=.4,
                contract_dte=30, contract_strike=100, contract_gamma=.02)
+    db.preload_tickers(['NAN'], as_of='2026-11-10')
     expected = score_row(row, db, '20261110_test')
     assert db.ensure_scoring_index(min_free_gib=0)
     assert not db.ensure_scoring_index(min_free_gib=0)
     with db.connect() as c:
-        plan = c.execute('EXPLAIN QUERY PLAN SELECT iv FROM chain_snapshots WHERE ticker=? AND iv IS NOT NULL AND dte BETWEEN ? AND ? AND quote_date<=? ORDER BY quote_date,option_symbol', ('NAN',7,60,'2026-11-10')).fetchall()
-        assert any('COVERING INDEX idx_chain_scoring_iv' in r[3] for r in plan)
+        from phantom_database import SCORING_QUALIFICATION_SQL, SCORING_HISTORY_COLUMNS
+        plan = c.execute('EXPLAIN QUERY PLAN SELECT '+SCORING_HISTORY_COLUMNS+' FROM chain_snapshots WHERE ticker=? AND '+SCORING_QUALIFICATION_SQL+' AND dte BETWEEN ? AND ? AND quote_date<=? ORDER BY quote_date,option_symbol', ('NAN',7,60,'2026-11-10')).fetchall()
+        assert any('COVERING INDEX idx_chain_scoring_qualified_v2' in r[3] for r in plan)
     statements = []
-    original = db.connect
+    original = db.read_connection
     @contextmanager
     def traced():
         with original() as conn:
             conn.set_trace_callback(statements.append)
             yield conn
-    db.connect = traced
+    db.read_connection = traced
     db.preload_tickers(['NAN'], as_of='2026-11-10')
     assert score_row(row, db, '20261110_test') == expected
     assert all('raw_json' not in r for r in db.latest_chain_rows('NAN'))
@@ -97,7 +99,7 @@ def test_index_disk_guard_does_not_change_chain_facts(tmp_path):
     with pytest.raises(RuntimeError,match='disk reserve'):
         db.ensure_scoring_index(min_free_gib=10**9)
     with sqlite3.connect(db.db_path) as c:
-        assert c.execute("SELECT COUNT(*) FROM sqlite_master WHERE name='idx_chain_scoring_iv'").fetchone()[0] == 0
+        assert c.execute("SELECT COUNT(*) FROM sqlite_master WHERE name='idx_chain_scoring_qualified_v2'").fetchone()[0] == 0
         assert c.execute('SELECT iv,underlying_price FROM chain_snapshots').fetchone() == (.3,100.)
 
 

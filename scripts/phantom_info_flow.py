@@ -39,9 +39,14 @@ def compute_info_flow(row: Dict[str, Any]) -> Dict[str, Any]:
     crowd_score = 15.0 if "ARRIVING" in crowd else (8.0 if "HINT" in crowd else 0.0)
     arbitration_score = 15.0 if "ALIGNED" in arb or "RESOLVED" in arb else 0.0
     score = max(0.0, min(100.0, 30.0 + pcr_score + flow_score + crowd_score + arbitration_score))
+    available = (math.isfinite(_float(row,'pcr_oi',default=float('nan'))) and pcr_oi>0) or any(
+        str(row.get(k) or '').strip().lower() not in {'','nan','none','null'}
+        for k in ('crowd_arrival_state','crowd_arrival_label','direction_arbitration_status')) or (
+        math.isfinite(_float(row,'contract_volume','volume',default=float('nan'))) and volume>=0 and
+        math.isfinite(_float(row,'contract_oi','open_interest',default=float('nan'))) and oi>=0)
     return {
-        "info_flow_score": round(score, 2),
-        "info_flow_source": "proxy_options_participation",
-        "info_flow_ratio": round(flow_ratio, 4),
+        "info_flow_score": round(score, 2) if available else None,
+        "info_flow_source": "proxy_options_participation" if available else "MISSING",
+        "info_flow_ratio": round(flow_ratio, 4) if available else None,
     }
 

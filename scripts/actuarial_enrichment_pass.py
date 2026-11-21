@@ -166,6 +166,7 @@ ACTUARIAL_SCRIPT = VANGUARD_DIR / "actuarial_cache_builder.py"
 # LOAD ACTUARIAL MODULE
 # ─────────────────────────────────────────────────────────────────────────────
 _CACHE_DF        = None
+_CACHE_OUTCOME_INDEX = None
 _LOOKUP_FN       = None
 _ACTUARIAL_READY = False
 _ACTUARIAL_ERROR = ""
@@ -262,6 +263,7 @@ def _preflight_fingerprint_check(db_path: str, registry: dict) -> bool:
 
 def _load_actuarial() -> bool:
     global _CACHE_DF, _LOOKUP_FN, _ACTUARIAL_READY, _ACTUARIAL_ERROR
+    global _CACHE_OUTCOME_INDEX
     global _STATE_COLS, _FORCE_CATALYST_NONE
     global _SCHEMA_VERSION, _SCHEMA_FINGERPRINT, _CANONICAL_DB_PATH, _CACHE_VALIDATION
     global _BEHAVIOUR_CACHE_HASHES, _BEHAVIOUR_CACHE_ERROR
@@ -294,6 +296,8 @@ def _load_actuarial() -> bool:
         if _CACHE_DF is None or len(_CACHE_DF) == 0:
             _ACTUARIAL_ERROR = "Cache empty — run actuarial_cache_builder.py first"
             return False
+        from contracts.actuarial_evidence import index_cache_outcomes
+        _CACHE_OUTCOME_INDEX = index_cache_outcomes(_CACHE_DF)
 
         _CACHE_VALIDATION = validate_cache_frame(_CACHE_DF, path=ACTUARIAL_CACHE)
         _SCHEMA_VERSION = _CACHE_VALIDATION.schema_version or registry_schema_version()
@@ -724,6 +728,8 @@ def _build_actuarial_block(state: Dict[str, str]) -> Dict[str, Any]:
         no_match = bool(_result_get(result, "no_match", True))
         block = {
             "available":             True,
+            "deferred":              False,
+            "reason":                "NO_MATCH" if no_match else "LOOKUP_COMPLETE",
             "actuarial_source":      SOURCE_MISSING if no_match else SOURCE_V6_DB,
             "schema_version":        _SCHEMA_VERSION,
             "schema_fingerprint":    _SCHEMA_FINGERPRINT,
@@ -755,6 +761,12 @@ def _build_actuarial_block(state: Dict[str, str]) -> Dict[str, Any]:
             "enriched_by":           "actuarial_enrichment_pass",
             "enriched_at":           datetime.now(timezone.utc).isoformat(),
         }
+        from contracts.actuarial_evidence import cache_outcomes
+        block['outcome_evidence'] = cache_outcomes(result,
+            _CACHE_OUTCOME_INDEX if _CACHE_OUTCOME_INDEX is not None else _CACHE_DF)
+        from contracts.actuarial_evidence import sha
+        hashes={c.get('source_cache_row_sha256') for c in block['outcome_evidence'] if c.get('source_cache_row_sha256')}
+        block['evidence_input_sha256'] = sha({'state':state,'cache_rows':sorted(hashes)}) if hashes else None
         block = apply_truth_packet(block)
         validate_truth_packet(block)
         return block
@@ -919,6 +931,7 @@ def _patch_package(
 
     # Retain existing useful fields by default; the fresh lookup owns core
     # match metrics and v6 truth metadata.
+    actuarial_block.setdefault('deferred',False)
     existing_act = pkg.get("actuarial") or {}
     if isinstance(existing_act, dict):
         merged_act = dict(existing_act)
@@ -936,8 +949,6 @@ def _patch_package(
         )
         validate_truth_packet(actuarial_block)
 
-    pkg["actuarial"] = actuarial_block
-
     # Determine outcome for reporting
     if not actuarial_block.get("available"):
         outcome = "LOOKUP_FAILED"
@@ -947,6 +958,9 @@ def _patch_package(
         outcome = "FALLBACK_MATCH"
     else:
         outcome = "EXACT_MATCH"
+
+    actuarial_block['enrichment_pass_result'] = outcome
+    pkg["actuarial"] = actuarial_block
 
     try:
         with pkg_path.open("w", encoding="utf-8") as f:
@@ -987,6 +1001,7 @@ def _record_actuarial_fact(pkg_path: Path, pkg: Dict[str, Any], ticker: str, blo
         run_dir = pkg_path.resolve().parents[1]
         append_enrichment_record(run_dir, str(pkg.get("run_id") or run_dir.name), "actuarial", {
             "ticker": ticker, "calculation_version": "actuarial_enrichment_pass", "payload": block,
+            "input_sha256": block.get('evidence_input_sha256') or '',
         })
     except Exception as e:  # never blocks the pass
         log.warning("Actuarial ledger not written for %s: %s", ticker, e)
