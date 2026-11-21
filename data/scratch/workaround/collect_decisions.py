@@ -185,6 +185,16 @@ def macro_line() -> str:
             f"Kill switches fired at the triage: {', '.join(map(str, fired)) or 'none'}. The monitors re-check them live.")
 
 
+def owns_context(folder: Path, context_path: Path) -> bool:
+    """True when `folder` is the hand-off folder the context file itself names."""
+    try:
+        context = json.loads(Path(context_path).read_text(encoding="utf-8-sig"))
+        named = context.get("handoff") or context.get("split_handoff")
+        return bool(named) and Path(named).resolve() == Path(folder).resolve()
+    except (OSError, ValueError):
+        return False
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--folder", help="hand-off folder (default: handoff, else split_handoff, in today_context.json)")
@@ -293,11 +303,15 @@ def main(argv=None):
     if not prompts.exists():
         print(f"WARNING: {prompts.name} is missing: the triage (B3) must save the deep-dive prompts")
     # F-10 (ACK 21 Nov 2026): the context follows what is on disk, without waiting for an avs_day.ps1 step.
+    # Only when this run collected the context's own hand-off folder: a replay or a test on another folder never
+    # touches today_context.json (fault found 21 Nov: the tests rewrote the live file).
+    context_path = WORK / "today_context.json"
     try:
-        import ticket_ready
-        changed = ticket_ready.refresh_context(WORK / "today_context.json")
-        if changed:
-            print("today_context.json refreshed: " + ", ".join(changed))
+        if owns_context(folder, context_path):
+            import ticket_ready
+            changed = ticket_ready.refresh_context(context_path)
+            if changed:
+                print("today_context.json refreshed: " + ", ".join(changed))
     except Exception as exc:   # the collection stands even when the context cannot be refreshed
         print(f"WARNING: today_context.json not refreshed ({type(exc).__name__}: {exc})")
 

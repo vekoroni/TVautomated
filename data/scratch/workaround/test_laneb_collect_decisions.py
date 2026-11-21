@@ -92,3 +92,41 @@ def test_the_newest_card_is_the_one_with_the_latest_date_in_its_name(tmp_path):
     old = folder / "CPNG_deep_dive_2026-10-19_v1.html"
     os.utime(old, (old.stat().st_mtime + 5000, old.stat().st_mtime + 5000))   # copied later, still the older card
     assert collect_decisions.find_cards(folder)["CPNG"][-1].name == f"CPNG_deep_dive_{SESSION}.html"
+
+
+# ---------------------------------------------------------------- the context belongs to its own hand-off folder
+# Fault found 21 Nov 2026: the collector refreshed today_context.json on every run, so these tests, which collect a
+# temporary folder from the repo root, rewrote the real file (stamp 14:05). A test must never write a live file.
+def _context(tmp_path, monkeypatch, handoff: Path) -> Path:
+    work = tmp_path / "work"
+    work.mkdir()
+    context = work / "today_context.json"
+    context.write_text(json.dumps({"session": SESSION, "handoff": str(handoff), "cards": None}), encoding="utf-8")
+    monkeypatch.setattr(collect_decisions, "WORK", work)
+    return context
+
+
+def test_collecting_another_folder_leaves_the_context_untouched(tmp_path, monkeypatch):
+    folder = folder_with_cards(tmp_path)
+    context = _context(tmp_path, monkeypatch, handoff=tmp_path / "some_other_handoff")
+    before = context.read_bytes()
+
+    collect_decisions.main(["--folder", str(folder)])
+
+    assert context.read_bytes() == before
+
+
+def test_collecting_the_contexts_own_folder_refreshes_it(tmp_path, monkeypatch):
+    folder = folder_with_cards(tmp_path)
+    context = _context(tmp_path, monkeypatch, handoff=folder)
+
+    collect_decisions.main(["--folder", str(folder)])
+
+    after = json.loads(context.read_text(encoding="utf-8"))
+    assert after["refreshed_by"].startswith("ticket_ready") and after["cards"].endswith(f"cards_{SESSION}.csv")
+
+
+def test_these_tests_never_point_at_the_real_context():
+    """The default WORK is the live Lane B folder; a collection of a temporary folder must not reach it."""
+    real = collect_decisions.WORK / "today_context.json"
+    assert not collect_decisions.owns_context(Path("C:/definitely/not/the/handoff"), real)
