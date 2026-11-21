@@ -17,8 +17,8 @@ data/scratch/workaround/handoff/lab_<session>/:
 
 Population: lab_verdict GO_LIMIT or MANUAL_REVIEW. Every excluded verdict is counted in the receipt.
 Order: GO_LIMIT first, then lab_rank ascending. No weights. Batches of 30 in that order.
-Focus list (settings focus_tickers, ACK 15 Nov 2026): the listed names fill the first batches in the order listed (lb_focus = FOCUS);
-    the rest follow in the Lab order. Order only: nothing is dropped, no Lab value changes.
+Focus list (settings focus_tickers): a flag, never an order (ACK 21 Nov 2026, AVS-ARCH-LB-001 G2). A listed name is marked
+    lb_focus = FOCUS and stays where the Lab ranked it. This replaces the 15 Nov rule that put the focus names in the first batches.
 Flags (never filters unless the settings say so):
     lb_window_flag   D1 (ACK 12 Nov): the planned hold stays the thesis runway. The trading window is judged on the
                      monetisation clock n when the Lab publishes it; until then on anticipated_sessions_q50, labelled PROXY_Q50
@@ -82,8 +82,8 @@ DEFAULTS = {
     # stock tier
     "stock_tier_a_usd": 50_000_000, "stock_tier_b_usd": 20_000_000, "stock_tier_bars": 20,
     "batch_size": 30,
-    # focus list (ACK 15 Nov 2026): these names fill the first batches, in the order listed; every other row follows in the Lab order.
-    # Order only: no row is dropped and no Lab value changes. Empty = the Lab order alone.
+    # focus list (ACK 21 Nov 2026): these names are flagged lb_focus = FOCUS and keep their Lab order. No row is dropped,
+    # no row is moved and no Lab value changes. Empty = no flags.
     "focus_tickers": [],
     "spotcheck_random_rows": 20, "spotcheck_seed": 20261112,
 }
@@ -400,8 +400,8 @@ def write_markdown(folder: Path, receipt: dict, rows: list[dict], settings: dict
           f"- Excluded by window filter: {c['excluded_by_window_filter']} (window_mode = {settings['window_mode']})", "",
           "## Order", "", "GO_LIMIT first, then `lab_rank` ascending. No weights. Batches of "
           f"{settings['batch_size']} in that order ({c['batches']} batches).", "",
-          *([f"Focus list (settings focus_tickers): {c['focus_rows']} names placed first, in the order listed; the other rows follow in "
-             "the Lab order. Order only: no row dropped, no Lab value changed."
+          *([f"Focus list (settings focus_tickers): {c['focus_rows']} names flagged lb_focus = FOCUS and left in the Lab order "
+             "(ACK 21 Nov 2026). No row moved, no row dropped, no Lab value changed."
              + (f" Not on the hand-off: {', '.join(receipt['focus_not_on_handoff'])}." if receipt["focus_not_on_handoff"] else ""), ""]
             if settings["focus_tickers"] else []),
           "## Flags (counts on the hand-off rows)", ""]
@@ -499,8 +499,7 @@ def main(argv=None) -> int:
         focus_order = {str(t).upper().strip(): i for i, t in reversed(list(enumerate(settings["focus_tickers"])))}
         ticker_of = lambda item: str(item[0]["values"].get("ticker")).upper().strip()   # noqa: E731
         focus_not_on_handoff = sorted(set(focus_order) - {ticker_of(item) for item in built})
-        if focus_order:   # stable: focus names first as listed, the rest keep the Lab order
-            built.sort(key=lambda item: (ticker_of(item) not in focus_order, focus_order.get(ticker_of(item), 0)))
+        # ACK 21 Nov 2026 (G2): focus names are flagged below and keep the Lab order; nothing is re-sorted here.
         seen_groups, out_rows = set(), []
         for i, (r, lb) in enumerate(built, start=1):
             v = r["values"]

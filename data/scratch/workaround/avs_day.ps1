@@ -298,7 +298,7 @@ switch ($Step) {
             & $Py "$W\build_mining_handoff.py" --ledger $c.ledger --out $out
             if ($LASTEXITCODE -ne 0) { "Hand-off build failed (exit $LASTEXITCODE)"; break }
         }
-        if (-not (Test-Path "$out\strategy_layer_$($c.session).csv")) { Invoke-Strategy $out } else { "Strategy layer already built: $out" }
+        # Strategy layer S1-S6 retired by ACK on 21 Nov 2026 (AVS-ARCH-LB-001 CF-02): no longer built with the hand-off.
         "== Trade guard: open forecasts on tonight's price store"
         Invoke-Guard
         $c = Write-Context
@@ -349,11 +349,9 @@ switch ($Step) {
 
     'strategy' {
         $c = Get-Context
-        if ($UseLab) { 'The strategy layer reads the old hand-off layout (<TICKER>_<SIDE>.json): not run on the Lab hand-off'; break }
-        if (-not $c.split_handoff_built) { "No hand-off for $($c.session) yet: run avs_day.ps1 evening first"; break }
-        Invoke-Strategy $c.split_handoff
-        $c = Write-Context
-        "Strategy layer: $($c.strategy_layer)  (read the .md beside it; checktriage turns its challenges into WARN lines)"
+        # Retired by ACK on 21 Nov 2026 (AVS-ARCH-LB-001 CF-02): "a lot of Lane B gives us the mining that is needed".
+        # The step name is kept so an old command says so instead of failing; strategy_layer.py is left in place, unhooked.
+        'Strategy layer S1-S6 is retired (ACK 21 Nov 2026). Nothing was run.'
     }
 
     'packs' {
@@ -431,7 +429,7 @@ switch ($Step) {
         & $Py "$W\ticket_ready.py"   # filled cards with no resting exit are listed first (21 Nov 2026)
         & $Py "$W\track_outcomes.py" $c.ledger
         Invoke-Guard
-        & $Py "$W\strategy_layer.py" --s6-calibrate   # S6: replay every split hand-off contract, lessons\s6_capture_<date>.md
+        # S6 calibration (strategy_layer.py --s6-calibrate) retired with the strategy layer by ACK on 21 Nov 2026.
         # Option closes: written by the post-close monitor (monitor\option_closes.csv); the local capture_option_closes.py
         # was retired from this step by ACK on 17 Oct 2026 so the file has one writer.
         $c = Write-Context

@@ -274,7 +274,10 @@ def test_stock_tier_from_twenty_day_dollar_volume(tmp_path):
     assert tiers["AAA"][0] == "A" and tiers["GOO"][0] == "B" and tiers["BBB"][0] == "C" and tiers["NAN"][0] == "NO_PRICE_HISTORY"
 
 
-# ---------------------------------------------------------------- focus list (ACK 15 Nov 2026)
+# ---------------------------------------------------------------- focus list: a flag, never an order (ACK 21 Nov 2026)
+# ACK 21 Nov 2026 (AVS-ARCH-LB-001 G2): the hand-off keeps the Lab order; a focus name is marked lb_focus = FOCUS and stays where
+# the Lab ranked it. This replaces the 15 Nov rule that put the focus names in the first batches: on 20 Nov that rule placed Lab
+# ranks 1413, 2192 and 2355 at the head of batch 1, ahead of ranks 4 and 8.
 
 def focus_build(tmp_path, names):
     tmp_path.mkdir(parents=True, exist_ok=True)
@@ -286,26 +289,32 @@ def focus_build(tmp_path, names):
     return folder, list(csv.DictReader((folder / "handoff.csv").open(encoding="utf-8", newline="")))
 
 
-def test_focus_names_fill_the_first_batches_in_the_order_given_and_no_row_is_dropped(tmp_path):
-    folder, rows = focus_build(tmp_path, ["bbb", "AAA"])
-    assert [r["ticker"] for r in rows] == ["BBB", "AAA", "GOO", "NAN"]     # focus first as listed, then the Lab order
-    assert [r["lb_batch"] for r in rows] == ["1", "1", "2", "2"]
-    assert [r["lb_focus"] for r in rows] == ["FOCUS", "FOCUS", "", ""]
-    assert "ticker_pack.py BBB AAA" in (folder / "pack_commands" / "ticker_pack_command_1.txt").read_text(encoding="utf-8")
+def test_focus_names_are_flagged_and_stay_in_the_lab_order(tmp_path):
+    _, plain = focus_build(tmp_path / "a", [])
+    folder, rows = focus_build(tmp_path / "b", ["nan", "BBB"])
+    assert [r["ticker"] for r in rows] == [r["ticker"] for r in plain]          # the Lab order, whatever the focus list says
+    assert [r["lb_batch"] for r in rows] == [r["lb_batch"] for r in plain]
+    assert {r["ticker"] for r in rows if r["lb_focus"] == "FOCUS"} == {"NAN", "BBB"}
+    assert len(rows) == len(plain) == 4                                          # no row dropped
 
 
-def test_a_focus_list_changes_the_order_only_never_a_lab_value(tmp_path):
+def test_a_focus_list_changes_the_flag_only_never_the_order_or_a_lab_value(tmp_path):
     _, plain = focus_build(tmp_path / "a", [])
     _, focus = focus_build(tmp_path / "b", ["BBB"])
-    moved = ("lb_order", "lb_batch", "lb_focus", "lb_group_role")
-    strip = lambda rows: {r["ticker"]: {k: v for k, v in r.items() if k not in moved} for r in rows}   # noqa: E731
-    assert strip(plain) == strip(focus)
+    strip = lambda rows: [{k: v for k, v in r.items() if k != "lb_focus"} for r in rows]   # noqa: E731
+    assert strip(plain) == strip(focus)                                          # same rows, same order, same batches
     assert all(r["lb_focus"] == "" for r in plain)
+
+
+def test_the_hand_off_note_says_focus_is_a_flag(tmp_path):
+    folder, _ = focus_build(tmp_path, ["BBB"])
+    note = (folder / "handoff.md").read_text(encoding="utf-8")
+    assert "Focus list" in note and "flagged" in note and "placed first" not in note
 
 
 def test_a_focus_name_that_is_not_on_the_hand_off_is_recorded_not_invented(tmp_path):
     folder, rows = focus_build(tmp_path, ["ZZZ", "BBB"])
     receipt = json.loads((folder / "receipt.json").read_text(encoding="utf-8"))
-    assert rows[0]["ticker"] == "BBB" and len(rows) == 4
+    assert [r["ticker"] for r in rows if r["lb_focus"]] == ["BBB"] and len(rows) == 4
     assert receipt["counts"]["focus_rows"] == 1 and receipt["focus_not_on_handoff"] == ["ZZZ"]
     assert "Focus list" in (folder / "handoff.md").read_text(encoding="utf-8")

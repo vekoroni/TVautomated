@@ -331,7 +331,8 @@ def check_batch(tri: Path, H: pd.DataFrame, lab: bool, session: str, cap: float,
     if not lab:
         sl = handoff_folder / f"strategy_layer_{session}.csv"
         if not sl.exists():
-            warns.append(f"{sl.name} is missing: run avs_day.ps1 strategy before the deep dives (cards will have no S1-S6 row)")
+            # Strategy layer S1-S6 retired by ACK on 21 Nov 2026 (AVS-ARCH-LB-001 CF-02): its absence is no longer a warning.
+            notes.append("strategy layer S1-S6: retired (ACK 21 Nov 2026); no strategy file expected")
         else:
             L = pd.read_csv(sl, dtype=str, keep_default_na=False)
             L["ticker"] = L["ticker"].str.upper().str.strip()
