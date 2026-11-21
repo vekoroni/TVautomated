@@ -412,6 +412,20 @@ def main(argv=None) -> int:
     if unchecked:
         notes.append("batch triage files not checked in this run: " + ", ".join(f"batch {b}" for b in unchecked) + " (use --all or --batch N)")
 
+    # F-09 (ACK 21 Nov 2026): a macro state from an earlier session is flagged, never a FAIL. It sits beside the
+    # context file, so a check run on another folder reads that folder's state.
+    try:
+        from datetime import date as _date
+        import ticket_ready
+        macro_state_file = cpath.parent / "macro_state.json"
+        if cpath.exists():
+            age, why = ticket_ready.macro_state_age(ticket_ready._load_macro_state(macro_state_file), _date.fromisoformat(str(session)[:10]))
+            if age != "CURRENT":
+                warns.append(f"macro state {age}: {why}. Kill switches on the tickets are NOT_ASSESSED until the triage rewrites "
+                             f"{macro_state_file.name}")
+    except Exception as exc:   # the age check must never stop the triage check
+        notes.append(f"macro state age not checked ({type(exc).__name__})")
+
     inbox = WORK / "lessons" / "fix_inbox" / f"{session}_triage.md"
     if not inbox.exists():
         warns.append(f"no fix-inbox file {inbox.name} (the triage writes one, 'none' if clean)")

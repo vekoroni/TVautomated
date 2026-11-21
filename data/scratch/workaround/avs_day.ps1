@@ -201,6 +201,8 @@ function Get-Context {
         strategy_layer      = $(if (Test-Path $strat) { $strat } else { $null })       # null = avs_day.ps1 strategy has not run
         cards               = $(if (Test-Path $cards) { $cards } else { $null })
         order_tickets       = $(if (Test-Path $tickets) { $tickets } else { $null })
+        ticket_ready        = $(if (Test-Path (Join-Path $split "ticket_ready_$session.md")) { Join-Path $split "ticket_ready_$session.md" } else { $null })   # every live card with its order strings (21 Nov 2026)
+        board_rows          = $(if (Test-Path (Join-Path $split "board_rows_$session.json")) { Join-Path $split "board_rows_$session.json" } else { $null })   # the day's board rows in one shape
         preclose_today      = $(if ($pre) { "$W\preclose\$($pre.Name)" } else { $null })
         preclose_previous   = $(if ($preprev) { "$W\preclose\$($preprev.Name)" } else { $null })
         lab_book            = $labManifest                                        # the Lab review projection manifest (names the database and the card fields)
@@ -415,8 +417,10 @@ switch ($Step) {
     'preclose' {
         $c = Get-Context
         & $Py "$W\collect_decisions.py" --folder $c.split_handoff
+        & $Py "$W\ticket_ready.py"   # every live card across the hand-off folders, entry and exit order strings (21 Nov 2026)
         & $Py "$W\preclose_trigger_scan.py" --handoff $c.split_handoff
         $c = Write-Context
+        "Ticket ready list: $($c.ticket_ready)  <- check each at 15:40 ET; advisory, you place every order"
         "Order tickets: $($c.order_tickets)  <- every TRADE/WATCH card's order; place them or write why not, before 15:55 ET"
         "Attach $($c.preclose_today) and your pre-close macro report to the pre-close decision chat."
     }
@@ -424,6 +428,7 @@ switch ($Step) {
     'eod' {
         $c = Get-Context
         & $Py "$W\collect_decisions.py" --folder $c.split_handoff
+        & $Py "$W\ticket_ready.py"   # filled cards with no resting exit are listed first (21 Nov 2026)
         & $Py "$W\track_outcomes.py" $c.ledger
         Invoke-Guard
         & $Py "$W\strategy_layer.py" --s6-calibrate   # S6: replay every split hand-off contract, lessons\s6_capture_<date>.md

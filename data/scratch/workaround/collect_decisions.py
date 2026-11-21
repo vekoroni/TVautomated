@@ -292,6 +292,14 @@ def main(argv=None):
         print(f"WARNING: {len(warn)} decisions file(s) miss standard fields (listed at the end of order_tickets_{session}.md)")
     if not prompts.exists():
         print(f"WARNING: {prompts.name} is missing: the triage (B3) must save the deep-dive prompts")
+    # F-10 (ACK 21 Nov 2026): the context follows what is on disk, without waiting for an avs_day.ps1 step.
+    try:
+        import ticket_ready
+        changed = ticket_ready.refresh_context(WORK / "today_context.json")
+        if changed:
+            print("today_context.json refreshed: " + ", ".join(changed))
+    except Exception as exc:   # the collection stands even when the context cannot be refreshed
+        print(f"WARNING: today_context.json not refreshed ({type(exc).__name__}: {exc})")
 
 
 if __name__ == "__main__":
