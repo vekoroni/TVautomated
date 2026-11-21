@@ -88,7 +88,7 @@ These are the items where the paperwork says one thing and the code or the live 
 | S1.3 | `scanner_data_quality=CONFIRMED` hardcoded | `intelligent_orchestrator.py:955, 6306` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
 | S2.1 | One bar reader; no stale-cache fallback | `STALE_CACHE` fallback at discovery `:1110` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
 | S5.2 | One Wyckoff engine | Dead copy still tracked | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
-| H2 | Missing direction defaults to CALL | `intelligent_orchestrator.py:1761-1765` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
+| H2 | Missing direction defaults to CALL | `intelligent_orchestrator.py:1761-1765` | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | STATIC+8282-SAVED-TRACE | NOT-EVIDENCED | VERIFY-DECISION | P2-DEFENSIVE — Latent caller defect reproduced; 0 defaults and 0 routed/governed side disagreements in 8,282 saved rows. Shared owner/identity follow-up BF-02, no observed wrong-side incident; see section 10. |
 | DWN-03, DWN-14, VNG-15, DSC-25 | EIL tests `edge_dir in {CALL, PUT}`; enrichment trend vocabulary; `win_probability` seeding; literals in domain code | Still present; some inert | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
 | VNG-04 / VNG-09 / C-05 | v8 mirrored first-passage labels; per-candidate first-passage statistics | No v8 builder | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
 | DIR-002 R-1…R-9 | Integrated acceptance of the direction cut-over | Only R-5 run (BEAR failed by 0.002); cut-over made under the 4 Oct waiver | NO-REPORTED | RECHECK-BASELINE | NO-REPORTED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P1 — Discovery/direction/horizon -> Vanguard -> OI -> EIL/Morning; inspect active versus retired path. |
@@ -185,7 +185,7 @@ These are the items where the paperwork says one thing and the code or the live 
 | STALE-A / B / C, STALE-BITO | Which fix for the 39 ETFs with no stored prices, and the BITO split (+98% shown on 19 Nov) | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
 | TRIAGE-11-UNIVERSE | Add 11 ETFs to the board universe | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
 | FUNDFLOW-SOURCE | A verified ETF net-flow source | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
-| COST-CAP | Decided by ACK on 21 Nov: USD 4 a day. Tests now read the cap from config; runbook corrected | YES-REPORTED | ANCESTOR-VERIFIED f3e199e | YES-REPORTED | COMMIT-REPORTED 16/16 | NOT-EVIDENCED | USD4-CONFIG-DECISION | VERIFY — Cap question resolved by ACK; cost tests reported passed in commit, not rerun here. No new budget authority from this register. |
+| COST-CAP | Decided by ACK on 21 Nov: USD 4 a day. Tests now read the cap from config; runbook corrected | YES-REPORTED | ANCESTOR-VERIFIED f3e199e | YES-REPORTED | 16-PASS-VERIFIED | NOT-EVIDENCED | USD4-CONFIG-DECISION | VERIFIED-NARROW — USD 4 API cost tests independently passed 16/16; no broader scheduler/producer/outcome acceptance implied. |
 | RECOV-FUNDING | API credit shortfall for FULL builds | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
 | MDI-12 | MOVE, dispersion and correlation measures | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
 | Dec 4, 5, 7, 8, 9 (AVS-TRADE-001) | Value selection SHADOW→ACTIVE; rank by return per premium dollar; tastytrade live quotes on cards; in-window names first; success tests as expectancy | UNKNOWN | RECHECK-BASELINE | UNKNOWN | NOT-REVERIFIED | NOT-EVIDENCED | DECISION-PENDING | P0-DECISION — Record the existing business decision/approval first; no implied build or new spending. |
@@ -218,7 +218,7 @@ These are the items where the paperwork says one thing and the code or the live 
 
 | ID | Fix | What was actually done | Built | Committed | Wired | Tested | Validated | Authorised | Priority / pipeline impact and implementation comment |
 |---|---|---|---|---|---|---|---|---|---|
-| D2 / OT-1 | Stop CONFIRMED direction with zero evidence | Display rename; source still writes `DIRECTION_CONFIRMED` | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
+| D2 / OT-1 | Stop CONFIRMED direction with zero evidence | Display rename; source still writes `DIRECTION_CONFIRMED` | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | REVIEW-SEMANTICS — Shared DIRECTION_CONFIRMED token means final==governed and validator expects it; not a calibrated probability. Preserve schema compatibility; assess display/calibration separately, see section 10. |
 | R6 / "expires before the median move" | Contract family by thesis timing | Flag `CONTRACT_EXPIRES_BEFORE_MEDIAN_TIME` only | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
 | OT-10.1 | Per-setup within-hold rates | Display only; lane and geometry not switched (ACK decision held) | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
 | R12 / S2.4 / DF-3 | Freshness gate | Report only, never blocks (ACK 19 Sep) | PARTIAL | RECHECK-BASELINE | PARTIAL/DEGRADED | NOT-REVERIFIED | NOT-EVIDENCED | VERIFY-DECISION | P2 — Separate intended display/shadow policy from missing functionality; no activation to close a row. |
@@ -440,7 +440,7 @@ Files: `Documents\Codex\2026-11-21\re\outputs\GARCH_ordering_and_IV_benchmark_fi
 
 ### 7.1 P0 — mandatory baseline gate before any fix build
 
-Current state: **COMMIT BATCH OBSERVED COMPLETE at `f3e199e`; BUILD HELD BY ACK; BASELINE ACCEPTANCE/DIRTY-RESIDUAL DISPOSITION INCOMPLETE.** See section 8 for the evidence and remaining qualifications.
+Current state: **COMMIT BATCH OBSERVED COMPLETE at `f3e199e`; BUILD HELD BY ACK; BASELINE QUALIFIED WITH KNOWN FIXTURE EXCEPTION AND SCOPED RESIDUALS; NOT A GREEN RELEASE. See section 10.** See section 8 for the evidence and remaining qualifications.
 
 1. Finish the existing commit work with its current owner; do not interrupt, stage unrelated changes, switch branches or cherry-pick fixes underneath it.
 2. After completion, record final branch/HEAD, relevant tracked/untracked/dirty files, release/config identity and effective import paths. Compare with the original `ff24d41` and intermediate `350e614` snapshots; neither is automatically the final baseline.
@@ -534,7 +534,7 @@ Record actual before/after counts and decisions, not only a green test result. P
 
 Residual tracked changes: this register, two 2 October outcome reports, three interpreter-backup file deletions. Untracked research/data/prototypes and `data/scratch/workaround/strategy_layer.py` remain. Do not stage/discard/restore/delete them here. The baseline receipt records their paths; investigate runtime relevance rather than assume untracked means unused. A completely clean repository has **not** been established.
 
-`b44d96e` reports 220 passing tests in 17 files and two known failing files. `f3e199e` addresses the three API-cap test failures and reports 16/16 passing. No later closure evidence found for the reported `test_macro_completion` fixture missing `config/macro_delivery_v1.json`; verify it in isolation before release. These are commit-reported results, not a fresh test run in this task. Existing two narrow Phantom ownership passes remain the only independently rerun tests cited by this review.
+`b44d96e` reports 220 passing tests in 17 files and two known failing files. `f3e199e` addresses the three API-cap test failures and reports 16/16 passing. Section 10 now reproduces and diagnoses the `test_macro_completion` missing-fixture-config failure. The checked-in test remains 1 failed/5 passed; a workspace-only corrected-fixture diagnostic passes without weakening the FULL guard. These are commit-reported results, not a fresh test run in this task. Existing two narrow Phantom ownership passes remain the only independently rerun tests cited by this review.
 
 ### 8.2 First fixes proposed, with current pipeline impact
 
@@ -589,6 +589,8 @@ These are proposed consumer/acceptance refinements. Existing mandate already cov
 
 **Current disposition:** commit batch appears finished and register history reconciled to `f3e199e`; baseline qualifications remain recorded; first slices and agent integration opportunities are now explicit. No fixes, agents, evaluation calls, schedules or deployment started.
 
+
+
 ## 10. ACK acceptance and amendments — 21 November
 
 **ACK, 21 November:** sections 7 to 9 and `BASELINE_and_agentic_build_integration_plan_20261121.txt` are accepted as the working plan, with the six amendments below (Claude Code review of the same day). **The build hold stands.** Acceptance of the plan approves no root cause, design, spend, merge or activation; each slice still needs its own approved design and a failing test first.
@@ -605,3 +607,166 @@ These are proposed consumer/acceptance refinements. Existing mandate already cov
 Decisions still with ACK before any build: commit of this register and the five residual files (A1, A5); `eb50549` (A2); the delayed-feed rule TR-005, which gave Morning DO_NOT_TRADE on 14, 18 and 19 Nov and conflicts with "flag quote age, never gate"; the Interpreter decommission scope (A4); a versioned agent packet, since the present one has 1,036 bytes of headroom.
 
 Known limits of this register as it stands: the six status columns hold the same placeholder values on most rows, and rows marked `RECHECK-BASELINE` or `NOT-REVERIFIED` have not been refreshed against `f3e199e` or the test results recorded in the 21 Nov commit messages. Sections 7.3 and 8.2 carry the real priorities.
+
+## 11. Baseline qualification and direction/default trace — completed investigation, build still held
+
+**Final baseline reconciliation:** While preparing this update, commit `9e7849bbdef03d1bc70d36c6e387eb6860b0e636` committed the register and all five explained residual files. Its six-file diff contains no production source/config/test changes; all pinned source hashes remain checked at application. The earlier tests were run against `f3e199e`, whose production sources are unchanged. The commit decisions in section 10 A1/A5 are therefore completed, superseding the pending wording there; other ACK decisions and the build hold remain. No commit was performed by this investigation. Tracked working tree was clean immediately after that commit; this documentation update will be a new uncommitted delta.
+
+**Disposition:** final committed baseline `9e7849bbdef03d1bc70d36c6e387eb6860b0e636` has unchanged production sources from `f3e199e636d93591065ebd6d0a2b6c4c6435f028`, selected production/config/test files have no diff from HEAD, nothing is staged and index lock is absent. Baseline qualifications are now **investigated and explicitly dispositioned**, not all erased or marked green. **No building yet**, as instructed by ACK.
+
+
+### 11.0 Reconciliation with ACK amendments
+
+Section 10 is preserved verbatim and governs the prerequisites. Before any build, ACK decisions remain on register/residual commits, eligibility commit eb50549, TR-005 quote-age policy, legacy Interpreter decommission scope and a versioned agent packet. No such decision is inferred here. Historical residual explanations in A5 close their cause investigation; committing those files remains pending, and the fixture remains unfixed.
+
+Independent branch checks confirm eb50549 itself changes 48 added/7 removed orchestrator lines plus the three named files. Its gate rejects dirty/unavailable-code STANDARD PRODUCTION BUILD_THESIS/FINALISE before acquisition; explicit proving/test/replay/force and Morning semantics differ. Whole-file comparison to today's HEAD includes unrelated newer changes: never replace the current orchestrator with the branch copy. Selective integration must preserve current code receipts, retention, Morning timing and final Lab publication. A3 is test-equivalence only: the Lab timing test has no diff, while current implementation differs. Real-session acceptance remains outstanding.
+
+Legacy Interpreter sync imports are confirmed at the six listed call sites, plus Evening snapshot, Lab views and manifest preparation. These are source wiring points, not nine equivalent runtime invocations; A4's wording “five sync hooks” lists six. The reported 900 MB/run, 4.3 GB and last-report date are attributed to section 10, not independently measured here. The legacy package and the new Interpreter agent are separate. Define scoped disconnection/publication compatibility before implementation; do not delete code or deactivate hooks in this task.
+
+Outcome integration must reuse the existing post-close monitor as sole option-close writer and AVS-LEDGER-001 for card outcomes; preserve the default-disabled capture flag. Agents consume qualified facts and outcome evidence; they do not become new data writers or decision owners.
+
+### 11.1 Verification results and residual disposition
+
+| Qualification | Result | Consequence / remaining action |
+|---|---|---|
+| API cap baseline | Independently rerun: `tests/test_macro_api_cost.py`, **16 passed in 65.83s** | USD 4 config/test alignment verified narrowly; not proof of all macro scheduling/output behaviour |
+| Macro-completion baseline | Independently rerun: `tests/test_macro_completion.py`, **1 failed, 5 passed in 52.04s** | Failure reproduced before archive validation because temporary root has no `config/macro_delivery_v1.json`; checked-in suite remains red |
+| Fixture causal diagnostic | Existing function with original validator mock and an explicit workspace-only DATA_ONLY config resolves expected archive hash; tampered hash rejected; FULL mode still prohibited | Confirms fixture/config precondition omission. Future BF-00 changes test setup, not production guard/config. Live config is FULL; blindly copying it into a DATA_ONLY fixture is not the repair |
+| Selected source baseline | Owner/adapter/router/Morning/EIL/forecast/publication sources and configs hashed, unchanged from HEAD | Receipts pin the investigation. Recheck if affected file/HEAD changes; no general full-suite or whole-estate certification |
+| Register delta | Intentional documentation change | Keep separate from build code; do not auto-stage/commit |
+| Historical outcome-report deltas | Two 2 October generated report files; canonical outcome code writes report artifacts | Preserve original working-tree state; not the frozen baseline or substitute for canonical labels in this build |
+| Deleted interpreter backups | Three tracked backup/history residual deletions; no direct reference found in traced current entry points | Preserve state, no deletion/restoration action inferred; full restore/retention qualification remains its own scope |
+| Untracked strategy layer | `data/scratch/workaround/strategy_layer.py` is a standalone/manual CLI; tracked `check_triage.py` can consume its strategy CSV on the old handoff layout | Not globally unused. Hash as a manual/external input boundary; no direct import found in traced Evening/Morning/forecast owners. Any Lane B acceptance must pin its input artifact/version or mark absent |
+| Other untracked research/test/agent artifacts | Not promoted to the committed production baseline by this task | Preserve; no blanket deletion, commit or 'all unused' assertion. Isolated agent candidate stays outside production |
+
+These qualifications are resolved to a **scope-qualified baseline with a known test-fixture exception and explicit residual boundaries**. They are not authority to ignore failures or claim a pristine release. The independent fixture diagnostic does not change the checked-in test's failure status.
+
+### 11.2 Actual direction path and saved-session evidence
+
+Source trace: Discovery-owned thesis -> OI `parse_structural_context` -> shared `resolve_governed_direction` -> GDR/final direction -> orchestrator horizon adapter -> router -> OI/EIL/EOD projections -> Morning shared-record validation/lock.
+
+Current Discovery-authority records do not re-run a legacy evidence vote; OI disables non-directional re-resolution. Morning's migration adapter converts a missing explicit side to UNRESOLVED; governed rows lock to final GDR. The traced EIL physics helper reads explicit final/governed/canonical/direction values without a CALL default. This is a source/caller trace plus saved-output reconciliation, not a new live pipeline or comprehensive Morning historical replay.
+
+| Saved run | OI rows | Horizon rows | Adapter side source | Invented CALL defaults | Directed routed/governed disagreements |
+|---|---:|---:|---|---:|---:|
+| `20261119_234734` | 2,746 | 2,746 | options_direction on every row | 0 | 0 |
+| `20261119_000537` | 2,764 | 2,764 | options_direction on every row | 0 | 0 |
+| `20261118_000634` | 2,772 | 2,772 | options_direction on every row | 0 | 0 |
+| **Total** | **8,282** | **8,282** | Explicit supplied fields | **0** | **0** |
+
+No inspected saved horizon row had a directed routed ID against a non-directed governed state. Input priority was reconstructed from archived OI output fields and compared with saved horizon IDs; original source-process execution was not rerun. These observations do not prove every historical/malformed/alternate-entry-point path safe.
+
+**H2 remains a confirmed latent adapter defect, not an observed wrong-side incident in these runs.** The orchestrator takes instrument -> options_direction -> strategy_type -> direction, default CALL, omitting canonical_direction/final_direction from that lookup. The router itself rejects unknown instruments. Extracting the existing helper and applying local cases reproduces:
+- Empty row -> CALL.
+- Only canonical_direction=PUT -> CALL.
+- instrument=CALL plus options_direction=PUT -> CALL.
+- direction=UNRESOLVED -> UNRESOLVED, not CALL.
+
+Use the shared direction owner, no invented default and explicit conflict/legacy policy in a future narrow repair. Do not create a new voting mechanism. A ticker-key raw-row writer and a ticker-fallback patch also present a latent same-ticker opposite-side identity risk; no collision was observed in these one-row-per-ticker saved OI artifacts. Add exact-identity regression cases rather than claim a proven incident.
+
+**Direction-label qualification:** `DIRECTION_CONFIRMED` is the shared-record path token when final equals governed; its validator expects that token. Fresh Discovery-owned records intentionally have no re-resolution evidence chain. This does not assert calibrated win probability or predictive confidence. A display concern must not be 'fixed' by renaming the schema token or forcing an evidence vote without compatibility/approval. Track label/calibration correctness separately from side integrity.
+
+### 11.3 Prepared first build brief — not started
+
+Source brief: [FIRST_BUILD_BRIEF_BASELINE_VOL_DIRECTION_20261121.md](FIRST_BUILD_BRIEF_BASELINE_VOL_DIRECTION_20261121.md). Standalone review copy and JSON evidence are in this chat's outputs. This is a proposed scoped brief, not implementation permission.
+
+| ID | Proposed change / current impact | Built | Committed | Wired | Tested | Validated | Authorised | Priority / next acceptance |
+|---|---|---|---|---|---|---|---|---|
+| BF-00 | Explicit DATA_ONLY test-fixture config; preserve hash/no-chaining/FULL guard; no production policy change | NO-REPORTED | NOT-APPLICABLE | NO-REPORTED | FAILURE-REPRODUCED; DIAGNOSTIC-PASS | NOT-APPLICABLE | BUILD-HELD | Prerequisite fixture-only future change; checked-in macro-completion 6/6 and cost 16/16 afterwards |
+| BF-01 / VOL-01..03, B1/F1 | Current price forecast before OI, typed IV on all chain paths, actual consumed-source receipts; restores unavailable shadow valuation/DOI evidence | DESIGN-ONLY | NOT-APPLICABLE | NO-REPORTED | CHARACTERISATION-EVIDENCE | NOT-EVIDENCED | BUILD-HELD | First production slice proposed; model/estimator unchanged, saved input/current-source tests, no unexpected direction/selection/permission changes |
+| BF-02 / H2, identity | Future defensive no-invented-CALL/alias-conflict and exact-merge-key repair | NO-REPORTED | NOT-APPLICABLE | NO-REPORTED | STATIC+8282-SAVED-TRACE | NOT-EVIDENCED | BUILD-HELD | Separate follow-up; malformed-input business tests plus unchanged inspected valid rows; not ahead of confirmed B1 based on an unobserved incident |
+
+Do not combine fixture repair, malformed-input policy, model changes and agent activation into one patch. BF-01 must not silently expand acquisition, add an IV solver, widen ATM filters, alter percentile formulas, normalise Phantom scores, switch contract selection from SHADOW or add an age-only trade veto. Shared-pricer inversion remains a separate dependency if local-IV solving is later added. Other missing geometry/model inputs may keep some B1 valuations unavailable even after current forecast handoff works.
+
+### 11.4 Agent integration in the first brief
+
+The existing isolated Interpreter/Challenger candidate consumes/criticises qualified owner-calculated facts. It does not repair inputs, fit GARCH, invert IV, invent contracts/outcomes, choose directions or change thesis/execution authority.
+
+- Backend supplies a valid canonical direction and truthful current forecast/IV/readiness result with identities and cutoff before dependent use.
+- Interpreter explains relevance and limitations; Challenger flags a stale CALL alias, unsupported directed claim, mixed clocks/tenors, low-IVP-as-cheapness, missing exact contract/costs or unevaluated trigger.
+- Proposed acceptance cases include canonical PUT-only, missing side with positive-looking macro, unresolved ticker with valid alternative thesis, prior-close versus stale forecast, usable forecast/missing IV, short sampled IV history, same ticker/two identities, stock wins/option loses and absent cost/exit input.
+- Preserve two roles/three bounded passes, blind peer binding and current 50-fact/size/claim limits. If the current context contract lacks these facts, report unassessed and propose a separate versioned packet delta; do not replace facts or append unbounded metadata.
+- Prior 39 synthetic passes are not acceptance of these new cases or model SME performance. No prompts, schema, source, provider calls, scheduled hook or deployment were changed.
+
+**Build decision remains with ACK. This task investigated baseline/direction risks, ran isolated existing verification/diagnostics, updated documentation and prepared the brief only.**
+
+## 12. ACK decision — legacy Interpreter decommission included
+
+**ACK instruction, 21 November:** decommission the legacy Interpreter as part of these fixes because it adds to pipeline runtime. This closes the decision on whether retirement is in scope and supersedes earlier wording that leaves that decision open. It does not lift the explicit no-build hold. Scope accepted; detailed implementation/activation remains held.
+
+**AG-F07 / BF-03 — step-0 publication/handoff workstream, ahead of agent activation.** Plan removal of active legacy dependencies: the six sync call sites, Evening interactive snapshot, legacy Lab desk/war mounts and manifest preparation flag. Trace their callers and downstream readers first; retire legacy-only views, and preserve or migrate any still-required handoff to a canonical saved artifact before disconnecting it. Do not retain active legacy hooks merely because an agent replacement is not yet deployed. The new Interpreter agent is a separate component, not a reason to keep this package running.
+
+Expected impact: less repeated copying, snapshot generation, duplicate publication and legacy startup work in Evening/EIL/EOD/Morning/Lab paths. Exact elapsed-time and byte savings remain unmeasured; the earlier size estimates are not acceptance targets. Measure stage duration, wall time, bytes copied and invocation counts against the same frozen inputs/environment before and after, when execution is authorised.
+
+Acceptance design: demonstrate no legacy imports/calls/copy side effects on every supported pipeline entry point; preserve canonical candidates, governed direction, forecasts, valuation, permissions, outcomes and current Lab publication; verify retired endpoint behaviour and retained reader compatibility. Review shared utilities before removal. Preserve historical evidence and code/history for rollback; bulk archive deletion is outside this retirement slice. Rollback must restore a coherent prior wiring/config version without rewriting decisions or outcomes.
+
+| Fix | Built | Committed | Wired | Tested | Validated | Authorised |
+|---|---|---|---|---|---|---|
+| AG-F07 / BF-03 legacy Interpreter retirement | NO | NO | NO | STATIC-WIRING-TRACE-ONLY | RUNTIME-SAVINGS-NOT-MEASURED | SCOPE-ACCEPTED; BUILD-HELD |
+
+This is an independent scoped change with dependency review and failing regression cases before implementation. Coordinate with eligibility/VOL-02 edits to the orchestrator; do not bundle decommissioning, volatility methodology and agent activation into one patch.
+
+## 13. Legacy Interpreter dependency closure and decommission design
+
+**21 November: investigation and plan prepared; build still held.** AG-F07 / BF-03 is in scope by ACK decision. Detailed plan: [LEGACY_INTERPRETER_DECOMMISSION_PLAN_20261121.md](LEGACY_INTERPRETER_DECOMMISSION_PLAN_20261121.md). It supersedes the earlier nine-point dependency grouping and clarifies what retirement preserves.
+
+The trace covers 97 package Python files, 765 static import statements/edges, tracked external references, Interpreter-named contracts and working-tree Lab UI. Five on_pipeline_complete callers plus mandatory finalizer make six sync sites. Additional dependencies include both Morning entries, EOD freeze, nine Desk/WAR routes and UI callbacks, macro/News Terminal projections, manual prepare/watch/shadow/capture launchers, tests and source-receipt config. Static inventories and hashed evidence are retained in this chat's outputs. Visible matching processes/tasks were absent at inspection; external/manual launch closure remains a cutover check.
+
+Critical preservation: contracts/interpreter_handoff*, interpreter_macro_context and accepted-handoff Lab readers are shared data-only publication/integrity owners, not the legacy inference package. Keep current compatible paths/schemas initially. Both Morning entry points must replace legacy-copy success with canonical integrity verification, preserving independent reconciliation and score checks. Preserve immutable EOD evidence before removing the package snapshot import; retain readiness and human review. Retire generation endpoints/UI/provider setup and launchers together; remove MA_Inputs macro targets from writers AND alignment expectations. Do not delete all interpreter-named artifacts or disable the Morning integrity gate.
+
+Metadata-only measurement: MA_Inputs 380 files / 4,479,734,109 logical bytes; classic outputs 141 files / 18,423,464 bytes, latest modification 10 August. This is retained footprint, not per-run writes or measured runtime. Sync force-copies the primary file and recursively scans outputs; Morning adds copy/hash work; first EOD snapshot adds gzip/hash work; model/capture cost is conditional on its separate entry points. Quantify paired stage/total timing, I/O and invocation counts after execution approval; do not promise ~900 MB/run or a percentage saving.
+
+| Work item | Built | Committed | Wired | Tested | Validated | Authorised |
+|---|---|---|---|---|---|---|
+| BF-03 D0–D1 caller closure and canonical/immutable handoff preservation | NO | NO | NO | STATIC-TRACE-ONLY | NOT-RUNTIME-VALIDATED | SCOPE-ACCEPTED; BUILD-HELD |
+| BF-03 D2 pipeline disconnection, both Morning paths and EOD snapshot owner | NO | NO | NO | NOT-BUILT | NOT-VALIDATED | BUILD-HELD |
+| BF-03 D3 UI/API/provider/launcher retirement and macro projection update | NO | NO | NO | NOT-BUILT | NOT-VALIDATED | BUILD-HELD |
+| BF-03 D4 paired performance, output invariance and full-session acceptance | NO | NO | NO | NOT-RUN | NOT-VALIDATED | EXECUTION-HELD |
+| BF-03 agent consumption of preserved canonical evidence | DESIGN-ONLY | NO | NO | NEW-CASES-NOT-RUN | NOT-VALIDATED | INTEGRATION-HELD |
+
+Priority: step-0 publication/handoff workstream, coordinated with eligibility and VOL-02 orchestrator changes; retire independently of agent activation. Characterize then add failing business cases before code. Runtime retirement is accepted on zero legacy calls/writes/dispatch, preserved handoffs/permissions, measured overhead and a qualified complete session. Financial logic/agent authority changes need separate validation. Agent integration retains two roles/three bounded passes, 50 facts and blind binding, and reuses existing outcome writers; no synchronous legacy replacement or autonomous policy updates.
+
+No code, tests, configuration, launchers, schedules, processes, prompts or agents were changed. No pipeline/model/capture/benchmark run or commit was performed. Scope accepted does not lift ACK's no-build hold.
+
+## 14. Review outcomes and build baseline — 21 November (Claude Code)
+
+Recorded at ACK's instruction to reconcile and baseline before the build starts. This section adds decisions and review findings; it changes no earlier section. Line endings of this file were normalised to LF in the same commit (the working copy had doubled carriage returns, which made git show a whole-file rewrite).
+
+### 14.1 ACK decisions given on 21 November
+
+| # | Decision | Effect |
+|---|---|---|
+| K1 | **The direction function must pick a direction; Lane B is where the direction is challenged.** | Supersedes the BF-02 wording that a missing side "remains explicit unknown/unresolved". The fault to remove is the constant CALL that ignores the governed direction, not the act of picking. The pick is made from evidence and labelled with how it was chosen. Open with ACK: when evidence favours neither side, pick a primary side and carry the other as the alternative, or pick one side only. This is a direction decision, so rule 5 and an approved design apply before any build. |
+| K2 | **Changes to Lane B are solely Claude Code's responsibility.** | The read-only analysis package asked for in `audit/architecture/AVS-ARCH-LB-001/AVS-ARCH-LB-001_fix_list.md` (analysis.md, build_plan.md, carried_forward.csv and the rest) is not needed as a hand-over. The fix list is the brief. Codex owns the Lab and macro fixes. |
+| K3 | **The legacy Interpreter is retired today**, including the Lab desk and war view. | Confirms section 12 and the scope of `LEGACY_INTERPRETER_DECOMMISSION_PLAN_20261121.md`. Codex is completing the impact trace. |
+| K4 | **The two trading agents are not needed for the Lane B target chain.** | Claude Code's assessment, given to ACK on 21 Nov and not disputed. Lane B's gaps are script, data and record problems; the chat with skills already does the judgement. A blind Challenger pass on finished cards can be revisited once cards are data records and a few weeks of scored outcomes exist. |
+
+### 14.2 Review of the first build brief and the decommission plan
+
+| # | Finding | Evidence | Needed before build |
+|---|---|---|---|
+| V1 | BF-01 does not name its pre-OI worklist. | Options Intelligence reads the pinned Discovery candidates file `runs/<run>/discovery/discovery_candidates_ultimate_<run>.csv` with `vanguard/vanguard_signals.csv` (`intelligent_orchestrator.py:4018-4021`). The forecast runner reads `superbrain/superbrain_enriched_<run>.csv`, which exists only after Options Intelligence (`garch_runner.py:365`). A frozen pre-option ticker packet is also published just before Options Intelligence (`intelligent_orchestrator.py:6424-6428`). | Name one of these as the worklist in the design. Recommended: the pinned Discovery candidates file, because it is the file Options Intelligence itself reads, so the forecast population equals the Options population by construction (2,746 rows on 19 Nov). |
+| V2 | Two advisory publishers end the Evening on any exception. Not dispositioned in the brief. | Pre-option forecast packet: `intelligent_orchestrator.py:6423-6437`, `return False`. C6 candidate set and C8 valuation: `:6472-6491`, `return False`. Both are described in their own comments and log lines as descriptive or advisory with no authority. The behavioural candidate packet beside them (`:6439-6446`) already records a failure and continues. TEV-001 P0(a), approved 27 Sep, asked for this and was never built. | A decision to treat both like the behavioural packet (record the failure, continue), or to keep the stop with a stated reason. Small change, same orchestrator file as BF-01 and BF-03. |
+| V3 | Correction to Claude Code's earlier priority list: the mixed-date fault on stale universe symbols is **not** a run-stopper today. | Scan exceptions are written as error rows (DSC-20). The 19 Nov run had 7 `SCAN_EXCEPTION_ValueError` rows and completed. Several date parses in Discovery still have no tolerant mode (`avshunter_discovery_ULTIMATE.py:1336, 1354, 1877, 2954, 3306`). Whether those 7 rows are this fault is not established. | Not a first-build item. It costs a few tickers per run; trace the 7 rows when Discovery is next in scope. |
+| V4 | The decommission plan is accepted as the design basis. It supersedes the "nine wiring points" in amendment A4, which was an incomplete grouping. | The plan adds: both Morning entry points require hash-verified Interpreter copies to report completion; the macro publisher and News Terminal write into `MA_Inputs/macro`; nine desk and war-view routes; browser controls; shadow-automation launchers. It keeps the Interpreter-named shared contracts (`contracts/interpreter_handoff.py`, `contracts/interpreter_macro_context.py`) because current Lab review and Morning read them. | See V5 to V7. |
+| V5 | "Retired today" can cover disconnection, not acceptance. | The plan's own stage D4 needs paired runs on frozen inputs and one complete Evening, Morning and Lab session. 21 Nov is a Saturday; the next session is Monday 23 Nov. | Agree what "retired" means today: wiring off (D2, D3) with acceptance on Monday, or design approval today and build next week. |
+| V6 | The Morning completion change is the highest-risk part. | `morning_handoff_finalizer.py:729-801` and `morning_gate.py:4730-4801` return failure when the legacy copy cannot be verified. Both entry points must switch together to verifying the canonical handoff. | Failing tests for both Morning entries before any edit; no edits while a run is in progress; done and checked before Monday's Morning run. |
+| V7 | Lane B has two touch points with the Interpreter. | `tools/ticker_pack.py:87` reads `interpreter/interpreter_macro_context.json`, a shared contract the plan preserves, so packs are unaffected. `data/scratch/workaround/capture_option_closes.py:142` imports `pipeline_interpreter.live_market_reader`; that script is already retired (ACK 17 Oct) and kept as a reference. | No Lane B change is needed for the retirement, provided the shared macro contract path stays. Claude Code owns confirming this on the first session after cutover. |
+| V8 | The test suite's own guard can hide a remaining caller. | `tests/conftest.py` replaces the sync function with a no-op for every test (`206bd53`). About 68 test files reference the Interpreter or its sync. | The retirement tests must assert the absence of the call, not rely on the no-op. Tests are adapted, not deleted to get a green run. |
+| V9 | Earlier size figure withdrawn as a saving. | "About 900 MB per run" in amendment A4 was the size of four files present in the inputs folder for the 19 Nov run, not a measured copy cost. Codex measured the folder at 380 files and 4.48 GB. | Runtime saving is to be measured, as the plan says. |
+
+### 14.3 Suggested build order (for ACK to confirm)
+
+One change at a time in `intelligent_orchestrator.py`, in this order:
+
+1. BF-00: test-fixture repair for `tests/test_macro_completion.py`. No production change.
+2. ACK decision on the production eligibility gate `eb50549` (merge, re-apply selectively, or drop).
+3. BF-03: legacy Interpreter retirement, stages D0 to D3, with V2 decided alongside.
+4. BF-01: current volatility evidence before Options Intelligence, with the worklist named (V1).
+5. BF-02: direction pick, to the design in K1 once the open fork is settled.
+
+Still open with ACK: the delayed-feed rule TR-005 and the versioned agent packet.
+
+### 14.4 Baseline
+
+Code baseline for the build: `9e7849b` on `laneb/lab-first-handoff` (production sources unchanged since `f3e199e`). The commit that adds this section is documentation only. One test file is known to fail on its fixture (`tests/test_macro_completion.py`, 1 of 6), to be repaired by BF-00. Nothing is pushed.
