@@ -78,14 +78,20 @@ RATE_SLEEP       = 0.15   # seconds between Polygon calls (stay under rate limit
 
 # ── Polygon price fetch ────────────────────────────────────────────────────────
 
-def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS) -> Optional[pd.DataFrame]:
+def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS, as_of: Optional[date] = None) -> Optional[pd.DataFrame]:
     """
     Fetch daily OHLCV from Polygon /v2/aggs/ticker/{ticker}/range/1/day.
     Returns DataFrame sorted oldest-first, or None on failure.
+
+    VOL-02 (ACK 21 Nov 2026): `as_of` is the run's evidence session. When it is known, no bar after
+    it is read, from the canonical store or from the provider, so a replay cannot see the future.
     """
     try:
         from canonical_data.history_bridge import read_canonical_history
-        canonical = read_canonical_history(ticker, bars=bars)
+        if as_of is not None:
+            canonical = read_canonical_history(ticker, bars=bars, end_date=as_of, reference_date=as_of)
+        else:
+            canonical = read_canonical_history(ticker, bars=bars)
         if canonical is not None and not canonical.empty:
             return canonical
     except Exception as error:
@@ -96,8 +102,9 @@ def _fetch_ohlcv(ticker: str, bars: int = PRICE_BARS) -> Optional[pd.DataFrame]:
         return None
 
     from datetime import timedelta
-    end_date   = date.today().strftime('%Y-%m-%d')
-    start_date = (date.today() - timedelta(days=int(bars * 1.5))).strftime('%Y-%m-%d')
+    _end       = as_of or date.today()
+    end_date   = _end.strftime('%Y-%m-%d')
+    start_date = (_end - timedelta(days=int(bars * 1.5))).strftime('%Y-%m-%d')
 
     url    = f'https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{start_date}/{end_date}'
     params = {'adjusted': 'true', 'sort': 'asc', 'limit': 500}
@@ -208,6 +215,9 @@ def _layer3_iv_observation(row: dict) -> dict:
         "l3_iv_as_of": as_of if iv is not None else None,
         "l3_iv_unit": "ANNUALISED_FRACTION" if iv is not None else None,
         "l3_iv_input_state": state,
+        # VOL-03: why the 30-day benchmark is missing, as published by Options Intelligence.
+        "l3_iv_benchmark_state": row.get("atm_iv_30d_state") if pd.notna(row.get("atm_iv_30d_state")) else None,
+        "l3_iv_benchmark_reason": row.get("atm_iv_30d_reason") if pd.notna(row.get("atm_iv_30d_reason")) else None,
     }
 
 
@@ -327,12 +337,18 @@ def _process_one_ticker(args: tuple) -> tuple:
     and an unexpected error a FORECAST_FAILED row with the reason, numeric fields missing — never
     an absent row that merges as an unexplained NaN (R1; tests/test_layer3_volatility_leftovers.py V6).
     """
-    ticker, iv, regime = args
+    ticker, iv, regime = args[:3]
+    as_of = args[3] if len(args) > 3 else None
     iv_observation = iv if isinstance(iv, dict) else None
+    if iv_observation is None and iv is None:
+        # No Options row yet (the forecast can run before Options): missing is stated, never blank.
+        iv_observation = _layer3_iv_observation({})
     if iv_observation is not None:
         iv = iv_observation["l3_atm_iv_30d"]
     try:
-        ohlcv = _fetch_ohlcv(ticker, PRICE_BARS)
+        # The session cutoff is passed only when the run has one, so a run with no metadata keeps the
+        # earlier call exactly.
+        ohlcv = _fetch_ohlcv(ticker, PRICE_BARS, as_of=as_of) if as_of is not None else _fetch_ohlcv(ticker, PRICE_BARS)
         time.sleep(RATE_SLEEP)
         if ohlcv is None or ohlcv.empty:
             log.debug(f'[{ticker}] No price data — explicit MISSING_PRICE_HISTORY row')
@@ -351,20 +367,57 @@ def _process_one_ticker(args: tuple) -> tuple:
 
 # ── Main batch runner ──────────────────────────────────────────────────────────
 
+def _sha256_file(path: Path) -> str:
+    import hashlib
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _run_evidence_session(run_id: str) -> tuple:
+    """The run's evidence session from its own metadata: (date or None, state)."""
+    meta_path = RUNS_DIR / run_id / "run_meta.json"
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None, "RUN_METADATA_UNAVAILABLE"
+    raw = (meta.get("dynamic_plan") or {}).get("last_completed_session")
+    try:
+        return date.fromisoformat(str(raw)[:10]), "FROM_RUN_METADATA"
+    except (TypeError, ValueError):
+        return None, "SESSION_NOT_IN_RUN_METADATA"
+
+
 def run_garch_batch(
     run_id:         str,
     superbrain_csv: Optional[Path] = None,
     output_dir:     Optional[Path] = None,
+    *,
+    worklist_csv:   Optional[Path] = None,
 ) -> Path:
     """
-    Run GARCH forecast for all tickers in superbrain_enriched CSV.
+    Run the volatility forecast for every ticker on the run's worklist.
     Returns path to garch_forecasts_{run_id}.csv.
+
+    VOL-02 (ACK 21 Nov 2026): the worklist is the run's pinned Discovery candidates file, the same
+    file Options Intelligence reads, so the forecast needs neither the SuperBrain file nor the
+    Options file and can run before Options. There is no fallback to another list: a missing
+    worklist stops with its name. `superbrain_csv` is kept as an explicit legacy list and is
+    labelled as such in the receipt.
     """
-    # Resolve superbrain CSV
-    if superbrain_csv is None:
-        superbrain_csv = RUNS_DIR / run_id / 'superbrain' / f'superbrain_enriched_{run_id}.csv'
-    if not superbrain_csv.exists():
-        raise FileNotFoundError(f'SuperBrain CSV not found: {superbrain_csv}')
+    if worklist_csv is not None:
+        worklist, worklist_kind = Path(worklist_csv), "EXPLICIT_WORKLIST"
+    elif superbrain_csv is not None:
+        worklist, worklist_kind = Path(superbrain_csv), "EXPLICIT_LEGACY_LIST"
+    else:
+        worklist = RUNS_DIR / run_id / 'discovery' / f'discovery_candidates_ultimate_{run_id}.csv'
+        worklist_kind = "DISCOVERY_CANDIDATES"
+    if not worklist.exists():
+        raise FileNotFoundError(f'Forecast worklist not found ({worklist_kind}): {worklist}')
+    superbrain_csv = worklist
+    evidence_session, evidence_session_state = _run_evidence_session(run_id)
 
     # Resolve output dir
     if output_dir is None:
@@ -390,7 +443,7 @@ def run_garch_batch(
     log.info('[GARCH] Running with 2 workers (ThreadPoolExecutor)')
     # Missing IV is passed as None (explicit IV_MISSING in layer 3), never 0.0.
     # The regime is passed for display only; layer 3 never uses it in a value.
-    worker_args = [(t, iv_map.get(t), regime) for t in tickers]
+    worker_args = [(t, iv_map.get(t), regime, evidence_session) for t in tickers]
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         for i, (row_dict, status) in enumerate(
@@ -406,6 +459,22 @@ def run_garch_batch(
     # failure is raised so downstream merges see the reason rather than an absent row.
     out_df = pd.DataFrame(results)
     out_df.to_csv(out_path, index=False)
+    # What this forecast actually consumed, written before any failure is raised.
+    receipt = {
+        "run_id": run_id,
+        "worklist_kind": worklist_kind,
+        "worklist_path": str(worklist),
+        "worklist_sha256": _sha256_file(worklist),
+        "worklist_ticker_count": len(tickers),
+        "forecast_row_count": len(results),
+        "evidence_session": evidence_session.isoformat() if evidence_session else None,
+        "evidence_session_state": evidence_session_state,
+        "iv_benchmark_rows_available": sum(
+            1 for value in iv_map.values() if (value or {}).get("l3_iv_input_state") == "IV_MEASURED"),
+        "status_counts": dict(counts),
+    }
+    (output_dir / f'garch_forecast_receipt_{run_id}.json').write_text(
+        json.dumps(receipt, sort_keys=True, indent=2), encoding="utf-8")
 
     n_forecasts = sum(counts.get(label, 0) for label in FORECAST_METHOD_LABELS)
     log.info(
@@ -425,6 +494,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='AVSHUNTER Q-OMEGA GARCH Runner')
     parser.add_argument('run_id',           help='Pipeline run ID (e.g. 20260408_143500)')
     parser.add_argument('--superbrain_csv', type=Path, default=None)
+    parser.add_argument('--worklist_csv',   type=Path, default=None,
+                        help='Ticker worklist; default is the run pinned Discovery candidates file')
     parser.add_argument('--output_dir',     type=Path, default=None)
     args = parser.parse_args()
 
@@ -433,6 +504,7 @@ if __name__ == '__main__':
             run_id         = args.run_id,
             superbrain_csv = args.superbrain_csv,
             output_dir     = args.output_dir,
+            worklist_csv   = args.worklist_csv,
         )
         log.info(f'[GARCH] Output written: {out}')
         sys.exit(0)
