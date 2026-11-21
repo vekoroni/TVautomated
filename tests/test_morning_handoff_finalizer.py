@@ -171,7 +171,7 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
         self.assertEqual(len(mismatches), len(tickers))
         self.assertTrue(all("EXPECTED_CONTRACT_REPAIR_GOT_GO_LIMIT" in item for item in mismatches))
 
-    def test_completed_run_reconciles_and_syncs_required_artifacts(self) -> None:
+    def test_completed_run_reconciles_and_verifies_canonical_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             tmp_path = Path(directory)
             runs_dir, rows, interpreter_dir, patches = _fixture(tmp_path)
@@ -185,9 +185,11 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
             self.assertEqual(summary["lab_rows"], 2)
             self.assertEqual(summary["source_actionable"], 1)
             self.assertEqual(summary["lab_actionable"], 1)
-            self.assertEqual(len(summary["interpreter_sync"]), 4)
-            self.assertTrue(all(item["verified"] for item in summary["interpreter_sync"]))
-            self.assertTrue((interpreter_dir / f"final_opportunity_book_{RUN_ID}.csv").exists())
+            self.assertEqual(summary["interpreter_sync"], [])
+            self.assertEqual(summary["interpreter_sync_status"], "RETIRED")
+            self.assertEqual(len(summary["canonical_artifacts"]), 4)
+            self.assertTrue(all(item["verified"] for item in summary["canonical_artifacts"]))
+            self.assertFalse(interpreter_dir.exists())
             self.assertTrue(Path(summary["summary_path"]).exists())
 
     def test_fresh_direction_policy_reconciles_after_version_crossover(self) -> None:
@@ -242,7 +244,7 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
                 with self.assertRaisesRegex(MorningHandoffError, "DIRECTION_POLICY_TUPLE_MIXED"):
                     finalize_morning_handoff(RUN_ID, rows, runs_dir=runs_dir)
 
-    def test_deferred_sync_publishes_only_after_explicit_release(self) -> None:
+    def test_deferred_publication_reverifies_canonical_files_without_legacy_copies(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             tmp_path = Path(directory)
             runs_dir, rows, interpreter_dir, patches = _fixture(tmp_path)
@@ -260,9 +262,7 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
 
             self.assertEqual(len(synced), 4)
             self.assertTrue(all(item["verified"] for item in synced))
-            self.assertTrue(
-                (interpreter_dir / f"final_opportunity_book_{RUN_ID}.csv").exists()
-            )
+            self.assertFalse(interpreter_dir.exists())
 
     def test_recovery_requires_existing_morning_csv(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -311,7 +311,7 @@ class MorningHandoffFinalizerTests(unittest.TestCase):
 
         self.assertIn("results = run_morning_gate", morning_source)
         self.assertIn("sync_interpreter=False", morning_source)
-        self.assertIn("sync_verified_morning_handoff(handoff)", morning_source)
+        self.assertIn("publish_verified_morning_handoff(handoff)", morning_source)
         self.assertIn("finalize_morning_handoff(", premarket)
         self.assertIn("return False", premarket)
         self.assertNotIn("final_csv_path", premarket)

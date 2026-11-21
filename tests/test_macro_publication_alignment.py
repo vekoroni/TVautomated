@@ -115,8 +115,7 @@ def test_evening_preflight_rejects_divergent_macro_projection(tmp_path, monkeypa
     }
     _write(authority, payload)
     projections = macro_projection_paths(tmp_path)
-    _write(projections[0], payload)
-    _write(projections[1], {**payload, "regime_state": "STALE"})
+    _write(projections[0], {**payload, "regime_state": "STALE"})
     monkeypatch.setattr(orchestrator.cfg, "MACRO_DIR", authority.parent)
     monkeypatch.setattr(orchestrator.cfg, "MACRO_FILE", authority)
 

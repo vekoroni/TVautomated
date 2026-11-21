@@ -1,4 +1,4 @@
-﻿"""Plan-first dynamic dispatcher for the AVSHUNTER production entry point.
+"""Plan-first dynamic dispatcher for the AVSHUNTER production entry point.
 
 This module owns orchestration only.  It does not calculate a trading signal,
 change a frozen thesis, or grant capital authority.  Preview resolution is
@@ -165,6 +165,7 @@ def resolve_dispatch_plan(
     authorised_tickers: Iterable[str] = (),
     provider_session_finalised: bool = False,
     operator_mode: OperatorMode | str = OperatorMode.STANDARD,
+    code_dirty: bool = False,
 ) -> tuple[RunPlan, AcceptedThesis | None]:
     """Return an operator-previewable plan without filesystem mutation."""
 
@@ -209,7 +210,7 @@ def resolve_dispatch_plan(
         )
     elif selected_run_id is None:
         selected_run_id = generated_run_id
-    plan = resolve_run_plan(
+    planning_inputs = dict(
         requested_action=action,
         as_of_utc=as_of_utc,
         evidence_cutoff_utc=evidence_cutoff_utc,
@@ -220,6 +221,12 @@ def resolve_dispatch_plan(
         operator_mode=operator_mode,
         pipeline_run_id=selected_run_id,
     )
+    plan = resolve_run_plan(**planning_inputs)
+    # Clean-release eligibility is an EOD build rule. Do not turn a Morning
+    # phase (PREOPEN_THESIS_CHECK/POSTOPEN_CONTRACT_REFRESH) into TEST: that
+    # label also selects which validation procedure executes.
+    if code_dirty and plan.resolved_action in {"BUILD_THESIS", "FINALISE"}:
+        plan = resolve_run_plan(**planning_inputs, code_dirty=True)
     return plan, thesis
 
 
@@ -256,7 +263,8 @@ def operator_summary(plan: RunPlan, thesis: AcceptedThesis | None) -> str:
         else "none"
     )
     return (
-        f"Dynamic plan {plan.plan_hash[:12]}: requested={plan.requested_action}; "
+        f"Dynamic plan {plan.plan_hash[:12]}: condition={plan.run_condition}; "
+        f"baseline_eligible_provisional={plan.baseline_eligible}; requested={plan.requested_action}; "
         f"resolved={plan.resolved_action}; session={plan.session_state}; "
         f"last_completed={plan.last_completed_session}; thesis={thesis_text}; "
         f"run=[{stages}]; reuse=[{reuse}]; requests<=\n"

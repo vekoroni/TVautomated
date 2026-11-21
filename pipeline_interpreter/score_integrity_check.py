@@ -1,4 +1,4 @@
-﻿"""
+"""
 AVSHUNTER Score Integrity Check
 =================================
 Asserts that scs_score values in morning_validated_trades match
@@ -10,6 +10,12 @@ Decommission threshold: mismatch_rate > 0.05 across 10 consecutive runs.
 """
 
 from __future__ import annotations
+
+# BF-03: stop operational legacy launches before imports, copies or provider setup.
+if __name__ == "__main__":
+    print("RETIRED: Legacy Interpreter is decommissioned. Use the canonical Lab review.")
+    raise SystemExit(2)
+
 
 import csv
 import json

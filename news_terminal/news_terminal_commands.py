@@ -1,4 +1,4 @@
-﻿"""
+"""
 AVSHUNTER News Terminal v1.3 â€” Command Router
 Maps /commands to prompts, API calls and output writers
 """
@@ -302,7 +302,6 @@ def deploy_news_terminal_outputs():
     src_dir = BASE / "news_terminal" / "outputs"
 
     macro_targets = [
-        BASE / "pipeline_interpreter" / "MA_Inputs" / "macro",
         BASE / "dropbox" / "macro",
     ]
 

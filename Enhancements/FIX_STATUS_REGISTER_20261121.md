@@ -809,3 +809,28 @@ Not exercised by a test: the whole `evening_workflow` end to end. The wiring is 
 3. BF-03 legacy Interpreter wiring off today, built by Codex and reviewed by Claude Code; acceptance Monday.
 4. BF-01 volatility evidence before Options Intelligence, worklist per K5.
 5. BF-02 direction pick per K7.
+
+## 17. Codex resumption reconciliation after commit
+
+Observed HEAD `c8631c471b33afb81148e33b2f61d27cf02f0cca`; `2522c25` committed the reviewed register baseline and `c8631c4` added TEV-001 P0(a). No Git process/index lock found at resumption. Section 16 was already an uncommitted concurrent delta and is preserved. Reviewed source changes since the dependency trace: orchestrator, Lab control and descriptive forecast packet; other previously hashed owners match.
+
+BF-03 remains the sole implementation focus. K9 requires warning-only provenance/eligibility integration first, preserving new advisory-failure handling. K10 requires the Evening snapshot writer to stay: its library import/compression/hash work is an explicit retained exception, not retirement failure or removable runtime savings. No generic latest-two retention deletion; a separate calendar/completed-session/receipt design is required. Retire Desk/WAR, sync duplication, legacy provider/report/capture entry points and launchers; preserve canonical Morning/Lab verification and shared macro/handoff contracts. No new agents or Lane B changes.
+
+The decommission plan is reconciled accordingly. K8 records implementation permission, but this chat previously held building; clarification was requested on resumption. Until resolved, this reconciliation changes documentation only. Monday 23 November remains the recorded forward acceptance target, not validation already achieved. No fixes, tests, pipeline/provider/capture calls, process/task changes or commits were performed in this resumption.
+
+## 18. BF-03 implemented after explicit chat approval
+
+**ACK answered “Implement BF-03 now”.** The earlier direct-chat hold is lifted for this slice. Starting HEAD c8631c4 remains unchanged; changes are local/uncommitted. Full report: [BF03_LEGACY_INTERPRETER_BUILD_REPORT_20261121.md](BF03_LEGACY_INTERPRETER_BUILD_REPORT_20261121.md).
+
+K9 warning-only provenance was built first: production continues on dirty/unidentified code with explicit baseline exclusion reasons; launch identity, provisional/final labels, immutable planning and current code receipts preserved. BF-03 removes legacy input sync/import fallbacks, preserves canonical verification on both Morning entries, retires Desk/WAR mounts and UI actions, removes MA_Inputs macro destinations, retires five batch/PowerShell wrappers and guards all 23 Python launchers before imports. K10 snapshot writer/source is unchanged. Shared handoff/macro contracts, canonical outputs, authority checks and historical evidence remain. No agent, Lane B, volatility/direction fix or retention deletion is included.
+
+| Work | Built | Committed | Wired | Tested | Validated | Authorised |
+|---|---|---|---|---|---|---|
+| K9 prerequisite | YES | NO | YES-SOURCE | 23-PASS | OFFLINE-ONLY | YES |
+| BF-03 pipeline/canonical handoff | YES | NO | YES-SOURCE | PASS; existing integrity checks retained | COMPONENT/OFFLINE; SESSION-PENDING | YES |
+| BF-03 Desk/WAR, UI, macros, wrappers and Python launch closure | YES | NO | YES-SOURCE | 41 retirement cases plus focused regressions | OFFLINE; NEXT-START/SESSION-PENDING | YES |
+| K10 snapshot retention deletion | NO | NO | NO | NOT-RUN | NOT-VALIDATED | SEPARATE-DESIGN |
+
+Consolidated result: **192 passed, 1 skipped and 3 subtests across 19 focused suites**. Corrected an overbroad intermediate EIL edit; the final diff removes only two direct sync blocks. Exact non-sync syntax in candidate/EIL/legacy Morning producers is preserved, and actual EIL enriched Morning publication has a passing regression. Source/JS parse checks and scoped whitespace checks pass. This is not whole-pipeline or economic validation.
+
+Isolated four-artifact 8 MiB handoff measurement, five warm-cache pairs: median 0.417 s with legacy copying versus 0.085 s canonical verification; hashes equal; zero new copy calls. Component evidence only, not a promise of full-pipeline time savings. Preserved snapshot work remains. No artifacts deleted. Visible matching Lab/legacy process check was empty; no process/task changes or live pipeline/provider/capture calls. Monday 23 November full-session acceptance and independent Claude Code review remain pending. Concurrent macro-fixture/verifier/OI changes were left untouched by BF-03; no commits or whole-tree staging.

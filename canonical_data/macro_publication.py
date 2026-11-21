@@ -21,11 +21,10 @@ MACRO_FILENAME = "macro_intelligence_latest.json"
 MACRO_AUTHORITY = "ADVISORY_ONLY"
 
 
-def macro_projection_paths(repository_root: Path | str) -> tuple[Path, Path]:
+def macro_projection_paths(repository_root: Path | str) -> tuple[Path, ...]:
     root = Path(repository_root)
     return (
         root / "data" / "macro" / MACRO_FILENAME,
-        root / "pipeline_interpreter" / "MA_Inputs" / "macro" / MACRO_FILENAME,
     )
 
 

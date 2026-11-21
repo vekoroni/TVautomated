@@ -2372,11 +2372,9 @@ def _integrate_provider_completeness_into_run_meta(
     git_describe = str(payload.get("git_describe") or "UNAVAILABLE")
     baseline_commit = str(payload.get("baseline_commit_hash") or "UNAVAILABLE")
     code_receipt = payload.get("code_receipt") or {}
-    dirty = (
-        git_describe.lower().endswith("-dirty")
-        or baseline_commit == "UNAVAILABLE"
-        or bool(code_receipt and code_receipt.get("state") != "CLEAN_COMMIT")
-    )
+    from orchestrator.production_eligibility import code_identity_reasons
+    code_reasons = code_identity_reasons(payload)
+    dirty = bool(code_reasons)
     mode = str(operator_mode or "STANDARD").strip().upper()
     provider_eligible = bool(evidence.get("normal_completed_session_eligible"))
     from domain.run_planning import resolve_run_condition
@@ -2401,11 +2399,17 @@ def _integrate_provider_completeness_into_run_meta(
         {
             "run_condition": run_condition,
             "baseline_eligible": run_condition == "NORMAL_COMPLETED_SESSION",
+            "classification_status": "FINAL",
+            "planned_run_condition": planned_condition or None,
+            "baseline_ineligibility_reason": (
+                None if run_condition == "NORMAL_COMPLETED_SESSION" else
+                "LIVE_PROVING" if run_condition == "LIVE_PROVING" else
+                ",".join(code_reasons + (("PROVIDER_NOT_COMPLETED_SESSION",) if not provider_eligible else ())) or run_condition
+            ),
             # ACK 8 Oct 2026: a live-proving run states how it differs from a clean completed-session baseline.
             **({"baseline_ineligibility_reason": "LIVE_PROVING",
-                "live_proving_deviations": [d for d, present in (("CODE_UNCOMMITTED", dirty),
-                                                                 ("PROVIDER_NOT_COMPLETED_SESSION", not provider_eligible))
-                                            if present]}
+                "live_proving_deviations": list(code_reasons) + (
+                    ["PROVIDER_NOT_COMPLETED_SESSION"] if not provider_eligible else [])}
                if run_condition == "LIVE_PROVING" else {}),
             "code_identity": {
                 "commit_hash": baseline_commit,
@@ -3049,6 +3053,7 @@ def pin_run_directory(
     discovery_run_id: str,
     macro_path: Path,
     run_plan: Optional["RunPlan"] = None,
+    code_identity: dict[str, str] | None = None,
 ) -> bool:
     """Create per-run structure and stage macro_snapshot + discovery CSV."""
     logger.info("=" * 80)
@@ -3179,7 +3184,7 @@ def pin_run_directory(
     if run_kind not in allowed_run_kinds:
         logger.warning("Unknown AVSHUNTER_RUN_KIND=%s; recording RESEARCH", run_kind)
         run_kind = "RESEARCH"
-    git_identity = _git_baseline_identity()
+    git_identity = code_identity if code_identity is not None else _git_baseline_identity()
     baseline_commit_hash = git_identity["baseline_commit_hash"]
     git_describe = git_identity["git_describe"]
     approved_untracked = ()
@@ -3237,7 +3242,13 @@ def pin_run_directory(
             "operator_mode": run_plan.operator_mode,
             "baseline_eligible": run_plan.baseline_eligible,
             "execution_authority_ceiling": run_plan.execution_authority_ceiling,
+            "classification_scope": "IMMUTABLE_PLANNED_INTENT_NOT_FINAL_ELIGIBILITY",
         }
+        meta.update(run_condition=run_plan.run_condition,
+                    planned_run_condition=run_plan.run_condition,
+                    baseline_eligible=run_plan.baseline_eligible,
+                    operator_mode=run_plan.operator_mode,
+                    classification_status="PROVISIONAL")
     meta["macro_packet_id"] = macro_quant_packet.get("macro_packet_id")
     meta["macro_packet_sha256"] = macro_quant_packet.get("macro_packet_sha256")
     if macro_data.get("macro_availability") == "UNAVAILABLE_NEUTRAL_FALLBACK":
@@ -3826,6 +3837,7 @@ def run_vanguard_pipeline(
     data_mode: str = "EOD",
     evidence_session_date: str | None = None,
     run_plan: Optional["RunPlan"] = None,
+    code_identity: dict[str, str] | None = None,
 ) -> bool:
     """Build packages, inject macro, backfill bars, run Vanguard."""
     logger.info("=" * 80)
@@ -3834,7 +3846,7 @@ def run_vanguard_pipeline(
     logger.info(f"   Using discovery run ID: {run_id}")
     logger.info(f"   Using macro path      : {macro_path}")
 
-    if not pin_run_directory(run_id, macro_path, run_plan=run_plan):
+    if not pin_run_directory(run_id, macro_path, run_plan=run_plan, code_identity=code_identity):
         logger.error("❌ VANGUARD pipeline aborted — could not pin run directory\n")
         return False
 
@@ -5947,6 +5959,7 @@ def evening_workflow(
     evidence_session_date: str | None = None,
     run_plan: Optional["RunPlan"] = None,
     live_proving: bool = False,
+    code_identity: dict[str, str] | None = None,
 ) -> bool:
     """
     Evening workflow: preflight → discovery → validate → vanguard → post-process → archive.
@@ -5956,6 +5969,15 @@ def evening_workflow(
       LATEST   — append explicitly-labelled current-session evidence for review.
                  It never acquires completed-session thesis authority.
     """
+    from orchestrator.production_eligibility import warn_production_eligibility
+    _launch_code_identity = code_identity if code_identity is not None else _git_baseline_identity()
+    warn_production_eligibility(
+        _launch_code_identity,
+        operator_mode=(getattr(run_plan, "operator_mode", None) or
+                       ("LIVE_PROVING" if live_proving else "FORCE" if force else "STANDARD")),
+        run_kind=os.getenv("AVSHUNTER_RUN_KIND", "PRODUCTION"),
+        action=getattr(run_plan, "resolved_action", "BUILD_THESIS"),
+    )
     session_id = run_id or datetime.now().strftime("%Y%m%d_%H%M%S")
     from orchestrator.session_authority_adapter import (
         resolve_pipeline_session_authority,
@@ -6508,6 +6530,7 @@ def evening_workflow(
         data_mode=_data_mode,
         evidence_session_date=_evidence_session_date,
         run_plan=run_plan,
+        code_identity=_launch_code_identity,
     ):
         logger.error("❌ EVENING WORKFLOW ABORTED — VANGUARD pipeline failed\n")
         return False
@@ -8225,7 +8248,7 @@ def premarket_workflow(
             go_count, flag_count, block_count, _output_path.name,
         )
         # Mandatory shared finaliser: Phase 11, Intelligence Lab rebuild,
-        # Interpreter sync, byte verification, and row reconciliation.  The
+        # canonical byte verification and row reconciliation (legacy sync retired).  The
         # direct morning_gate.py CLI calls this same function, preventing the
         # two supported Morning entry paths from diverging again.
         try:
@@ -8235,7 +8258,7 @@ def premarket_workflow(
                 _run_id,
                 results,
                 runs_dir=cfg.RUNS_DIR,
-                sync_interpreter=True,
+                sync_interpreter=False,
             )
             logger.info(
                 "✅ Morning final handoff — %d rows | %d Lab actionable | %s",
@@ -8714,6 +8737,8 @@ def main() -> None:
                     "It still applies to the legacy --evening path.",
                     args.data_mode,
                 )
+            from orchestrator.production_eligibility import code_identity_reasons, warn_production_eligibility
+            _dispatch_code_identity = _git_baseline_identity()
             plan, selected_thesis = resolve_dispatch_plan(
                 output_dir=cfg.OUTPUT_DIR,
                 requested_action=requested_action,
@@ -8723,12 +8748,17 @@ def main() -> None:
                 # G2-01 (verification 20261008_220129): the dispatcher carries ACK's --live-proving to the plan.
                 operator_mode=("LIVE_PROVING" if args.live_proving else
                                "FORCE" if args.force else ("REPLAY" if args.replay else "STANDARD")),
+                code_dirty=bool(code_identity_reasons(_dispatch_code_identity)),
             )
             logger.info(operator_summary(plan, selected_thesis))
             if args.plan_only:
                 print(json.dumps(plan.to_dict(), indent=2, sort_keys=True))
                 success = True
             else:
+                warn_production_eligibility(
+                    _dispatch_code_identity, operator_mode=plan.operator_mode,
+                    run_kind=os.getenv("AVSHUNTER_RUN_KIND", "PRODUCTION"), action=plan.resolved_action,
+                )
                 flags = runtime_flags
                 if not flags.plan_engine:
                     raise RuntimeError("dynamic plan execution requires AVSHUNTER_DYNAMIC_PLAN_ENABLED=1")
@@ -8771,6 +8801,7 @@ def main() -> None:
                         evidence_session_date=planned.last_completed_session,
                         run_plan=planned,
                         live_proving=args.live_proving,
+                        code_identity=_dispatch_code_identity,
                     )
                     if not built:
                         return False

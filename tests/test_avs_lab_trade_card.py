@@ -48,7 +48,7 @@ def test_trade_card_is_the_default_modal_view_and_loads_its_script():
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
-def test_trade_card_answers_the_eight_questions_and_runs_the_interpreter():
+def test_trade_card_answers_the_eight_questions_without_retired_interpreter_actions():
     script = (ROOT / "intelligence-lab" / "static" / "trade-card.js").read_text(encoding="utf-8")
     probe = script + """
 const s = {ticker:'XLU', direction:'PUT', thesis_category:'Phase B · no event on the PUT side; opposing Failed Upthrust Continuation (detected, 1mo)',
@@ -66,7 +66,7 @@ console.log(JSON.stringify({missing, interp: html.includes('tradeCardRunInterpre
     out = subprocess.run(["node"], input=probe, capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert out.returncode == 0, out.stderr
     result = json.loads(out.stdout.strip().splitlines()[-1])
-    assert result == {"missing": [], "interp": True, "rich": True, "reach": True, "opposing": True, "callWall": True}
+    assert result == {"missing": [], "interp": False, "rich": True, "reach": True, "opposing": True, "callWall": True}
 
 
 def test_opening_a_ticker_activates_the_trade_card_not_the_overview():

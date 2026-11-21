@@ -430,34 +430,12 @@ function renderTradeCard(s, profile) {
   const ticker = tcEsc(s.ticker);
   return `<div class="tc">${sections.join('')}
     <div class="tc-actions">
-      <button class="fb" onclick="tradeCardRunInterpreter('${ticker}')" title="Advisory Interpreter report for this ticker (paid model call; you confirm the cost first)">Run Interpreter report</button>
-      <button class="fb" onclick="tradeCardSavedReports('${ticker}')" title="Open stored Interpreter reports for this ticker; no model call">View saved reports</button>
     </div>
     <div class="tc-note">Advisory only. No order, sizing or capital authority.</div>
     ${profile ? `<div class="tc-tiers">${renderEvidenceTiers(s, profile)}</div>` : ''}</div>`;
 }
 
-function tradeCardSelect(ticker) {
-  INTERPRETER_SELECTED.clear();
-  INTERPRETER_SELECTED.add(ticker);
-  document.querySelectorAll('input[data-interpreter-ticker]').forEach(input => {
-    input.checked = input.dataset.interpreterTicker === ticker;
-  });
-  updateInterpreterSelection();
-  if (typeof closeModal === 'function') closeModal();
-  const panel = document.getElementById('interpreter-panel') || document.getElementById('interpreter-status');
-  if (panel) panel.scrollIntoView({behavior: 'smooth', block: 'start'});
-}
-
-function tradeCardRunInterpreter(ticker) {
-  tradeCardSelect(ticker);
-  previewInterpreterDesk();
-}
-
-function tradeCardSavedReports(ticker) {
-  tradeCardSelect(ticker);
-  viewSavedInterpreterReports();
-}
+// BF-03: legacy model/report actions retired; canonical evidence cards remain.
 
 /* Evidence drawer and audit tier (ACK 2 Oct 2026). The run's book is profiled once in the browser:
    empty -> listed for tracing; duplicate (identical to an earlier field on every row), lineage

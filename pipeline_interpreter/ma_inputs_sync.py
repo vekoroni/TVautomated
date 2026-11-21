@@ -1,4 +1,4 @@
-﻿"""
+"""
 AVSHUNTER MA_Inputs Auto-Sync v1.1 FIXED
 =========================================
 Purpose:
@@ -22,6 +22,12 @@ Pipeline usage:
     from ma_inputs_sync_v1_1_FIXED import sync_to_ma_inputs
     sync_to_ma_inputs(source_dir=str(output_dir), recursive=True, max_age_hours=0)
 """
+
+# BF-03: stop operational legacy launches before imports, copies or provider setup.
+if __name__ == "__main__":
+    print("RETIRED: Legacy Interpreter is decommissioned. Use the canonical Lab review.")
+    raise SystemExit(2)
+
 
 import argparse
 import shutil

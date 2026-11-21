@@ -2469,7 +2469,7 @@ def build_final_run_manifest(
         run_prep_permission = "MANUAL_REVIEW_MORNING_VALIDATION"
         run_tradeable_label = "MANUAL_REVIEW_MORNING_VALIDATION"
         manual_review_enabled = True
-        pipeline_interpreter_prep_enabled = True
+        pipeline_interpreter_prep_enabled = False  # retired; manual review remains enabled
     elif next_action == "NEEDS_LIVE_UAT":
         run_execution_permission = "LIVE_UAT_REQUIRED"
         run_prep_permission = "REVIEW_ONLY"
@@ -2510,6 +2510,7 @@ def build_final_run_manifest(
         "run_prep_permission": run_prep_permission,
         "manual_review_enabled": manual_review_enabled,
         "pipeline_interpreter_prep_enabled": pipeline_interpreter_prep_enabled,
+        "legacy_interpreter_status": "RETIRED",
         "worker3_market_environment": {
             "status": worker3_macro_status,
             "error": worker3_macro_error,
@@ -4977,7 +4978,7 @@ def write_final_opportunity_book(
     run_manifest: Optional[Dict[str, Any]],
     runs_dir: Path | str,
     *,
-    sync_interpreter: bool = True,
+    sync_interpreter: bool = False,
     contract_quote_lookup: Any = None,
     publish_review: bool = True,
 ) -> Dict[str, Any]:
@@ -5173,14 +5174,8 @@ def write_final_opportunity_book(
 
     # Keep Pipeline Interpreter in lock-step with the same compact Lab view.
     if sync_interpreter:
-        try:
-            import sys as _sys
-            _repo_root = Path(runs_dir).parent.parent.parent
-            _sys.path.insert(0, str(_repo_root / "pipeline_interpreter"))
-            from ma_inputs_sync import on_pipeline_complete as _ma_on_pipeline_complete
-            _ma_on_pipeline_complete(str(triage_csv_path), output_dir=str(out_dir))
-        except Exception:
-            pass
+        # BF-03: canonical output is complete; legacy input duplication retired.
+        pass
 
     payload = {
         "lab_schema_version": "lab_signal_book_v4",

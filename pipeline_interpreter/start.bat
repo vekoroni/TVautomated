@@ -1,4 +1,3 @@
 @echo off
-cd /d "%~dp0"
-python pipeline_interpreter.py
-pause
+echo RETIRED: Legacy Interpreter is decommissioned. Use the canonical Intelligence Lab review.
+exit /b 2

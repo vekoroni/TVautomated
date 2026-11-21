@@ -1,4 +1,4 @@
-﻿"""
+"""
 AVSHUNTER Morning Gate v1.3
 ============================
 Fail-closed morning validation. Replaces morning_thesis_validator.py entirely.
@@ -4728,7 +4728,7 @@ def main() -> int:
     try:
         from morning_handoff_finalizer import (
             finalize_morning_handoff,
-            sync_verified_morning_handoff,
+            publish_verified_morning_handoff,
         )
 
         # Materialise first, then prove Morning -> Lab integrity before any
@@ -4791,9 +4791,9 @@ def main() -> int:
         if lab_integrity.get("integrity_status") != "PASS":
             log.error("Post-Lab score integrity failed - run is not operationally complete")
             return 1
-        sync_results = sync_verified_morning_handoff(handoff)
+        sync_results = publish_verified_morning_handoff(handoff)
         log.info(
-            "Verified Morning handoff published to Interpreter - %d artifacts",
+            "Verified canonical Morning handoff - %d artifacts",
             len(sync_results),
         )
     except Exception as error:

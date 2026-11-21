@@ -1,4 +1,4 @@
-﻿"""
+"""
 prepare_interpreter_session.py
 ================================
 Populates MA_Inputs with all files needed before running the Pipeline Interpreter.
@@ -42,6 +42,12 @@ Then paste the newsroom brief:
 Then run triage:
   /triage
 """
+
+# BF-03: stop operational legacy launches before imports, copies or provider setup.
+if __name__ == "__main__":
+    print("RETIRED: Legacy Interpreter is decommissioned. Use the canonical Lab review.")
+    raise SystemExit(2)
+
 
 import argparse
 import json

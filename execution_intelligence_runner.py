@@ -3409,13 +3409,8 @@ if __name__ == "__main__":
     )
     out.to_csv(args.output, index=False)
     logger.info(f"Saved â†’ {args.output}")
-    try:
-        import sys as _ma_sys
-        _ma_sys.path.insert(0, r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\pipeline_interpreter")
-        from ma_inputs_sync import on_pipeline_complete as _ma_on_pipeline_complete
-        _ma_on_pipeline_complete(str(args.output), output_dir=str(Path(args.output).parent))
-    except Exception as _ma_sync_err:
-        logger.warning("MA_Inputs sync skipped for execution output: %s", _ma_sync_err)
+    # BF-03: canonical output is complete; legacy input duplication retired.
+    pass
 
     # â”€â”€ Write eil_enriched to superbrain dir so morning_validation finds it â”€â”€
     # FIX (2026-04-17): EIL only wrote to execution/ dir. morning_validation
@@ -3700,13 +3695,8 @@ if __name__ == "__main__":
             eil_df.to_csv(eil_enriched, index=False)
             logger.info("Physics fields handed to EIL: %d rows", int(eil_df["physics_state_id"].astype(str).str.len().gt(0).sum()))
             logger.info(f"eil_enriched written â†’ {eil_enriched}")
-            try:
-                import sys as _ma_sys
-                _ma_sys.path.insert(0, r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\pipeline_interpreter")
-                from ma_inputs_sync import on_pipeline_complete as _ma_on_pipeline_complete
-                _ma_on_pipeline_complete(str(eil_enriched), output_dir=str(Path(eil_enriched).parent))
-            except Exception as _ma_sync_err:
-                logger.warning("MA_Inputs sync skipped for eil_enriched output: %s", _ma_sync_err)
+            # BF-03: canonical output is complete; legacy input duplication retired.
+            pass
     except Exception as _e:
         logger.warning(f"eil_enriched write failed (non-critical): {_e}")
 

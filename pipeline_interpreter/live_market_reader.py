@@ -1,4 +1,4 @@
-﻿"""
+"""
 live_market_reader.py
 =====================
 Fetches the four live data gaps identified in the WFC Interpreter output:
@@ -19,6 +19,12 @@ Output paths (written per-ticker):
 
 These are auto-detected by scan_ma_inputs_for_ticker() and injected into prompts.
 """
+
+# BF-03: stop operational legacy launches before imports, copies or provider setup.
+if __name__ == "__main__":
+    print("RETIRED: Legacy Interpreter is decommissioned. Use the canonical Lab review.")
+    raise SystemExit(2)
+
 
 import os
 import json

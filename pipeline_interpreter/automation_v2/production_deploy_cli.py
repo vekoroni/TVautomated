@@ -1,4 +1,10 @@
-﻿from __future__ import annotations
+from __future__ import annotations
+
+# BF-03: stop operational legacy launches before imports, copies or provider setup.
+if __name__ == "__main__":
+    print("RETIRED: Legacy Interpreter is decommissioned. Use the canonical Lab review.")
+    raise SystemExit(2)
+
 
 import argparse
 import json

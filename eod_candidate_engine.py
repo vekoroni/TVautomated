@@ -3447,13 +3447,8 @@ def build_candidate_manifest(
             focus_path, len(focus),
         )
         if str(run_id or "").upper() != "TEST":
-            try:
-                import sys as _ma_sys
-                _ma_sys.path.insert(0, r"C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\pipeline_interpreter")
-                from ma_inputs_sync import on_pipeline_complete as _ma_on_pipeline_complete
-                _ma_on_pipeline_complete(str(output_path), output_dir=str(Path(output_path).parent))
-            except Exception as _ma_sync_err:
-                log.warning("MA_Inputs sync skipped for candidate manifest: %s", _ma_sync_err)
+            # BF-03: canonical output is complete; legacy input duplication retired.
+            pass
 
     return out_df
 

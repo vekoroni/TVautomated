@@ -272,7 +272,9 @@ def collect_canonical_inputs(
     return CanonicalInputs(
         run_id=run_id, evidence_session=evidence_session,
         as_of_utc=str(plan.get("evidence_cutoff_utc") or meta.get("evidence_cutoff_utc") or ""),
-        run_condition=str(plan.get("run_condition") or meta.get("run_condition") or "UNKNOWN"),
+        # Current assessment wins over immutable planning intent. This input
+        # citation records its capture-time condition, not a final eligibility grant.
+        run_condition=str(meta.get("run_condition") or plan.get("run_condition") or "UNKNOWN"),
         discovery_rows=rows,
         discovery=_citation(discovery_path, row_count=len(rows), governed_input=governed_input),
         macro_snapshot=macro_citation, macro_regime_present=bool(str(macro.get("regime_state") or "").strip()),
@@ -332,6 +334,7 @@ def build_canonical_manifest(inputs: CanonicalInputs, *, created_at_utc: datetim
         "evidence_session": inputs.evidence_session.isoformat(),
         "as_of_utc": inputs.as_of_utc,
         "run_condition": inputs.run_condition,
+        "run_condition_scope": "INPUT_CAPTURE_NOT_FINAL_ELIGIBILITY",
         "ticker_set_source": ticker_set_source,
         "sources": {
             "discovery": discovery_source,

@@ -1,6 +1,12 @@
-﻿"""
+"""
 AVSHUNTER Pipeline Interpreter v1.0 â€” Interactive Entry Point
 """
+
+# BF-03: stop operational legacy launches before imports, copies or provider setup.
+if __name__ == "__main__":
+    print("RETIRED: Legacy Interpreter is decommissioned. Use the canonical Lab review.")
+    raise SystemExit(2)
+
 import sys
 from datetime import datetime
 from pathlib import Path

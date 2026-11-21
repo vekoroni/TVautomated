@@ -172,25 +172,9 @@ WORKER3_BROWSER = None
 from contracts.lab_macro_desk import register_routes as register_macro_desk_routes
 register_macro_desk_routes(app, BASE_DIR / 'macro_board' / 'output', lambda: RUNS_DIR)
 
-# The Interpreter Desk is a separate advisory path. It reads a frozen EOD
-# snapshot, optionally reconciles the accepted Morning handoff, and never
-# replaces the Lab book or its evidence overlay. Missing GPT configuration
-# affects report generation only; it must not stop the Lab from loading.
-try:
-    from pipeline_interpreter.interactive_desk import install_interpreter_desk
-
-    install_interpreter_desk(app, RUNS_DIR)
-except Exception as interpreter_desk_mount_error:
-    print(f"  WARNING Interpreter Desk advisory routes unavailable: {interpreter_desk_mount_error}")
-
-# Optional, provider-free view over an already-saved Interpreter report.
-# It neither changes Morning Gate nor the governed Lab opportunity book.
-try:
-    from pipeline_interpreter.war_view import install_war_view
-
-    install_war_view(app, RUNS_DIR, BASE_DIR)
-except Exception as war_view_mount_error:
-    print(f"  WARNING Interpreter WAR view unavailable: {war_view_mount_error}")
+# BF-03: retired endpoints cannot load a provider or generate a legacy report.
+from contracts.legacy_interpreter_retirement import install_retired_interpreter_routes
+install_retired_interpreter_routes(app)
 
 _run_cache: dict = {}
 
@@ -2888,7 +2872,8 @@ def api_orchestrator_status():
         "run_execution_permission": manifest.get("run_execution_permission", ""),
         "run_prep_permission": manifest.get("run_prep_permission", ""),
         "manual_review_enabled": manifest.get("manual_review_enabled", False),
-        "pipeline_interpreter_prep_enabled": manifest.get("pipeline_interpreter_prep_enabled", False),
+        "pipeline_interpreter_prep_enabled": False,
+        "legacy_interpreter_status": "RETIRED",
         "phase_status": manifest.get("phase_status", {}),
         "missing_files": [
             k for k, v in (manifest.get("output_files") or {}).items()

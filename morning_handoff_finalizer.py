@@ -726,79 +726,50 @@ def _publish_msi_handoff(
     }
 
 
-def _sync_and_verify(paths: Iterable[Path]) -> list[dict[str, Any]]:
-    # The repository contains both pipeline_interpreter.py and a same-named
-    # directory.  When the module has already been imported, normal dotted
-    # import cannot reach the directory.  Load the sync implementation by its
-    # governed file path as a deterministic fallback.
-    try:
-        from pipeline_interpreter.ma_inputs_sync import MA_PIPELINE_OUT, sync_file
-    except (ImportError, ModuleNotFoundError):
-        sync_path = REPO_ROOT / "pipeline_interpreter" / "ma_inputs_sync.py"
-        spec = importlib.util.spec_from_file_location(
-            "avshunter_morning_ma_inputs_sync",
-            sync_path,
-        )
-        if spec is None or spec.loader is None:
-            raise MorningHandoffError(f"Cannot load Interpreter sync module: {sync_path}")
-        sync_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(sync_module)
-        MA_PIPELINE_OUT = sync_module.MA_PIPELINE_OUT
-        sync_file = sync_module.sync_file
-
-    results: list[dict[str, Any]] = []
+def verify_canonical_handoff(paths: Iterable[Path], *, expected_hashes: Mapping[str, str] | None = None) -> list[dict[str, Any]]:
+    """Verify canonical publications in place; never import or copy to legacy inputs."""
+    results = []
     for source in paths:
         source = Path(source)
-        if not source.exists():
+        if not source.is_file():
             raise MorningHandoffError(f"Required handoff artifact is missing: {source}")
-        if not sync_file(source, verbose=True, force=True):
-            raise MorningHandoffError(f"Interpreter sync rejected required artifact: {source}")
-        destination = Path(MA_PIPELINE_OUT) / source.name
-        if not destination.exists():
-            raise MorningHandoffError(f"Interpreter destination was not created: {destination}")
-        source_hash = _sha256(source)
-        destination_hash = _sha256(destination)
-        if source_hash != destination_hash:
-            raise MorningHandoffError(
-                f"Interpreter copy hash mismatch: {source} -> {destination}"
-            )
-        results.append(
-            {
-                "source": str(source),
-                "destination": str(destination),
-                "sha256": source_hash,
-                "verified": True,
-            }
-        )
+        digest = _sha256(source)
+        if expected_hashes is not None and expected_hashes.get(str(source)) != digest:
+            raise MorningHandoffError(f"Canonical handoff hash mismatch: {source}")
+        results.append({"source": str(source), "sha256": digest, "verified": True})
+    return results
+
+
+def _sync_and_verify(paths: Iterable[Path]) -> list[dict[str, Any]]:
+    """Deprecated API: canonical verification only; legacy copying is retired."""
+    return verify_canonical_handoff(paths)
+
+
+def publish_verified_morning_handoff(summary: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """After post-Lab integrity, reverify the frozen canonical handoff hashes."""
+    execution_summary = dict(summary.get("execution_gate_summary", {}) or {})
+    raw_paths = [summary.get("source_path"), execution_summary.get("gated_csv"),
+                 summary.get("lab_triage_path"), summary.get("lab_csv_path")]
+    if any(not value or str(value) == "." for value in raw_paths):
+        raise MorningHandoffError("Cannot publish an incomplete Morning handoff summary")
+    recorded = summary.get("canonical_artifacts")
+    if not isinstance(recorded, list) or len(recorded) != len(raw_paths):
+        raise MorningHandoffError("Canonical handoff hash receipt is missing")
+    expected = {str(item["source"]): str(item["sha256"]) for item in recorded}
+    results = verify_canonical_handoff([Path(str(p)) for p in raw_paths], expected_hashes=expected)
+    summary_path = summary.get("summary_path")
+    if summary_path and str(summary_path) != ".":
+        updated = dict(summary)
+        updated.update(canonical_artifacts=results, canonical_handoff_status="PASS",
+                       canonical_verified_at_utc=_utc_now(), interpreter_sync=[],
+                       interpreter_sync_status="RETIRED")
+        _atomic_json(Path(str(summary_path)), updated)
     return results
 
 
 def sync_verified_morning_handoff(summary: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Publish an already-materialised handoff after its integrity gate passes.
-
-    Keeping this step separate allows the Morning entry point to materialise the
-    Lab book, compare it with the governed Morning rows, and only then expose the
-    artifacts to the Pipeline Interpreter.
-    """
-    execution_summary = dict(summary.get("execution_gate_summary", {}) or {})
-    required_paths = [
-        Path(str(summary.get("source_path") or "")),
-        Path(str(execution_summary.get("gated_csv") or "")),
-        Path(str(summary.get("lab_triage_path") or "")),
-        Path(str(summary.get("lab_csv_path") or "")),
-    ]
-    if any(not str(path) or str(path) == "." for path in required_paths):
-        raise MorningHandoffError("Cannot sync an incomplete Morning handoff summary")
-
-    sync_results = _sync_and_verify(required_paths)
-    summary_path = Path(str(summary.get("summary_path") or ""))
-    if summary_path and str(summary_path) != ".":
-        updated = dict(summary)
-        updated["interpreter_sync"] = sync_results
-        updated["interpreter_sync_status"] = "PASS"
-        updated["interpreter_synced_at_utc"] = _utc_now()
-        _atomic_json(summary_path, updated)
-    return sync_results
+    """Deprecated name retained for callers; verifies canonical files without copies."""
+    return publish_verified_morning_handoff(summary)
 
 
 def finalize_morning_handoff(
@@ -806,7 +777,7 @@ def finalize_morning_handoff(
     results: Optional[Iterable[Mapping[str, Any]]] = None,
     *,
     runs_dir: Path | str = DEFAULT_RUNS_DIR,
-    sync_interpreter: bool = True,
+    sync_interpreter: bool = False,
 ) -> dict[str, Any]:
     """Materialise and verify every downstream artifact for one Morning run.
 
@@ -983,7 +954,9 @@ def finalize_morning_handoff(
         completed_at_utc=completed_at_utc,
         macro_reference=macro_reference,
     )
-    sync_results = _sync_and_verify(required_paths) if sync_interpreter else []
+    # The compatibility flag never re-enables retired copying. All paths still verify.
+    canonical_artifacts = verify_canonical_handoff(required_paths)
+    sync_results = []
 
     summary = {
         "schema_version": HANDOFF_VERSION,
@@ -1005,6 +978,9 @@ def finalize_morning_handoff(
         "lab_csv_path": str(final_book_path),
         "lab_triage_path": str(triage_path),
         "interpreter_sync": sync_results,
+        "interpreter_sync_status": "RETIRED",
+        "canonical_artifacts": canonical_artifacts,
+        "canonical_handoff_status": "PASS",
         "msi_handoff": msi_handoff,
         "dynamic_validation_events": validation_event_summary,
         "macro_advisory": {
@@ -1072,7 +1048,7 @@ def main() -> int:
         summary = finalize_morning_handoff(
             args.run_id,
             runs_dir=Path(args.runs_dir),
-            sync_interpreter=not args.no_interpreter_sync,
+            sync_interpreter=False,
         )
     except Exception as error:
         log.exception("Morning handoff failed: %s", error)
