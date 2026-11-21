@@ -131,7 +131,7 @@ def test_review_screen_is_opt_in_and_never_waits_for_forecast_or_legacy_loader()
     assert "review-app.js" in html and "trade-card.js" not in html
     js = (root / "intelligence-lab/static/review-app.js").read_text(encoding="utf-8")
     assert "/api/lab/" in js and "/forecast_book/" not in js
-    assert "/api/interpreter/saved_reports" in js and "/api/interpreter/reports" not in js
+    assert "/api/interpreter/" not in js
     app = (root / "intelligence-lab/intelligence_lab.py").read_text(encoding="utf-8")
     # ACK 13 Oct 2026: the page is served at the root only; the /review alias is retired.
     assert '@app.route("/review")' not in app and '@app.route("/")' in app
