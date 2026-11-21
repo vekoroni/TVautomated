@@ -810,6 +810,21 @@ Not exercised by a test: the whole `evening_workflow` end to end. The wiring is 
 4. BF-01 volatility evidence before Options Intelligence, worklist per K5.
 5. BF-02 direction pick per K7.
 
+## 16. ACK decisions on the eligibility gate and the Evening snapshot — 21 November
+
+| # | Decision (ACK, 21 Nov) | Effect |
+|---|---|---|
+| K9 | **Production eligibility gate (`eb50549`): re-apply as a warning only.** | A standard production Evening on uncommitted or unidentifiable code is not refused. It runs, and the run is labelled as not baseline eligible with the reason (`CODE_UNCOMMITTED`, `CODE_IDENTITY_UNAVAILABLE`). This changes what Codex built on 12 Nov, where `require_production_eligibility` raises before acquisition. The rest of that commit (real git cleanliness passed to planning, identity captured at launch and carried to run pinning, provisional then final eligibility labels in run metadata, manifest labelled as input capture) is kept. Re-apply selectively onto the current `intelligent_orchestrator.py`; never replace the file with the branch copy. Closes amendment A2 as a decision. |
+| K10 | **Evening snapshot: keep writing it; a run's snapshot may be deleted after the next trading session.** | The writer at the end of the Evening stays (`runs/<run>/interpreter/eod_review_v1`, 107 MB for the 19 Nov run). Claude Code's reading of the instruction: the snapshot for session N becomes deletable once session N+1 has completed, so at most the latest one or two are held. Its only reader today is the legacy desk (`pipeline_interpreter/interactive_desk.py:488`), which is retired under K3. |
+
+Build notes for Codex (owner of BF-03, per K8):
+
+- K9 goes first, before any other orchestrator edit in BF-03, as the decommission plan's stage D0 already requires. It needs a failing test that a standard production Evening on a dirty tree starts and is labelled, and the tests in `tests/test_production_eligibility.py` from `eb50549` adapted to the warning behaviour.
+- K10 is a deletion rule, so it needs its own small design before any file is removed: which owner deletes (the existing `scripts/artifact_retention.py` and `config/artifact_retention_v1.json` are the place to look first), how "next trading session completed" is established from the exchange calendar and a completed run, and a receipt for each deletion. Nothing is deleted under this register entry.
+- Start from `c8631c4`. That commit changed `intelligent_orchestrator.py` and `contracts/lab_control.py`.
+
+Still open with ACK: the delayed-feed rule TR-005, the versioned agent packet, and lifting the hold on BF-00.
+
 ## 17. Codex resumption reconciliation after commit
 
 Observed HEAD `c8631c471b33afb81148e33b2f61d27cf02f0cca`; `2522c25` committed the reviewed register baseline and `c8631c4` added TEV-001 P0(a). No Git process/index lock found at resumption. Section 16 was already an uncommitted concurrent delta and is preserved. Reviewed source changes since the dependency trace: orchestrator, Lab control and descriptive forecast packet; other previously hashed owners match.
@@ -848,3 +863,29 @@ Test-first result: 2 frontend failures and 10 passes before the fix; all 12 Node
 | BF-03 P2 current-review report controls | YES | THIS-FIX-COMMIT | YES-SAVED-REVIEW | 12-NODE-CASES; 57-PYTHON-PASS | OFFLINE-BEHAVIOUR; MONDAY-DEPLOYED-UI-PENDING | YES |
 
 The reproduced P2 is closed in source/offline verification. Monday's browser acceptance should open a current saved-review card, confirm no Interpreter/paid controls or requests, and expand all canonical evidence drawers. Full Evening/Morning acceptance remains separate. No live pipeline, provider/model/capture, retention deletion or operational process changes occurred. Only this fix's six files and this appended register section are included; the pre-existing section 16 and any other editor changes remain outside the commit.
+
+## 20. Claude Code builds of 21 November, committed before the first Evening run on them
+
+Recorded at ACK's instruction to commit the register before the Evening run of 21 November. Each item was built on ACK's go-ahead given the same day. None has run on a real session yet.
+
+| Item | Commit | Built | Wired | Tested | Validated | Authorised |
+|---|---|---|---|---|---|---|
+| TEV-001 P0(a): advisory packets never stop the Evening | `c8631c4` | YES | YES | 8 new tests; 85 in nine related files | NOT YET: first Evening is 21 Nov | ACK 21 Nov |
+| BF-00: macro completion test fixture | `13a72fc` | YES | test only | 6 of 6 (1 failed before) | not applicable | ACK 21 Nov ("fix") |
+| TR-005: verifier quote age is a flag, never a gate (`timing.quote_age_policy` = FLAG) | `3f41a41` | YES | YES | 6 new tests; replay on saved Mornings 14 and 19 Nov: DO_NOT_TRADE becomes TRUST_WITH_CAVEATS, other checks identical | NOT YET: needs a Morning | ACK 21 Nov |
+| VOL-03: 30-day IV benchmark on every chain path, with state and reason | `afc2ef4` | YES | YES | 14 new tests; 58 of 60 regression files (two failures predate it) | NOT YET: first Evening is 21 Nov. Expect a state on every Options row; the 19 Nov run had 1,075 blanks | ACK 21 Nov |
+| VOL-02, runner half: Discovery worklist, evidence-session cutoff, receipt | `78ecd96` | YES | PARTLY: the Evening still passes the old list | 6 new tests; 79 in four forecast files | NOT YET | ACK 21 Nov (K5) |
+| AVS-ENH-2026-11-21 Wave 0 (F-01 to F-05, F-09, F-10, F-29): ticket-ready list per branch, board-row collector, context refresh, stale macro state flagged | `1323f35` | YES | YES in `avs_day.ps1` preclose and eod | 28 new tests; 28 other Lane B tests; replay on saved folders | NOT YET: first session is 23 Nov | ACK 21 Nov |
+
+Closed as decisions by ACK on 21 November: TR-005 (flag, not gate); the two trading agents stay frozen ("if we get Lane B to work as expected we will not need the agents"); BF-00.
+
+Not built, still on the list:
+
+- VOL-02, orchestrator half: move the forecast stage before Options Intelligence in `evening_workflow`, then feed the current forecast into contract valuation. A second cause of the dead shadow selection was found on the way: `test_b1_shadow_valuer_forecast_source` fails with `SCORE_NO_RUNWAY_ESTIMATE`, so valuation also lacks a runway estimate.
+- BF-02: direction picks a primary side and carries an alternative (K7). Needs a written design and ACK's approval.
+- Wave 0 parts that live outside the repo: the 15:40 push, the monitor's reason codes and quantity column, the card template (kill switch, whole-number size, one board-row shape), the write to the board. Prompt text owed to ACK.
+- The rest of `2026-11-21_claude_code_brief_enhancements.md` (Part A outside Wave 0, Parts B and C) is not verified.
+
+Review owed by Claude Code: Codex's legacy Interpreter commits `a179378` and `bbc6212` have not been reviewed against the decommission plan (deferred by ACK on 21 Nov). Their first real test is the Evening of 21 Nov and the Morning of 23 Nov.
+
+Combined check before the run, at `1323f35`: the 14 changed pipeline modules compile and import; 167 tests across 12 files pass, including Codex's 41 retirement tests and 23 eligibility tests beside the above.
