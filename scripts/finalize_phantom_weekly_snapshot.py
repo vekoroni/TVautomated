@@ -11,6 +11,11 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from .phantom_option_quality import benchmark_mask
+except ImportError:
+    from phantom_option_quality import benchmark_mask
+
 
 def entropy(values: pd.Series) -> float:
     clean = pd.to_numeric(values, errors="coerce").dropna()
@@ -36,7 +41,12 @@ def dte_bucket(value) -> str:
 
 
 def nearest_iv(group: pd.DataFrame, target_delta: float) -> float | None:
-    valid = group[pd.to_numeric(group["iv"], errors="coerce").between(0.01, 5.0)].copy()
+    valid = group[benchmark_mask(group)].copy()
+    return _nearest_eligible_iv(valid, target_delta)
+
+
+def _nearest_eligible_iv(valid: pd.DataFrame, target_delta: float) -> float | None:
+    """Internal selection from the already-qualified population."""
     if valid.empty:
         return None
     delta = pd.to_numeric(valid["delta"], errors="coerce").abs()
@@ -54,12 +64,17 @@ def nearest_iv(group: pd.DataFrame, target_delta: float) -> float | None:
 
 
 CHAIN_SELECT = """SELECT ticker,quote_date,option_symbol,side,strike,dte,bid,mid,ask,
-               open_interest,volume,underlying_price,iv,delta,gamma,theta,vega FROM chain_snapshots"""
+               open_interest,volume,underlying_price,iv,delta,gamma,theta,vega,
+               updated_ts,greeks_source,greeks_quality FROM chain_snapshots"""
 
 
 def _surface_and_atm(frame: pd.DataFrame, quote_date: str, built_at: str):
     """The IV surface rows (ticker x DTE bucket x side) and each ticker's ATM IV for one session's chains."""
     frame = frame.copy()
+    # Stable exact-contract tie breaking independent of SELECT row order. The
+    # tail-snapshot CLI reads reverse rowids; bounded derivation need not.
+    if "option_symbol" in frame:
+        frame = frame.sort_values(["ticker", "option_symbol"], kind="mergesort")
     frame["dte_bucket"] = frame["dte"].map(dte_bucket)
     frame["spread_pct"] = (
         (pd.to_numeric(frame["ask"], errors="coerce") - pd.to_numeric(frame["bid"], errors="coerce"))
@@ -67,9 +82,12 @@ def _surface_and_atm(frame: pd.DataFrame, quote_date: str, built_at: str):
     )
     surface_rows = []
     grouped = frame.groupby(["ticker", "dte_bucket", "side"], dropna=False)
-    medians = grouped["iv"].median().to_dict()
-    iv25 = {key: nearest_iv(group, 0.25) for key, group in grouped}
+    eligible = frame[benchmark_mask(frame)]
+    medians = eligible.groupby(["ticker", "dte_bucket", "side"], dropna=False)["iv"].median().to_dict()
+    eligible_groups = dict(tuple(eligible.groupby(["ticker", "dte_bucket", "side"], dropna=False)))
+    iv25 = {key: _nearest_eligible_iv(group, 0.25) for key, group in eligible_groups.items()}
     for (ticker, bucket, side), group in grouped:
+        qualified = eligible_groups.get((ticker, bucket, side), eligible.iloc[:0])
         own_med = medians.get((ticker, bucket, side))
         put_med = medians.get((ticker, bucket, "put"))
         call_med = medians.get((ticker, bucket, "call"))
@@ -77,8 +95,8 @@ def _surface_and_atm(frame: pd.DataFrame, quote_date: str, built_at: str):
         call25 = iv25.get((ticker, bucket, "call"))
         surface_rows.append((
             ticker, quote_date, bucket, str(side).lower(), int(len(group)),
-            nearest_iv(group, 0.50), float(own_med) if pd.notna(own_med) else None,
-            entropy(group["iv"]),
+            _nearest_eligible_iv(qualified, 0.50), float(own_med) if pd.notna(own_med) else None,
+            entropy(qualified["iv"]),
             (float(put25) - float(call25)) if put25 is not None and call25 is not None else None,
             (float(put_med) - float(call_med)) if pd.notna(put_med) and pd.notna(call_med) else None,
             float(group["spread_pct"].median()) if group["spread_pct"].notna().any() else None,
@@ -86,11 +104,7 @@ def _surface_and_atm(frame: pd.DataFrame, quote_date: str, built_at: str):
             int(pd.to_numeric(group["volume"], errors="coerce").fillna(0).sum()),
             built_at,
         ))
-    valid_iv = frame[
-        pd.to_numeric(frame["iv"], errors="coerce").between(0.01, 5.0)
-        & pd.to_numeric(frame["underlying_price"], errors="coerce").gt(0)
-        & pd.to_numeric(frame["strike"], errors="coerce").gt(0)
-    ].copy()
+    valid_iv = eligible.copy()
     valid_iv["rank_dte"] = (pd.to_numeric(valid_iv["dte"], errors="coerce") - 30.0).abs()
     valid_iv["rank_delta"] = (pd.to_numeric(valid_iv["delta"], errors="coerce").abs() - 0.50).abs()
     valid_iv["rank_strike"] = (
@@ -128,7 +142,9 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
         derived = sorted(frame["ticker"].unique().tolist())
         report.update({"status": "PASS" if frame["iv"].notna().any() else "FAIL", "tickers_derived": len(derived),
                        "chain_rows": int(len(frame)), "surface_rows": len(surface_rows),
-                       "iv_cache_rows": int(len(atm))})
+                       "iv_cache_rows": int(len(atm)),
+                       "benchmark_eligible_rows": int(benchmark_mask(frame).sum()),
+                       "iv_eligibility_policy": "US_OPTIONS_TWO_SIDED_UNADJUSTED_1_TO_500_PERCENT_V1"})
         if execute:
             conn.execute("BEGIN")
             conn.executemany("DELETE FROM iv_surface_history WHERE quote_date = ? AND ticker = ?",
@@ -174,18 +190,29 @@ def _write_iv_cache(iv_cache_path: Path, quote_date: str, atm: pd.DataFrame, bui
     try:
         cache.execute("PRAGMA journal_mode=WAL")
         cache.execute("BEGIN")
+        protected = set()
+        expected = {row.ticker: float(row.iv) for row in atm.itertuples(index=False)}
+        for ticker in set(replace_tickers or []) | set(expected):
+            prior = cache.execute('SELECT atm_iv,source FROM iv_history WHERE ticker=? AND sample_date=?',
+                                  (ticker,quote_date)).fetchone()
+            if prior is not None and prior[1] != 'phantom_history':
+                # Do not replace a vendor/unknown-origin observation with a
+                # computed benchmark. A disagreement requires explicit review.
+                if ticker not in expected or prior[0] != expected[ticker]:
+                    raise RuntimeError('IV_CACHE_NON_DERIVED_VALUE_CONFLICT: '+ticker)
+                protected.add(ticker)
         if replace_tickers:
-            cache.executemany('DELETE FROM iv_history WHERE ticker=? AND sample_date=?',
+            cache.executemany("DELETE FROM iv_history WHERE ticker=? AND sample_date=? AND source='phantom_history'",
                               [(ticker,quote_date) for ticker in replace_tickers])
         cache.executemany(
             """INSERT OR REPLACE INTO iv_history(ticker,sample_date,atm_iv,source,updated_at)
                VALUES(?,?,?,'phantom_history',?)""",
-            [(row.ticker, quote_date, float(row.iv), built_at) for row in atm.itertuples(index=False)],
+            [(row.ticker, quote_date, float(row.iv), built_at) for row in atm.itertuples(index=False) if row.ticker not in protected],
         )
         cache.executemany(
             """INSERT INTO iv_cache_meta(ticker,last_full_build,last_refresh) VALUES(?,NULL,?)
                ON CONFLICT(ticker) DO UPDATE SET last_refresh=excluded.last_refresh""",
-            [(str(ticker), quote_date) for ticker in atm["ticker"]],
+            [(str(ticker), quote_date) for ticker in atm["ticker"] if ticker not in protected],
         )
         cache.commit()
     finally:
@@ -243,7 +270,7 @@ def main() -> int:
         """
         SELECT ticker,quote_date,option_symbol,side,strike,dte,bid,mid,ask,
                open_interest,volume,underlying_price,iv,delta,gamma,theta,vega,
-               greeks_source,greeks_quality
+               greeks_source,greeks_quality,updated_ts
         FROM chain_snapshots ORDER BY rowid DESC LIMIT ?
         """,
         (args.expected_rows,),
@@ -257,53 +284,8 @@ def main() -> int:
 
     greek_cols = ["iv", "delta", "gamma", "theta", "vega"]
     coverage = {name: int(frame[name].notna().sum()) for name in greek_cols}
-    frame["dte_bucket"] = frame["dte"].map(dte_bucket)
-    frame["spread_pct"] = (
-        (pd.to_numeric(frame["ask"], errors="coerce") - pd.to_numeric(frame["bid"], errors="coerce"))
-        / pd.to_numeric(frame["mid"], errors="coerce").replace(0, pd.NA)
-    )
-
-    surface_rows = []
-    grouped = frame.groupby(["ticker", "dte_bucket", "side"], dropna=False)
-    medians = grouped["iv"].median().to_dict()
-    iv25 = {key: nearest_iv(group, 0.25) for key, group in grouped}
     built_at = datetime.now(timezone.utc).isoformat()
-    for (ticker, bucket, side), group in grouped:
-        opposite = "put" if str(side).lower() == "call" else "call"
-        own_med = medians.get((ticker, bucket, side))
-        opp_med = medians.get((ticker, bucket, opposite))
-        put_med = medians.get((ticker, bucket, "put"))
-        call_med = medians.get((ticker, bucket, "call"))
-        put25 = iv25.get((ticker, bucket, "put"))
-        call25 = iv25.get((ticker, bucket, "call"))
-        surface_rows.append((
-            ticker, args.quote_date, bucket, str(side).lower(), int(len(group)),
-            nearest_iv(group, 0.50), float(own_med) if pd.notna(own_med) else None,
-            entropy(group["iv"]),
-            (float(put25) - float(call25)) if put25 is not None and call25 is not None else None,
-            (float(put_med) - float(call_med)) if pd.notna(put_med) and pd.notna(call_med) else None,
-            float(group["spread_pct"].median()) if group["spread_pct"].notna().any() else None,
-            int(pd.to_numeric(group["open_interest"], errors="coerce").fillna(0).sum()),
-            int(pd.to_numeric(group["volume"], errors="coerce").fillna(0).sum()),
-            built_at,
-        ))
-
-    valid_iv = frame[
-        pd.to_numeric(frame["iv"], errors="coerce").between(0.01, 5.0)
-        & pd.to_numeric(frame["underlying_price"], errors="coerce").gt(0)
-        & pd.to_numeric(frame["strike"], errors="coerce").gt(0)
-    ].copy()
-    valid_iv["rank_dte"] = (pd.to_numeric(valid_iv["dte"], errors="coerce") - 30.0).abs()
-    valid_iv["rank_delta"] = (pd.to_numeric(valid_iv["delta"], errors="coerce").abs() - 0.50).abs()
-    valid_iv["rank_strike"] = (
-        pd.to_numeric(valid_iv["strike"], errors="coerce")
-        - pd.to_numeric(valid_iv["underlying_price"], errors="coerce")
-    ).abs()
-    valid_iv = valid_iv.sort_values(
-        ["ticker", "rank_dte", "rank_delta", "rank_strike", "side"],
-        kind="mergesort",
-    )
-    atm = valid_iv.drop_duplicates("ticker", keep="first")[["ticker", "iv"]]
+    surface_rows, atm = _surface_and_atm(frame, args.quote_date, built_at)
 
     report = {
         "status": "PASS" if coverage["iv"] > 0 else "FAIL",
@@ -314,6 +296,8 @@ def main() -> int:
         "full_greek_rows": int(frame[greek_cols].notna().all(axis=1).sum()),
         "surface_rows": int(len(surface_rows)),
         "iv_cache_rows": int(len(atm)),
+        "benchmark_eligible_rows": int(benchmark_mask(frame).sum()),
+        "iv_eligibility_policy": "US_OPTIONS_TWO_SIDED_UNADJUSTED_1_TO_500_PERCENT_V1",
         "executed": bool(args.execute),
         "built_at_utc": built_at,
     }
@@ -331,21 +315,8 @@ def main() -> int:
         )
         conn.commit()
 
-        cache = sqlite3.connect(str(args.iv_cache_path), timeout=60)
-        cache.execute("PRAGMA journal_mode=WAL")
-        cache.execute("BEGIN")
-        cache.executemany(
-            """INSERT OR REPLACE INTO iv_history(ticker,sample_date,atm_iv,source,updated_at)
-               VALUES(?,?,?,'phantom_history',?)""",
-            [(row.ticker, args.quote_date, float(row.iv), built_at) for row in atm.itertuples(index=False)],
-        )
-        cache.executemany(
-            """INSERT INTO iv_cache_meta(ticker,last_full_build,last_refresh) VALUES(?,NULL,?)
-               ON CONFLICT(ticker) DO UPDATE SET last_refresh=excluded.last_refresh""",
-            [(str(ticker), args.quote_date) for ticker in atm["ticker"]],
-        )
-        cache.commit()
-        cache.close()
+        _write_iv_cache(args.iv_cache_path, args.quote_date, atm, built_at,
+                        replace_tickers=sorted(frame['ticker'].unique().tolist()))
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")

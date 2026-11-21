@@ -201,6 +201,13 @@ def hydrate_chain_snapshots(conn: sqlite3.Connection, records: Iterable[Dict[str
             )
             updated += int(cur.rowcount or 0)
             continue
+        # Preserve model/clock qualifications on newly hydrated computed rows.
+        # Existing nonblank labels and vendor numeric values remain protected
+        # by the non-overwrite UPDATE below.
+        quality = str(rec.get("quality_status") or "UNKNOWN")
+        flags = rec.get("quality_flags")
+        if flags:
+            quality += ";" + (";".join(flags) if isinstance(flags, list) else str(flags))
         params = (
             rec.get("iv"),
             rec.get("delta"),
@@ -208,7 +215,7 @@ def hydrate_chain_snapshots(conn: sqlite3.Connection, records: Iterable[Dict[str
             rec.get("theta"),
             rec.get("vega"),
             rec.get("greeks_source", "COMPUTED_BS"),
-            rec.get("quality_status"),
+            quality,
             now,
             rec.get("ticker"),
             rec.get("snapshot_date"),

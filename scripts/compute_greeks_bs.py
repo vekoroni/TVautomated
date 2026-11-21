@@ -11,6 +11,11 @@ from dataclasses import dataclass
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from .phantom_option_quality import quote_assessment
+except ImportError:
+    from phantom_option_quality import quote_assessment
+
 
 VOL_MIN = 1.0e-6
 VOL_MAX = 12.0
@@ -67,26 +72,7 @@ def no_arbitrage_bounds(side: str, spot: float, strike: float, time_years: float
 
 
 def choose_market_price(row: Dict[str, Any]) -> Tuple[Optional[float], str, List[str]]:
-    flags: List[str] = []
-    mid = to_float(row.get("mid"))
-    bid = to_float(row.get("bid"))
-    ask = to_float(row.get("ask"))
-    last = to_float(row.get("last"))
-
-    if mid is not None and mid > 0:
-        return mid, "mid", flags
-
-    if bid is not None and ask is not None and bid >= 0 and ask > 0 and ask >= bid:
-        spread_mid = (bid + ask) / 2.0
-        if spread_mid > 0:
-            flags.append("mid_rebuilt_from_bid_ask")
-            return spread_mid, "bid_ask_mid", flags
-
-    if last is not None and last > 0:
-        flags.append("last_used_no_mid")
-        return last, "last", flags
-
-    return None, "none", ["no_valid_option_price"]
+    return quote_assessment(row)
 
 
 def solve_implied_vol(
@@ -226,52 +212,18 @@ def compute_greeks_from_row(row: Dict[str, Any], risk_free_rate: float = 0.045) 
 
     time_years = max(dte / 365.0, 1.0 / 365.0)
     solve_price = market_price
-    adjusted_no_arb = False
     lower_bound, upper_bound = no_arbitrage_bounds(side, spot, strike, time_years, rate)
-    if solve_price < lower_bound:
-        violation = lower_bound - solve_price
-        adjustment_limit = max(0.25, spot * 0.0025, abs(solve_price) * 0.01)
-        if violation <= adjustment_limit:
-            flags.append(f"price_below_no_arb_adjusted:{violation:.6f}")
-            solve_price = lower_bound + 1.0e-8
-            adjusted_no_arb = True
-        else:
-            return GreekResult(
-                "PRICE_BELOW_NO_ARB",
-                flags,
-                price_source,
-                market_price,
-                rate,
-                None,
-                None,
-                None,
-                None,
-                None,
-                0,
-                f"PRICE_BELOW_NO_ARB: target={market_price:.8f} lower={lower_bound:.8f}",
-            )
-    elif solve_price > upper_bound:
-        violation = solve_price - upper_bound
-        adjustment_limit = max(0.25, spot * 0.0025, abs(solve_price) * 0.01)
-        if violation <= adjustment_limit:
-            flags.append(f"price_above_no_arb_adjusted:{violation:.6f}")
-            solve_price = upper_bound - 1.0e-8
-            adjusted_no_arb = True
-        else:
-            return GreekResult(
-                "PRICE_ABOVE_NO_ARB",
-                flags,
-                price_source,
-                market_price,
-                rate,
-                None,
-                None,
-                None,
-                None,
-                None,
-                0,
-                f"PRICE_ABOVE_NO_ARB: target={market_price:.8f} upper={upper_bound:.8f}",
-            )
+    # Do not manufacture a point IV by moving an observed mark to a bound.
+    if solve_price < lower_bound or solve_price > upper_bound:
+        status = "PRICE_BELOW_NO_ARB" if solve_price < lower_bound else "PRICE_ABOVE_NO_ARB"
+        return GreekResult(status, flags, price_source, market_price, rate,
+                           None, None, None, None, None, 0,
+                           f"{status}: observed={market_price:.8f} lower={lower_bound:.8f} upper={upper_bound:.8f}")
+    tolerance = max(PRICE_TOLERANCE_FLOOR, abs(solve_price) * 1e-5)
+    if solve_price <= lower_bound + tolerance or solve_price >= upper_bound - tolerance:
+        return GreekResult("BOUNDARY_IV_NON_IDENTIFIABLE", flags, price_source,
+                           market_price, rate, None, None, None, None, None, 0,
+                           "Observed mark at model boundary; no reliable point IV")
 
     iv, iterations, solver_error = solve_implied_vol(side, spot, strike, time_years, rate, solve_price)
     if iv is None:
@@ -287,8 +239,12 @@ def compute_greeks_from_row(row: Dict[str, Any], risk_free_rate: float = 0.045) 
     except Exception as exc:
         return GreekResult("GREEK_COMPUTE_FAILED", flags, price_source, market_price, rate, None, None, None, None, None, iterations, f"{type(exc).__name__}: {exc}")
 
-    stored_iv = 0.0 if adjusted_no_arb and iv <= VOL_MIN * 10.0 else greeks["iv"]
-    status = "OK_ADJUSTED_NO_ARB" if adjusted_no_arb else "OK"
+    if iv <= VOL_MIN * 10:
+        return GreekResult("BOUNDARY_IV_NON_IDENTIFIABLE", flags, price_source,
+                           market_price, rate, None, None, None, None, None,
+                           iterations, "Near-zero boundary solution is not a point IV")
+    stored_iv = greeks["iv"]
+    status = "OK"
     return GreekResult(
         status,
         flags,
