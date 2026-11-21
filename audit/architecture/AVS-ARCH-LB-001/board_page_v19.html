@@ -1,0 +1,1492 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Card Watch Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the deep-dive card family's look; one fluid column, live strip on top, then a ranked table that folds into label/value cards on phones. */
+:root {
+  --bg: #f4f6f7; --surface: #ffffff; --ink: #151a1f; --muted: #5a6572; --rule: #d6dbe0; --band: #e9edf0;
+  --accent: #8f2f2a; --ok: #1f7a4d; --warn: #9a6400; --bad: #b3261e; --info: #2b5c8a;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1418; --surface: #161c22; --ink: #e4e8ec; --muted: #98a3af; --rule: #2a333c; --band: #1b232a;
+  --accent: #e58a80; --ok: #5cc490; --warn: #e0ad4e; --bad: #f08a80; --info: #8ab8e6; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1418; --surface: #161c22; --ink: #e4e8ec; --muted: #98a3af; --rule: #2a333c; --band: #1b232a;
+  --accent: #e58a80; --ok: #5cc490; --warn: #e0ad4e; --bad: #f08a80; --info: #8ab8e6; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1680px; margin-inline: auto; padding-block: 18px 56px; }
+a { color: var(--accent); text-underline-offset: 2px }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.masthead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px }
+.masthead h1 { font-family: var(--display); font-weight: 700; font-size: clamp(1.35rem, 1.1rem + 1vw, 1.9rem); line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+.masthead .id { font-family: var(--mono); font-size: .82rem; color: var(--muted) }
+.controls { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+button { font: 600 .85rem/1.2 var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); padding: 7px 12px; cursor: pointer }
+button.primary { border-left: 3px solid var(--accent) }
+button[aria-pressed="false"] { color: var(--muted) }
+button:disabled { opacity: .55; cursor: default }
+
+.status { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 12px 0 0; padding: 10px 14px; background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--accent) }
+.status div { min-width: 0 }
+.status dt { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 0 }
+.status dd { margin: 0; font-family: var(--mono); font-size: .92rem; font-variant-numeric: tabular-nums }
+
+.banner { margin-top: 12px; padding: 10px 14px; border: 1px solid var(--rule); border-left: 3px solid var(--warn); background: var(--surface); font-size: .92rem; max-width: 124ch }
+.banner.bad { border-left-color: var(--bad) }
+.banner.ok { border-left-color: var(--ok) }
+
+.tally { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0 }
+.tally span { font-size: .8rem; background: var(--band); padding: 3px 9px }
+
+h2 { font-family: var(--display); font-weight: 700; font-size: 1.2rem; margin: 2rem 0 .3rem; padding-top: .8rem; border-top: 2px solid var(--ink); text-wrap: balance }
+.lead { color: var(--muted); font-size: .9rem; margin: .2rem 0 .6rem; max-width: 124ch }
+
+.tbl { max-width: 100%; overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; font-variant-numeric: tabular-nums; background: var(--surface); border: 1px solid var(--rule) }
+th { text-align: left; font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--band); padding: 7px 9px; border-bottom: 1px solid var(--rule); vertical-align: bottom; white-space: nowrap }
+td { padding: 8px 9px; border-bottom: 1px solid var(--rule); vertical-align: top; overflow-wrap: anywhere }
+tbody tr:last-child td { border-bottom: 0 }
+tr.sev-go td:first-child { box-shadow: inset 4px 0 0 var(--ok) }
+tr.sev-work td:first-child { box-shadow: inset 4px 0 0 var(--info) }
+tr.sev-warn td:first-child { box-shadow: inset 4px 0 0 var(--warn) }
+tr.sev-bad td:first-child { box-shadow: inset 4px 0 0 var(--bad) }
+tr.sev-idle td:first-child { box-shadow: inset 4px 0 0 var(--rule) }
+.tk { font-family: var(--display); font-weight: 700; font-size: 1.02rem }
+.sub { display: block; font-size: .78rem; color: var(--muted); font-family: var(--mono) }
+.n { font-family: var(--mono); font-size: .84rem; white-space: nowrap }
+.why { display: block; font-size: .8rem; color: var(--muted); margin-top: 3px }
+.up { color: var(--ok) } .dn { color: var(--bad) }
+.pill { display: inline-block; font: 600 .66rem/1.6 var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 0 6px; border: 1px solid currentColor; white-space: nowrap }
+.pill.go { color: var(--ok) } .pill.work { color: var(--info) } .pill.warn { color: var(--warn) } .pill.bad { color: var(--bad) } .pill.idle { color: var(--muted) }
+.chk { display: block; font-size: .8rem; white-space: normal }
+.chk.pass::before { content: "✓ "; color: var(--ok); font-weight: 600 }
+.chk.fail::before { content: "✗ "; color: var(--bad); font-weight: 600 }
+.chk.man::before { content: "? "; color: var(--warn); font-weight: 600 }
+.foot { margin-top: 2rem; font-size: .85rem; color: var(--muted); max-width: 124ch }
+.foot p { margin: .4rem 0 }
+
+@media (max-width: 900px) {
+  body { font-size: 14.5px }
+  table.stack, table.stack tbody { display: block; width: 100% }
+  table.stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%) }
+  table.stack tr { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 11px 12px; border-bottom: 1px solid var(--rule) }
+  table.stack tbody tr:last-child { border-bottom: 0 }
+  table.stack td { display: grid; grid-template-columns: minmax(5.6rem, 28%) 1fr; gap: 10px; padding: 1px 0; border: 0; box-shadow: none !important }
+  table.stack td::before { content: attr(data-label); font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding-top: 3px }
+  table.stack td:first-child { display: block; padding-bottom: 3px }
+  table.stack td:first-child::before { content: none }
+  tr.sev-go { border-left: 4px solid var(--ok) } tr.sev-work { border-left: 4px solid var(--info) } tr.sev-warn { border-left: 4px solid var(--warn) } tr.sev-bad { border-left: 4px solid var(--bad) } tr.sev-idle { border-left: 4px solid var(--rule) }
+  .n { white-space: normal }
+}
+</style>
+
+<style>
+.sig { display: block; font-size: .82rem; margin-top: 3px }
+.sig b { font-weight: 600 }
+.sig.bad { color: var(--bad) } .sig.warn { color: var(--warn) } .sig.go { color: var(--ok) } .sig.info { color: var(--info) }
+.pill.held { color: var(--info) }
+.empty { padding: 14px; color: var(--muted) }
+</style>
+
+<style>
+.todo { display: block; font-weight: 600; font-size: .86rem; margin-top: 4px }
+.plan { display: block; font-size: .78rem; color: var(--muted); margin-top: 4px; border-top: 1px dashed var(--rule); padding-top: 3px }
+.donow { margin-top: 14px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--ok); max-width: 124ch }
+.donow-h { margin: 0 0 .3rem; padding: 0; border: 0; font-size: 1rem }
+.donow ul { margin: 0; padding-left: 1.2rem } .donow li { margin: .25rem 0 }
+.sub.dn { color: var(--bad) }
+.alt.big { border-color: var(--warn) }
+.alt { display: block; margin-top: 6px; padding: 5px 7px; font-size: .78rem; border: 1px dashed var(--info); color: var(--ink) }
+.glance { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px }
+.glance a { text-decoration: none; font: 600 .78rem/1.3 var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--rule); padding: 4px 8px }
+.glance a.g-go { border-left-color: var(--ok) } .glance a.g-work { border-left-color: var(--info) } .glance a.g-bad { border-left-color: var(--bad) } .glance a.g-warn { border-left-color: var(--warn) } .glance a.g-held { border-left-color: var(--info) }
+.glance a span { display: block; font-weight: 400; color: var(--muted); font-size: .72rem }
+.ticket { margin-top: 6px; font-size: .82rem; background: var(--band); padding: 4px 8px }
+.ticket summary { cursor: pointer; font-weight: 600 }
+.ticket ol { margin: .3rem 0; padding-left: 1.1rem } .ticket li { margin: .25rem 0 }
+.tline { font-family: var(--mono); font-size: .78rem }
+button.cp { font-size: .7rem; padding: 2px 6px; margin-left: 4px }
+</style>
+<style>
+/* Market tape (13 Nov): ETF panel on its own fast loop */
+.tapehead { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-start; margin: .4rem 0 .6rem }
+.tape-read { flex: 1 1 520px; min-width: 0; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-left: 3px solid var(--info); padding: 8px 12px; font-size: .9rem; max-width: 124ch }
+.tape-read.on { border-left-color: var(--ok) } .tape-read.off { border-left-color: var(--bad) } .tape-read.mixed { border-left-color: var(--warn) }
+.tape-read b { color: var(--ink) }
+.tape-read .chips { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px }
+.tape-read .chips span { font-size: .76rem; background: var(--band); color: var(--ink); padding: 2px 7px }
+.tape-read .chips span.up { color: var(--ok) } .tape-read .chips span.dn { color: var(--bad) }
+.tape-ctl { font-size: .82rem; color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap }
+.tape-ctl label { color: var(--ink) }
+.tape-ctl select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); padding: 3px 6px }
+table.tape td { color: var(--ink) }
+table.tape tr.grp td { background: var(--band); color: var(--ink); font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; padding: 5px 9px }
+table.tape .nm { display: block; font-size: .74rem; color: var(--muted) }
+.rng { position: relative; display: inline-block; width: 92px; height: 8px; background: var(--band); border: 1px solid var(--rule); vertical-align: middle }
+.rng i { position: absolute; top: -3px; width: 3px; height: 12px; background: var(--ink); margin-left: -1px }
+.spark { display: block; overflow: visible } .spark polyline { fill: none; stroke-width: 1.5 } .spark line { stroke: var(--rule); stroke-dasharray: 2 2 }
+@keyframes tfu { from { background: rgba(31, 122, 77, .28) } to { background: transparent } }
+@keyframes tfd { from { background: rgba(179, 38, 30, .28) } to { background: transparent } }
+td.fu { animation: tfu 1.2s ease-out } td.fd { animation: tfd 1.2s ease-out }
+@media (prefers-reduced-motion: reduce) { td.fu, td.fd { animation: none } }
+@media (max-width: 900px) { table.stack.tape tr.grp { display: block; padding: 0 } table.stack.tape tr.grp td { display: block; padding: 6px 12px } }
+/* Updated card (20 Nov) */
+button.ucb { font-size: .72rem; padding: 3px 7px; margin-top: 5px; display: inline-block; border-left: 3px solid var(--info) }
+dialog#uc { width: min(1000px, 96vw); max-height: 92vh; padding: 0; border: 1px solid var(--rule); background: var(--surface); color: var(--ink) }
+dialog#uc::backdrop { background: rgba(10, 14, 18, .55) }
+.uc-bar { position: sticky; top: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; background: var(--band); color: var(--ink); border-bottom: 1px solid var(--rule); z-index: 1 }
+.uc-bar b { font-family: var(--display); color: var(--ink) } .uc-bar .sp { flex: 1 } #uc-msg { font-size: .8rem; color: var(--muted) }
+#uc-body { padding: 12px 16px 20px; overflow: auto; max-height: calc(92vh - 56px); color: var(--ink) }
+#uc-body h3 { font-family: var(--display); font-size: 1rem; margin: 1.1rem 0 .3rem; color: var(--ink) }
+.uc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px }
+.uc-verdict { margin: 10px 0; padding: 10px 14px; border: 1px solid var(--rule); border-left: 4px solid var(--warn); color: var(--ink); background: var(--surface) }
+.uc-verdict.ok { border-left-color: var(--ok) } .uc-verdict.bad { border-left-color: var(--bad) }
+.uc-verdict ul { margin: .4rem 0 0; padding-left: 1.2rem } .uc-verdict li.dn { color: var(--bad) }
+.uc-state { margin: 6px 0; color: var(--ink) }
+.uc-strip { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 10px 0 4px; padding: 8px 12px; border: 1px solid var(--rule); border-left: 3px solid var(--accent); color: var(--ink) }
+.uc-strip dt { font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 } .uc-strip dd { margin: 0; font-family: var(--mono); font-size: .88rem; color: var(--ink) }
+table.uc-t { margin: 4px 0 } table.uc-t td:first-child { width: 22%; color: var(--muted); font-size: .8rem }
+.uc-plan { background: var(--band); color: var(--ink); padding: 8px 10px; font-size: .88rem }
+.ucn { display: block; font-size: .8rem; font-style: italic; color: var(--info); margin: 4px 0 }
+ol.uc-tk { padding-left: 1.2rem; font-size: .85rem } ol.uc-tk li { margin: .25rem 0 }
+</style>
+<div class="wrap">
+  <header class="masthead">
+    <h1>Card watch board</h1>
+    <span class="id">deep-dive cards · Tastytrade live</span>
+    <div class="controls">
+      <button id="btn-refresh" class="primary" type="button">Refresh now</button>
+      <button id="btn-auto" type="button" aria-pressed="true">Live: on</button>
+    </div>
+  </header>
+
+  <dl class="status" aria-label="Live state">
+    <div><dt>Session</dt><dd id="s-session">–</dd></div>
+    <div><dt>New York</dt><dd id="s-et">–</dd></div>
+    <div><dt>Quotes as of</dt><dd id="s-asof">not pulled yet</dd></div>
+    <div><dt>QQQ · VIX</dt><dd id="s-mkt">–</dd></div>
+    <div><dt>Cards</dt><dd id="s-cards">loading</dd></div>
+  </dl>
+  <div id="banner" class="banner" hidden></div>
+  <div class="tally" id="tally"></div>
+  <div class="glance" id="glance"></div>
+  <section class="donow" id="donow" hidden><h2 class="donow-h">Do now</h2><ul id="donow-list"></ul></section>
+
+  <h2>Market tape: QQQ and the ETFs</h2>
+  <p class="lead">Indices, volatility, the sector funds and the macro ETFs on their own fast loop, whether you are in a trade or not. "1 min / 5 min" and the trend line are built from the board's own samples, so they start when the board opens. The Cards column shows every live card that gates on that ETF, passing or failing right now.</p>
+  <div class="tapehead">
+    <div id="tape-read" class="tape-read">Waiting for the first ETF quotes.</div>
+    <div class="tape-ctl"><label for="tape-every">Refresh every</label> <select id="tape-every"><option value="3000">3 s</option><option value="5000">5 s</option><option value="15000">15 s</option></select> <span id="tape-asof" class="n">–</span></div>
+  </div>
+  <div class="tbl"><table class="stack tape" id="t-tape"><thead><tr>
+    <th>ETF</th><th>Last</th><th>Day</th><th>From open</th><th>vs QQQ</th><th>1 min / 5 min</th><th>Day range</th><th>Since board opened</th><th>Cards</th>
+  </tr></thead><tbody><tr><td colspan="9" class="empty">Waiting for the first refresh.</td></tr></tbody></table></div>
+
+  <h2>Live trades: when to sell</h2>
+  <p class="lead">Every open position, matched to its card by the option symbol. The board checks the card's exits: good-till target, stop, time stop and review date. It also checks that the good-till sell is actually working at Tastytrade. It tells you; you place the order.</p>
+  <div class="tbl"><table class="stack" id="t-pos"><thead><tr>
+    <th>Position</th><th>Signal</th><th>Stock</th><th>Option</th><th>P&amp;L</th><th>Card exits</th>
+  </tr></thead><tbody><tr><td colspan="6" class="empty">Waiting for the first refresh.</td></tr></tbody></table></div>
+
+  <h2>Cards waiting for entry</h2>
+  <p class="lead">Each row checks the live quote against the card's entry lines: zone, most you may pay, gates, stop and dates. Anything a quote can't show (a 15-minute close, the 15:50 hold, oil, news) is marked with a ? and stays your call. Once a card fills, it moves to the live trades above.</p>
+  <div class="tbl"><table class="stack" id="t-cards"><thead><tr>
+    <th>Card</th><th>State</th><th>Stock</th><th>Entry zone</th><th>Contract live</th><th>Gates and checks</th><th>Stop · exit</th>
+  </tr></thead><tbody><tr><td colspan="7" class="empty">Loading cards.</td></tr></tbody></table></div>
+
+  <h2>Older cards still live</h2>
+  <p class="lead">Setups from earlier cards that still met their written criteria (old-card sweep, 19 Oct).</p>
+  <div class="tbl"><table class="stack" id="t-old"><thead><tr>
+    <th>Card</th><th>State</th><th>Stock</th><th>Entry zone</th><th>Contract live</th><th>Gates and checks</th><th>Stop · exit</th>
+  </tr></thead><tbody><tr><td colspan="7" class="empty">Loading cards.</td></tr></tbody></table></div>
+
+  <h2>Review: validate or ask for a fresh card</h2>
+  <p class="lead">Cards whose entry window has passed, and cards filed for review. Up to 5 sessions old: <b>Validate</b>, is the trade still valid as written? Older: <b>Fresh card</b>, the trade and the option have likely changed. Each row shows where the stock is against the card, whether the stop or target was crossed, and copies a ready prompt for a new deep dive that reads the old card and merges it. Retire a row once you have decided.</p>
+  <div class="tbl"><table class="stack" id="t-rev"><thead><tr>
+    <th>Card</th><th>Review</th><th>Stock now</th><th>Card plan</th><th>Actions</th>
+  </tr></thead><tbody><tr><td colspan="5" class="empty">Loading cards.</td></tr></tbody></table></div>
+
+  <h2>Triage pipeline: when to deep dive</h2>
+  <p class="lead">Every triaged name, joined to its card on ticker and side, priced live every 60 seconds. <b>NOW</b>: no current card and the trigger has fired (short of the half target), sits within 1.5%, or the class is E1. <b>NEXT</b>: within 4%, or E2/E3 with no readable level. <b>LATER</b>: further away, beyond the half target, or E6. <b>DONE</b>: a card is on the board. <b>VALIDATE</b>: its card has aged into Review. <b>CLOSED</b>: the invalidation is already crossed. Every name still gets a deep dive; this sets the order. Levels are read from the triage text, so rows marked "check" need a look.</p>
+  <div class="tapehead"><div id="tri-sum" class="tape-read">Loading the triage.</div>
+    <div class="tape-ctl"><button type="button" data-triview="act" aria-pressed="true">Now and next</button><button type="button" data-triview="all" aria-pressed="false">All</button><button type="button" data-triview="earlier" aria-pressed="false">Include earlier days</button></div></div>
+  <div class="tbl"><table class="stack" id="t-tri"><thead><tr>
+    <th>Name</th><th>Deep dive</th><th>Triage</th><th>Stock vs trigger</th><th>Contract live</th><th>Stop (triage)</th>
+  </tr></thead><tbody><tr><td colspan="6" class="empty">Loading the triage.</td></tr></tbody></table></div>
+
+  <dialog id="uc" aria-label="Updated card"><div class="uc-bar"><b>Updated card</b><span class="sp"></span><span id="uc-msg"></span><button type="button" id="uc-save" class="primary">Save update</button><button type="button" id="uc-dl">Download card</button><button type="button" id="uc-close">Close</button></div><div id="uc-body"></div></dialog>
+
+  <div class="foot">
+    <p><strong>Updated card (20 Nov).</strong> Every row has an Updated card button. It rebuilds the card's trade side from the row and live quotes, without a new deep dive: status strip, what changed since the card, the refreshed plan, gates, order ticket and position. A verdict says whether a mini update is enough, a re-check is needed, or a full rebuild is due (52-week high or low reached, cancel or stop line crossed, a move of 5% or more since the baseline, entry window ended). The narrative, news, lifecycle and plugin evidence are not refreshed here. Save update keeps it on the board; the board also saves one by itself at the 09:45 ET read and the 15:50 ET check while it is open. Download card gives an HTML file for the hand-off folder. The baseline is the deep dive's own values when the row carries them (built), otherwise the board's first live read of the row.</p>
+    <p><strong>Sell signals.</strong> Target: the option bid has reached the card's good-till price, or the stock has reached the card's target level. Stop: the stock is past the stop line. Before 15:45 ET this is a warning; from 15:45 to the close it is a sell, matching the card's 15:50 ET rule. Time stop: on the exit day the board says sell by 15:50 ET, and after that day it shows overdue. Review: a card's review date has arrived. GTC check: the board sees orders placed today. A good-till sell placed on an earlier day does not show, so the board reminds you of the card's price instead of warning.</p>
+    <p><strong>Entry states.</strong> Ready: in the zone, gates pass, inside the window, ask at or under the max. Work the order: the max sits between bid and ask, so rest a limit. Price high: the bid is already above the max. Waiting: the stock is outside the zone. Blocked: a gate fails. Stop risk: the price is past the stop line. Closed: the entry window has passed.</p>
+    <p><strong>Refresh.</strong> While the market is open, quotes refresh every 15 seconds and positions and orders every 60 seconds; outside hours, every 60 seconds. Tickets stay open across refreshes. The board builds the orders; you place them in Tastytrade.</p><p><strong>Limits.</strong> Quotes are snapshots, not a stream. Live data needs the Claude desktop app on the computer running the Tastytrade server; in a browser the board shows the stored card levels only. Card levels live in this board's data and are written by each deep dive; a card changed later needs its row updated too.</p><p><strong>Market tape (13 Nov).</strong> The ETF panel has its own loop: every 3, 5 or 15 seconds (your choice, remembered on this device) from 04:00 to 20:00 ET on weekdays, so pre-market and after-hours moves show, and every 60 seconds otherwise. It pauses when the board is hidden or Live is off. Quotes are snapshots polled from Tastytrade, not a tick stream (the page cannot open a streaming connection), and if Tastytrade asks the board to slow down it waits and says so. The risk read counts six tells: QQQ against SPY, IWM against SPY, equal weight against SPY, XLY against XLP, high-yield credit and the VIX. Four or more pointing one way is called risk-on or risk-off; otherwise mixed.</p><p><strong>Liquidity (11 Nov).</strong> Every contract gets a tier from its live spread. A: spread up to 10% of mid (and no more than 0.10 wide under 1.50) on a stock trading at least $50M a day; full size. B: 10–20%, or a stock trading $20–50M a day; 1 contract, resting limit orders only, and stops worked from 15:30 ET. C: over 20%, no bid, or a stock under $20M a day; not tradeable, and the contract search never offers one. The spread-tax check needs the first-target gain, bought at the ask, to be at least twice the spread, because a round trip costs about one full spread.</p><p><strong>Path log and returns.</strong> While the market is open the board saves each held option's bid, ask and stock price once a minute (the best price you could have sold at, and when), for the nightly review. Contract searches test your +30% rule buying at the ask and selling at the bid; the mid return is shown beside it.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var SERVER = "host:tastytrade";
+  var EXTRA = ["QQQ", "XLY", "XLP", "XLB", "NEE", "XRT", "UUP", "KWEB"];
+  var INDEX = ["VIX"];
+  var WORKING = ["Received", "Routed", "In Flight", "Live", "Contingent"];
+
+  var CARDS = [];          // from the board's data store
+  var lastQ = {}, lastPos = null, lastOrders = [];
+  var mcp = null, acct = null, busy = false, auto = true, timer = null, liveOk = false;
+
+  // ---------- helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function num(x) { var n = parseFloat(x); return isFinite(n) ? n : null; }
+  function f2(x) { return x == null ? "–" : x.toFixed(2); }
+  function pct(a, b) { return (a == null || b == null || !b) ? null : (a / b - 1) * 100; }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function key(sym) { return String(sym || "").replace(/\s+/g, ""); }
+  function pad(occ) { // "GO261120C00013000" -> "GO    261120C00013000"
+    var k = key(occ); var m = k.match(/^([A-Z.]+)(\d{6}[CP]\d{8})$/); return m ? (m[1] + "      ").slice(0, 6) + m[2] : occ;
+  }
+  function etParts(d) {
+    var fmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, weekday: "short" });
+    var o = {}; fmt.formatToParts(d).forEach(function (p) { o[p.type] = p.value; });
+    var h = parseInt(o.hour, 10) % 24;
+    return { date: o.year + "-" + o.month + "-" + o.day, mins: h * 60 + parseInt(o.minute, 10), wd: o.weekday, hm: String(h).padStart(2, "0") + ":" + o.minute };
+  }
+  function shortDate(iso) { if (!iso) return "–"; return new Date(iso + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }); }
+  function sessionsUntil(fromIso, toIso) {
+    if (!toIso) return null;
+    var a = new Date(fromIso + "T12:00:00Z"), b = new Date(toIso + "T12:00:00Z"), n = 0;
+    if (b < a) return -1;
+    for (var d = new Date(a); d <= b; d.setUTCDate(d.getUTCDate() + 1)) { var w = d.getUTCDay(); if (w && w < 6) n++; }
+    return n;
+  }
+  function marketOpen(now) { return !(now.wd === "Sat" || now.wd === "Sun") && now.mins >= 570 && now.mins < 960; }
+  function stepAt(steps, today) { if (!steps || !steps.length) return null; var v = null; steps.forEach(function (s) { if (today >= s[0]) v = s[1]; }); return v == null ? steps[0][1] : v; }
+  function maxPay(m, px, q) {
+    if (!m) return null;
+    if (m.fixed != null) return m.fixed;
+    if (m.steps) { for (var i = 0; i < m.steps.length; i++) if (px <= m.steps[i][0]) return m.steps[i][1]; return null; }
+    if (m.ladder) {
+      var L = m.ladder;
+      if (px <= L[0][0]) return L[0][1];
+      if (px >= L[L.length - 1][0]) return L[L.length - 1][1];
+      for (var j = 1; j < L.length; j++) if (px <= L[j][0]) { var t = (px - L[j - 1][0]) / (L[j][0] - L[j - 1][0]); return Math.round((L[j - 1][1] + t * (L[j][1] - L[j - 1][1])) * 100) / 100; }
+    }
+    if (m.theo != null) { var th = q ? num(q["theo-price"]) : null; return th == null ? m.cap : Math.min(m.cap, Math.round((th + m.theo) * 100) / 100); }
+    return null;
+  }
+  function cardOccs(c) { var o = [key(c.occ)]; (c.rungs || []).forEach(function (r) { if (r.occ) o.push(key(r.occ)); }); return o; }
+  function stopNow(c, today) { var v = c.stop.v; if (c.stop.after && today >= c.stop.after.date) v = c.stop.after.v; return v; }
+  function ordersFor(occ, orders) {
+    var k = key(occ);
+    return (orders || []).filter(function (o) { return (o.legs || []).some(function (l) { return key(l.symbol) === k; }); });
+  }
+  function isSell(o) { return (o.legs || []).some(function (l) { return /sell/i.test(l.action || ""); }); }
+
+
+  function planText(c) {
+    var side = c.side === "PUT" ? "put" : "call";
+    var zones = (c.rungs || []).map(function (r) { return r.label ? r.label.charAt(0).toLowerCase() + r.label.slice(1) : ""; }).join("; or ");
+    var stop = "stop: a 15:50 ET price " + (c.stop.dir === "above" ? "above " : "below ") + f2(c.stop.v);
+    var tgt = c.gtcText ? "sell: good-till " + c.gtcText : (c.targetStock != null ? "target: " + c.t + " " + f2(c.targetStock) : "");
+    return "Buy 1 " + (c.con || "") + " " + side + " when " + zones + ". " + [tgt, stop, c.exit ? "out by " + shortDate(c.exit) + " 15:50 ET" + (c.exitWhy ? " (" + c.exitWhy + ")" : "") : ""].filter(Boolean).join(" · ");
+  }
+  function maxWhy(c, r, px, q, inZone) {
+    var m = r.max || {};
+    var where = inZone ? "at " + c.t + " " + f2(px) : "at the zone edge " + f2(px);
+    if (m.ladder) return "Why: the card's fair-value ladder " + where + ", so you never pay more than the stock's price justifies";
+    if (m.steps) return "Why: the card's cap for this price band (" + where + ")";
+    if (m.theo != null) return "Why: Tastytrade fair value " + f2(q ? num(q["theo-price"]) : null) + " minus 0.20, never above " + f2(m.cap);
+    return "Why: the card's fixed cap, the most that still pays its minimum return at the target";
+  }
+
+  var openTickets = {};
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function occLabel(occ) {
+    var m = key(occ).match(/^([A-Z.]+)(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/);
+    if (!m) return key(occ);
+    return m[1] + " " + parseInt(m[4], 10) + " " + MON[parseInt(m[3], 10) - 1] + " 20" + m[2] + " " + (parseInt(m[6], 10) / 1000) + " " + (m[5] === "C" ? "Call" : "Put");
+  }
+  function line(label, text) { return { label: label, text: text }; }
+  function exitLines(c, occ, gtcNow, stopV) {
+    var L = [], name = occLabel(occ), u = c.t;
+    if (gtcNow != null) L.push(line("Profit order (place right after the fill)", "Sell to Close 1 " + name + " @ " + f2(gtcNow) + " limit, GTC" + (c.gtcText ? "  [card schedule: " + c.gtcText + "]" : "")));
+    else if (c.targetStock != null) L.push(line("Profit", "When " + u + " reaches " + f2(c.targetStock) + ": Sell to Close 1 " + name + " at the bid or better"));
+    L.push(line("Stop (check at 15:50 ET)", "If " + u + " is " + (c.stop.dir === "above" ? "above " : "below ") + f2(stopV) + " at 15:50 ET: cancel the GTC, then Sell to Close 1 " + name + " at the bid (spread over 10% of mid: start from 15:30 ET, 1 cent under the mid, stepping down)"));
+    if (c.exit) L.push(line("Time stop", shortDate(c.exit) + " 15:50 ET" + (c.exitWhy ? " (" + c.exitWhy + ")" : "") + ": cancel the GTC, then Sell to Close 1 " + name));
+    return L;
+  }
+  function entryTicket(c, r0, occ, lim, mx, stopV, today, pre, stale) {
+    var name = occLabel(occ), L = [];
+    var gtcNow = stepAt((r0 && r0.gtcSteps) || c.gtcSteps, today);
+    if (lim != null) L.push(line("Entry order", "Buy to Open 1 " + name + " @ " + f2(lim) + " limit, Day"));
+    var notes = [];
+    if (mx != null) notes.push("The max (" + f2(mx) + ") moves with the stock; never pay above it");
+    if (pre) notes.push("No orders before 09:45 ET");
+    if (stale) notes.push("Plan written for " + shortDate(c.cardDay) + ": re-check the card first");
+    if (notes.length) L.push(line("Before you send", notes.join(". ")));
+    return { title: "Order ticket: " + name, lines: L.concat(exitLines(c, occ, gtcNow, stopV)), id: "tk-" + (c._id || c.t) };
+  }
+  function ticketHtml(t) {
+    if (!t || !t.lines.length) return "";
+    return '<details class="ticket" id="' + esc(t.id) + '"' + (openTickets[t.id] ? " open" : "") + '><summary>' + esc(t.title) + "</summary><ol>" +
+      t.lines.map(function (l) {
+        var copy = /^(Entry order|Profit order|Exit now)/.test(l.label);
+        return "<li><b>" + esc(l.label) + ":</b> <span class=\"tline\">" + esc(l.text) + "</span>" + (copy ? ' <button type="button" class="cp" data-copy="' + esc(l.text) + '">Copy</button>' : "") + "</li>";
+      }).join("") + "</ol></details>";
+  }
+  document.addEventListener("toggle", function (ev) { var t = ev.target; if (t && t.id && t.id.indexOf("tk-") === 0) openTickets[t.id] = t.open; }, true);
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("button.cp") : null; if (!b) return;
+    var txt = b.getAttribute("data-copy");
+    function done(ok) { b.textContent = ok ? "Copied" : "Select and copy"; setTimeout(function () { b.textContent = "Copy"; }, 2000); }
+    try { navigator.clipboard.writeText(txt).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
+  });
+  // ---------- contract search (dynamic alternative) ----------
+  var ALT = {};
+  function ncdf(x) { var t = 1 / (1 + 0.2316419 * Math.abs(x)), d = 0.3989423 * Math.exp(-x * x / 2), p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return x > 0 ? 1 - p : p; }
+  function bs(side, S, K, T, v) {
+    var r = 0.0389;
+    if (T <= 0) return Math.max(side === "CALL" ? S - K : K - S, 0);
+    var d1 = (Math.log(S / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T)), d2 = d1 - v * Math.sqrt(T);
+    return side === "CALL" ? S * ncdf(d1) - K * Math.exp(-r * T) * ncdf(d2) : K * Math.exp(-r * T) * ncdf(-d2) - S * ncdf(-d1);
+  }
+  function solveIv(side, S, K, T, price) {
+    var lo = 0.03, hi = 3;
+    if (bs(side, S, K, T, hi) < price || bs(side, S, K, T, lo) > price) return null;
+    for (var i = 0; i < 80; i++) { var m = (lo + hi) / 2; if (bs(side, S, K, T, m) > price) hi = m; else lo = m; }
+    return (lo + hi) / 2;
+  }
+  function yearsBetween(fromMs, isoDate) { return Math.max((Date.parse(isoDate + "T20:00:00Z") - fromMs) / 86400000, 0) / 365; }
+  function thirdFridays(afterIso, n) {
+    var out = [], d = new Date(afterIso + "T12:00:00Z");
+    d.setUTCDate(1);
+    for (var k = 0; out.length < n && k < 8; k++) {
+      var y = d.getUTCFullYear(), m = d.getUTCMonth(), first = new Date(Date.UTC(y, m, 1, 12)), wd = first.getUTCDay();
+      var day = 1 + ((5 - wd + 7) % 7) + 14, iso = y + "-" + String(m + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+      if (iso > afterIso) out.push(iso);
+      d.setUTCMonth(m + 1);
+    }
+    return out;
+  }
+  function addDays(iso, n) { var d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function occFor(t, expIso, side, K) {
+    return (t + "      ").slice(0, 6) + expIso.slice(2, 4) + expIso.slice(5, 7) + expIso.slice(8, 10) + (side === "CALL" ? "C" : "P") + String(Math.round(K * 1000)).padStart(8, "0");
+  }
+  function cardMinRet(c, r) {
+    var g = stepAt((r && r.gtcSteps) || c.gtcSteps, etParts(new Date()).date), m = r && r.max && r.max.fixed;
+    return 0.30; // ACK 19 Oct: anything over +30% consistently is good
+  }
+  async function findAlt(c, r, S, edge) {
+    var tgt = (r && r.target) || c.target;
+    var res = { t: Date.now(), checked: 0 };
+    if (!tgt || !tgt.v) { res.none = "the card row has no stock target to price against"; return res; }
+    var by = tgt.by || c.exit; if (!by) { res.none = "the card row has no exit date"; return res; }
+    var side = c.side, now = Date.now(), minRet = cardMinRet(c, r), cap = c.premiumCap || 5;
+    var exps = thirdFridays(addDays(by, 6), 3);
+    var step = S < 25 ? 0.5 : S < 100 ? 1 : S < 200 ? 2.5 : 5;
+    var lo = side === "PUT" ? S * 0.86 : S * 0.9, hi = side === "PUT" ? S * 1.1 : S * 1.15, own = key((r && r.occ) || c.occ), syms = [];
+    var px = edge || S; if (edge) { lo = side === "PUT" ? px * 0.86 : px * 0.9; hi = side === "PUT" ? px * 1.1 : px * 1.15; }
+    exps.forEach(function (e) { for (var k = Math.ceil(lo / step) * step; k <= hi + 1e-9; k += step) { var o = occFor(c.t, e, side, Math.round(k * 100) / 100); syms.push({ symbol: o, instrument_type: "Equity Option" }); } });
+    if (!syms.some(function (x) { return key(x.symbol) === own; })) syms.unshift({ symbol: pad(own), instrument_type: "Equity Option" });
+    syms = syms.slice(0, 100);
+    var qs = items(await call("tastytrade_get_quote_snapshot", { symbols: syms }));
+    var stopV = c.stop.v, best = null, near = [], big = null;
+    var stretch = tgt.v + (tgt.v - (edge || S)); if (!(stretch > 0)) stretch = tgt.v;
+    var todayIso = etParts(new Date()).date, midMs = (Date.now() + Date.parse(by + "T20:00:00Z")) / 2, midIso = new Date(midMs).toISOString().slice(0, 10);
+    qs.forEach(function (q) {
+      var bid = num(q.bid), ask = num(q.ask), mid = num(q.mid), oi = q["open-interest"];
+      if (bid == null || ask == null || !(bid > 0) || !mid) return;
+      res.checked++;
+      var spr = (ask - bid) / mid * 100; if (spr > 20 || (oi != null && oi < 100)) return;   // 11 Nov: liquidity tier C (spread over 20% of mid) is never offered
+      var overCap = ask > cap;
+      var m = key(q.symbol).match(/(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/); if (!m) return;
+      var expIso = "20" + m[1] + "-" + m[2] + "-" + m[3], K = parseInt(m[5], 10) / 1000;
+      var iv = solveIv(side, S, K, yearsBetween(now, expIso), mid); if (!iv) return;
+      var tRem = Math.max((Date.parse(expIso) - Date.parse(by)) / 86400000, 0) / 365, half = (ask - bid) / 2;
+      var tMid = Math.max((Date.parse(expIso) - midMs) / 86400000, 0) / 365;
+      var vE = Math.max(bs(side, tgt.v, K, tMid, iv) - half, 0);
+      var vT = Math.max(bs(side, tgt.v, K, tRem, iv) - half, 0), vF = Math.max(bs(side, px, K, tRem, iv) - half, 0), vS = Math.max(bs(side, stopV, K, tRem, iv) - half, 0);
+      var limit = edge ? Math.round(bs(side, px, K, yearsBetween(now, expIso), iv) * 100) / 100 : Math.round(mid * 100) / 100, mx = Math.floor(vE / (1 + minRet) * 100) / 100;
+      var rE = vE / limit - 1, rT = vT / limit - 1, rF = vF / limit - 1, rS = vS / limit - 1, score = rE + 0.5 * rT + rF + 0.5 * rS;
+      var entryAsk = edge ? limit + half : ask, rEa = vE / entryAsk - 1;   // 19 Oct: the +30% bar is tested buying at the ask, selling at the bid
+      near.push({ con: occLabel(q.symbol), bid: bid, ask: ask, oi: oi, rE: rE, rEa: rEa, rT: rT, rF: rF, rS: rS, score: score, own: key(q.symbol) === own, overCap: overCap });
+      var vB = Math.max(bs(side, stretch, K, tMid, iv) - half, 0), rB = vB / limit - 1;
+      if (!overCap && rE > 0 && rB >= 1 && (!big || rB > big.rB)) big = { occ: key(q.symbol), con: occLabel(q.symbol), bid: bid, ask: ask, oi: oi, spr: spr, limit: limit, rB: rB, rE: rE, rF: rF, rS: rS, gtcB: Math.floor(vB * 100) / 100, gtcE: Math.floor(vE * 100) / 100, stretch: stretch, tv: tgt.v, mid: midIso, own: key(q.symbol) === own };
+      if (overCap || limit > mx || rEa < minRet) return;
+      if (!best || score > best.score) best = { own: key(q.symbol) === own, edge: edge || null, occ: key(q.symbol), con: occLabel(q.symbol), bid: bid, ask: ask, optMid: mid, oi: oi, spr: spr, iv: iv, limit: limit, max: edge ? mx : Math.min(mx, ask), gtc: Math.floor(vE * 100) / 100, rE: rE, rEa: rEa, entryAsk: entryAsk, mid: midIso, rT: rT, rF: rF, rS: rS, score: score, by: by, tv: tgt.v };
+    });
+    near.sort(function (a, b) { return b.score - a.score; });
+    res.big = big;
+    res.near = near.slice(0, 3); res.midDate = midIso;
+    if (best) res.best = best; else res.none = "no contract (of " + res.checked + " liquid ones) pays the card's +" + Math.round(minRet * 100) + "% bought at the ask and sold at the bid if " + c.t + " reaches " + f2(tgt.v) + " by " + shortDate(midIso);
+    res.minRet = minRet;
+    return res;
+  }
+  // ---------- auction map and invalidation tiers (19 Oct) ----------
+  function auctionRead(c, last, now) {
+    var A = c.auction; if (!A || last == null) return null;
+    var up = A.up && A.up.v, dn = A.down && A.down.v, late = now.mins >= 950 && marketOpen(now), where, sev = "man";
+    if (up != null && last > up) { where = "Up branch: " + c.t + " " + f2(last) + " is above " + f2(up) + (late ? " at the 15:50 check: sellers lost control" : ". It counts only on the 15:50 ET check, not intraday"); sev = late ? "pass" : "man"; }
+    else if (dn != null && last < dn) { where = "Down branch: " + c.t + " " + f2(last) + " is below " + f2(dn) + (late ? " at the 15:50 check: buyers failed" : ". It counts only on the 15:50 ET check"); sev = late ? "fail" : "man"; }
+    else where = "Balance: " + c.t + " " + f2(last) + " sits between " + f2(dn) + " and " + f2(up) + ". The map reads balance (no entry until one side breaks); until the card is re-adjudicated its own entry rule still applies";
+    var z = "";
+    if (A.buyers && last >= A.buyers[0] && last <= A.buyers[1]) z = " · testing the buyers' zone " + f2(A.buyers[0]) + "–" + f2(A.buyers[1]);
+    if (A.sellers && last >= A.sellers[0] && last <= A.sellers[1]) z = " · testing the sellers' zone " + f2(A.sellers[0]) + "–" + f2(A.sellers[1]);
+    return { sev: sev, text: where + z, up: up, dn: dn,
+      html: '<span class="plan"><b>Auction (' + esc(A.pattern || "map") + (A.asOf ? ", " + esc(A.asOf) : "") + "):</b> " + esc(where + z) +
+        (A.buyers ? "<br>buyers " + f2(A.buyers[0]) + "–" + f2(A.buyers[1]) : "") + (A.sellers ? " · sellers " + f2(A.sellers[0]) + "–" + f2(A.sellers[1]) : "") +
+        (A.up && A.up.targets && A.up.targets.length ? "<br>above " + f2(up) + ": path " + A.up.targets.map(f2).join(", ") : "") +
+        (A.down && A.down.targets && A.down.targets.length ? "<br>below " + f2(dn) + ": path " + A.down.targets.map(f2).join(", ") : "") + "</span>" };
+  }
+  function tierHits(c, last, now) {
+    var T = c.tiers, out = []; if (!T || last == null) return out;
+    var late = now.mins >= 945 && marketOpen(now);
+    [["expectation", "Expectation failure"], ["trade", "Trade invalidation"], ["campaign", "Campaign invalidation"]].forEach(function (k) {
+      var t = T[k[0]]; if (!t || t.v == null) return;
+      var hit = t.dir === "above" ? last > t.v : last < t.v;
+      out.push({ tier: k[0], name: k[1], hit: hit, late: late, t: t });
+    });
+    return out;
+  }
+  function pc1(x) { return (x >= 0 ? "+" : "−") + Math.abs(x * 100).toFixed(0) + "%"; }
+  // ---------- entry evaluation ----------
+  var SEV = { bad: 0, go: 1, work: 2, held: 3, warn: 4, idle: 5 };
+
+  function evalCard(c, Q, now, orders, heldKeys) {
+    var s = Q[c.t];
+    var out = { sev: "idle", label: "No quote", why: "", checks: [], zone: [], opt: "", stock: "–", stopTxt: "" };
+    var today = now.date;
+    var held = cardOccs(c).some(function (k) { return heldKeys[k]; });
+    if (!s) { out.why = "Tastytrade returned no quote for " + c.t; if (held) { out.sev = "held"; out.label = "Filled"; out.why = "Position open: see live trades"; } return out; }
+    var last = num(s.last) != null ? num(s.last) : num(s.mark);
+    var prev = num(s["prev-close"]), open = num(s.open), hi = num(s["day-high-price"]), lo = num(s["day-low-price"]);
+    var ch = pct(last, prev);
+    out.stock = '<span class="n">' + f2(last) + '</span> <span class="n ' + (ch >= 0 ? "up" : "dn") + '">' + (ch == null ? "" : (ch >= 0 ? "+" : "") + ch.toFixed(1) + "%") + "</span>" +
+      '<span class="sub">day ' + f2(lo) + "–" + f2(hi) + " · open " + f2(open) + "</span>";
+    var stopV = stopNow(c, today);
+    var stopHit = !c.stopAfterFill && (c.stop.dir === "above" ? last > stopV : last < stopV);
+    var stopDist = c.stop.dir === "above" ? (stopV - last) / last * 100 : (last - stopV) / last * 100;
+    var left = sessionsUntil(today, c.exit);
+    out.stopTxt = '<span class="n">close ' + (c.stop.dir === "above" ? "above " : "below ") + f2(stopV) + "</span>" +
+      '<span class="sub">' + (stopHit ? "past it now" : stopDist.toFixed(1) + "% away") + "</span>" +
+      '<span class="sub">GTC ' + esc(c.gtcText || "–") + "</span>" +
+      '<span class="sub">exit ' + (c.exit ? shortDate(c.exit) + (left != null && left >= 0 ? " · " + left + " sessions" : "") : "see card") + "</span>";
+
+    var active = null, nearest = null, nearestD = Infinity;
+    (c.rungs || []).forEach(function (r) {
+      var inR;
+      if (r.failedTest) inR = hi != null && hi >= r.failedTest.touch && last < r.failedTest.under && last >= (r.lo - 0.5);
+      else inR = last >= r.lo && last <= r.hi;
+      if (r.belowOpen && inR) inR = open != null && last < open;
+      var rOpen = !r.until || today <= r.until;
+      var d = last < r.lo ? r.lo - last : (last > r.hi ? last - r.hi : 0);
+      var txt = esc(r.label);
+      if (r.failedTest) txt += '<span class="sub">day high ' + f2(hi) + (hi >= r.failedTest.touch ? " (tested)" : " (not tested)") + "</span>";
+      else if (d > 0) txt += '<span class="sub">' + (last < r.lo ? "needs +" : "needs −") + f2(d) + " (" + (d / last * 100).toFixed(1) + "%)</span>";
+      else if (r.belowOpen && open != null && last >= open) txt += '<span class="sub">in the shelf, but above the open ' + f2(open) + "</span>";
+      if (!rOpen) txt += '<span class="sub">rung window closed ' + shortDate(r.until) + "</span>";
+      out.zone.push(txt);
+      if (inR && rOpen && !active) active = r;
+      if (rOpen && d < nearestD) { nearestD = d; nearest = r; }
+    });
+
+    var gatesOk = true;
+    (c.gates || []).forEach(function (g) {
+      if (g.custom === "cava") {
+        var qq = Q.QQQ ? num(Q.QQQ.last) : null;
+        if (qq == null) { out.checks.push('<span class="chk man">QQQ gate: no quote</span>'); return; }
+        if (qq >= 706.52) { out.checks.push('<span class="chk pass">QQQ ' + f2(qq) + " ≥ 706.52</span>"); return; }
+        var xly = Q.XLY ? pct(num(Q.XLY.last), num(Q.XLY["prev-close"])) : null;
+        var okc = xly != null && ch != null && ch > xly; if (!okc) gatesOk = false;
+        out.checks.push('<span class="chk ' + (okc ? "pass" : "fail") + '">QQQ ' + f2(qq) + " < 706.52, so " + esc(c.t) + " must beat XLY: " + (ch == null ? "–" : ch.toFixed(1)) + "% vs " + (xly == null ? "–" : xly.toFixed(1)) + "%</span>");
+        return;
+      }
+      var q = Q[g.s], v = q ? num(q.last) : null;
+      if (v == null) { out.checks.push('<span class="chk man">' + esc(g.label) + ": no quote</span>"); return; }
+      var ok = g.op === ">=" ? v >= g.v : v <= g.v; if (!ok) gatesOk = false;
+      out.checks.push('<span class="chk ' + (ok ? "pass" : "fail") + '">' + esc(g.label) + " · now " + f2(v) + "</span>");
+    });
+    if (c.cancel) {
+      var cHit = c.cancel.dir === "below" ? last < c.cancel.v : last > c.cancel.v;
+      out.checks.push('<span class="chk ' + (cHit ? "fail" : "pass") + '">Cancel line: ' + esc(c.cancel.text) + "</span>");
+    }
+    (c.manual || []).forEach(function (m) { out.checks.push('<span class="chk man">' + esc(m) + "</span>"); });
+
+    var r0 = active || nearest || (c.rungs || [])[0] || {};
+    var occ = pad(r0.occ || c.occ), oq = Q[occ];
+    var bid = oq ? num(oq.bid) : null, ask = oq ? num(oq.ask) : null, mid = oq ? num(oq.mid) : null;
+    var pxForMax = active ? last : (r0.failedTest ? r0.lo : Math.min(Math.max(last, r0.lo), r0.hi));
+    var mx = maxPay(r0.max, pxForMax, oq);
+    var why = maxWhy(c, r0, pxForMax, oq, !!active);
+    var spr = (bid != null && ask != null) ? ask - bid : null, sprPct = (spr != null && mid) ? spr / mid * 100 : null;
+    var sprLimit = Math.min(c.spreadMaxPct != null ? c.spreadMaxPct : 20, 20), sprOk = sprPct == null || sprPct <= sprLimit + 1e-9;
+    // 11 Nov liquidity tiers: A = spread <= 10% of mid (and <= 0.10 wide under 1.50) on a stock trading >= $50M a day; B = 10-20% (1 contract, resting limits); C = over 20%, no bid, or stock under $20M a day: not tradeable
+    var dvM = c.stockDvM != null ? c.stockDvM : null;
+    var tier = sprPct == null ? null : (sprPct <= 10 && !(mid < 1.5 && spr > 0.10 + 1e-9) ? "A" : sprPct <= 20 ? "B" : "C");
+    if (tier === "A" && dvM != null && dvM < 50) tier = "B";
+    if (dvM != null && dvM < 20) { tier = "C"; sprOk = false; }
+    var gtcFirst = stepAt((r0 && r0.gtcSteps) || c.gtcSteps, today);
+    var taxGain = (gtcFirst != null && ask) ? (gtcFirst / ask - 1) * 100 : null, taxOk = taxGain == null || sprPct == null || taxGain >= 2 * sprPct;
+    if (!oq) out.opt = '<span class="sub">no option quote</span>';
+    else {
+      out.opt = '<span class="n">' + f2(bid) + " / " + f2(ask) + "</span>" +
+        '<span class="sub">' + esc(r0.con || c.con) + " · mid " + f2(mid) + "</span>" +
+        '<span class="sub ' + (sprOk ? "" : "dn") + '">spread ' + (sprPct == null ? "–" : sprPct.toFixed(0) + "%") + " (rule ≤ " + sprLimit + "%) · <b>liquidity tier " + (tier || "–") + "</b>" + (dvM != null ? " · stock $" + Math.round(dvM) + "M/day" : "") + "</span>" +
+        '<span class="sub"><b>max ' + f2(mx) + "</b>" + (r0.limit ? " · limit " + f2(r0.limit) : "") + "</span>" +
+        '<span class="sub">' + esc(why) + "</span>" +
+        '<span class="sub">OI ' + (oq["open-interest"] != null ? oq["open-interest"] : "–") + " · vol today " + (num(oq.volume) != null ? Math.round(num(oq.volume)) : "–") + "</span>";
+      if (c.spreadMax != null && spr != null) {
+        var sOk = spr <= c.spreadMax + 1e-9; if (!sOk) gatesOk = false;
+        out.checks.unshift('<span class="chk ' + (sOk ? "pass" : "fail") + '">Option width ' + f2(spr) + " ≤ " + f2(c.spreadMax) + "</span>");
+      }
+      out.checks.unshift('<span class="chk ' + (sprOk ? "pass" : "fail") + '">Spread ' + (sprPct == null ? "–" : sprPct.toFixed(0) + "%") + " of mid (rule ≤ " + sprLimit + "%)" + (dvM != null && dvM < 20 ? "; stock trades only $" + Math.round(dvM) + "M a day" : "") + "</span>");
+      if (taxGain != null && sprPct != null) out.checks.unshift('<span class="chk ' + (taxOk ? "pass" : "fail") + '">Spread tax: first target +' + taxGain.toFixed(0) + "% bought at the ask, against a round trip of about " + sprPct.toFixed(0) + "% (needs at least 2×)</span>");
+      if (tier === "B") out.checks.unshift('<span class="chk man">Liquidity tier B: 1 contract only, resting limit orders; work any stop from 15:30 ET</span>');
+    }
+    // 15:50 ET hold line (card: must hold a level at the 15:50 check)
+    var holdOk = true, holdPending = false;
+    if (c.hold && active) {
+      var hv = c.hold.v, hAbove = c.hold.dir !== "below";
+      var hNow = hAbove ? last >= hv : last <= hv;
+      if (now.mins >= 950 && marketOpen(now)) { holdOk = hNow; out.checks.unshift('<span class="chk ' + (hNow ? "pass" : "fail") + '">15:50 hold: ' + esc(c.t) + " " + (hAbove ? "≥ " : "≤ ") + f2(hv) + " · now " + f2(last) + "</span>"); }
+      else { holdPending = true; out.checks.unshift('<span class="chk man">Must ' + (hAbove ? "hold " : "stay under ") + f2(hv) + " at 15:50 ET · now " + f2(last) + (hNow ? " (holding)" : " (not holding)") + "</span>"); }
+    }
+    cardOccs(c).forEach(function (k) {
+      ordersFor(k, orders).forEach(function (o) { out.checks.unshift('<span class="chk pass">Order working: ' + esc((o.legs[0] || {}).action || "") + " @ " + esc(o.price || "–") + " (" + esc(o.status) + ")</span>"); });
+    });
+
+    var AR = auctionRead(c, last, now); if (AR) out.auction = AR.html;
+    var tierBlock = null;
+    tierHits(c, last, now).forEach(function (h) {
+      out.checks.push('<span class="chk ' + (h.hit ? "fail" : "pass") + '">' + h.name + ": " + esc(c.t) + (h.t.dir === "above" ? " above " : " below ") + f2(h.t.v) + (h.t.text ? " (" + esc(h.t.text) + ")" : "") + (h.hit ? " · now " + f2(last) : "") + "</span>");
+      if (h.hit && !h.t.advisory && !c.stopAfterFill && (h.tier === "trade" || h.tier === "campaign")) tierBlock = h;
+    });
+    var before = c.from && today < c.from, after = c.until && today > c.until, stale = c.cardDay && today > c.cardDay;
+    var preWindow = now.mins < 585, closed = !marketOpen(now);
+    var lim = mx == null ? null : (r0.limit != null ? Math.min(r0.limit, mx) : mx);
+    function set(sev, label, why2, todo) { out.sev = sev; out.label = label; out.why = why2; out.todo = todo || ""; }
+    if (held) set("held", "Filled", "Position open: managed in live trades above", "Manage it in Live trades");
+    else if (c.blocked) set("bad", "Data blocked", c.blocked, "Don't buy: the card is blocked until this is fixed");
+    else if (tierBlock) set("bad", "Invalidated", tierBlock.name + ": " + c.t + " " + f2(last) + (tierBlock.t.dir === "above" ? " is above " : " is below ") + f2(tierBlock.t.v), "Don't buy: the setup has failed; the card needs a revalidation");
+    else if (after) set("idle", "Closed", "Entry window ended " + shortDate(c.until), "Nothing: the entry window has passed");
+    else if (before) set("idle", "Not yet", c.at1550 ? "Entry only on the 15:50 ET read from " + shortDate(c.from) : "Window opens " + shortDate(c.from), "Nothing until " + shortDate(c.from));
+    else if (stopHit) set("bad", "Stop risk", "Price is past the " + f2(stopV) + " stop line; the card rule is the 15:50 ET price", "Don't buy: the stock is past the card's stop");
+    else if (!active) set("warn", "Waiting", nearest ? "Outside the zone; " + (last < nearest.lo ? "needs a rise to " + f2(nearest.lo) : last > nearest.hi ? "needs a fall to " + f2(nearest.hi) : "conditions not met") : "No open rung",
+      nearest ? "Nothing yet: wait for " + c.t + (last < nearest.lo ? " to rise to " + f2(nearest.lo) : last > nearest.hi ? " to fall to " + f2(nearest.hi) : " to meet the zone condition") : "Nothing");
+    else if (!gatesOk) set("bad", "Blocked", "In the zone, but a gate fails", "Don't buy: a condition fails (see the ✗ under Gates)");
+    else if (!holdOk) set("bad", "Blocked", c.t + " is not holding " + f2(c.hold.v) + " at the 15:50 check", "Don't buy today: it didn't hold " + f2(c.hold.v) + " into the close");
+    else if (c.at1550 && now.mins < 950) set("work", "In zone, wait 15:50", "In the zone now; the card reads it only at 15:50 ET", "Wait for 15:50 ET (20:50 UK), then re-check this row");
+    else if (!sprOk) set("warn", "Spread too wide", (dvM != null && dvM < 20 ? c.t + " trades only $" + Math.round(dvM) + "M a day: liquidity tier C" : "Spread " + (sprPct == null ? "–" : sprPct.toFixed(0)) + "% of mid is over the " + sprLimit + "% rule (tier C): about " + (sprPct / 2).toFixed(0) + "% of the premium is lost on any exit"), "Don't buy: liquidity tier C. Wait for the spread to tighten under " + sprLimit + "% or use the alternative below");
+    else if (!taxOk) set("warn", "Spread eats target", "The round trip (about " + sprPct.toFixed(0) + "% of mid) costs more than half of the first-target gain (+" + taxGain.toFixed(0) + "% bought at the ask)", "Don't buy this contract: the spread takes too much of the target. Use the alternative below");
+    else if (holdPending && ask != null && mx != null && bid <= mx) set("work", "In zone, wait 15:50", "Price works, but the card needs " + c.t + " to hold " + f2(c.hold.v) + " at 15:50 ET", "Wait for 15:50 ET; if " + c.t + " is " + (c.hold.dir === "below" ? "≤ " : "≥ ") + f2(c.hold.v) + ", buy at up to " + f2(lim));
+    else if (ask != null && mx != null && ask <= mx) set("go", "Ready", "In the zone, gates pass, ask " + f2(ask) + " ≤ max " + f2(mx), "Buy 1 " + (r0.con || c.con) + " now at up to " + f2(lim) + " (ask " + f2(ask) + ")");
+    else if (bid != null && mx != null && bid <= mx) set("work", "Work the order", "Bid " + f2(bid) + " ≤ max " + f2(mx) + " < ask " + f2(ask), "Place a limit buy for 1 " + (r0.con || c.con) + " at " + f2(lim) + " or less and leave it working");
+    else if (bid != null && mx != null) set("warn", "Price high", "In the zone, but the bid " + f2(bid) + " is above the max " + f2(mx), "Don't buy: even the bid is above the card's max " + f2(mx));
+    else set("warn", "In zone", "No usable option quote", "Check the option quote in Tastytrade");
+    if (tier === "B" && (out.sev === "go" || out.sev === "work")) out.todo += " · liquidity tier B: 1 contract only, resting limit";
+    if (stale && (out.sev === "go" || out.sev === "work")) { out.why += ". The card's plan was written for " + shortDate(c.cardDay) + ": re-check it first"; out.todo += " (plan written for " + shortDate(c.cardDay) + ")"; }
+    if ((out.sev === "go" || out.sev === "work") && preWindow && !closed) { out.why += ". No orders before 09:45 ET"; out.todo = "From 09:45 ET: " + out.todo; }
+    if (closed && out.sev !== "idle" && out.sev !== "held") out.why += ". Market closed: quotes are from the last session";
+    out.plan = planText(c);
+    out.ticket = entryTicket(c, r0, occ, lim, mx, stopV, today, preWindow && !closed, stale);
+    out.bigRender = function () {
+      var B = ALT[c._id || c.t]; if (held || !B) return;
+      if (!B.big) { if (B.checked) out.opt += '<span class="alt big">Big move: no liquid contract under the cap doubles if ' + esc(c.t) + " runs to twice the card's move</span>"; return; }
+      var g = B.big;
+      out.opt += '<span class="alt big"><b>Big move: ' + esc(g.con) + "</b>" + (g.own ? " (the card's contract)" : "") + "<br>" + f2(g.bid) + " / " + f2(g.ask) + " · OI " + esc(g.oi) + " · ≈ " + f2(g.limit) +
+        "<br>if " + esc(c.t) + " runs to " + f2(g.stretch) + " by " + shortDate(g.mid) + ": " + pc1(g.rB) + "<br>at the card's target " + f2(g.tv) + ": " + pc1(g.rE) + " · flat " + pc1(g.rF) + " · stop " + pc1(g.rS) + "</span>";
+      if (out.ticket && out.ticket.lines) out.ticket.lines.push(line("Big-move option (instead of the core order)", "Buy to Open 1 " + g.con + " @ " + f2(g.limit) + " limit, Day. Then GTC sell @ " + f2(g.gtcB) + " (" + c.t + " " + f2(g.stretch) + "); or bank at " + f2(g.gtcE) + " (card target) and roll the profit into a further-out strike"));
+    };
+    if (!held && !active && !before && !after && !stopHit && nearest && out.label === "Waiting") {
+      var edgePx = nearest.failedTest ? nearest.failedTest.under : (last < nearest.lo ? nearest.lo : nearest.hi);
+      if (nearest.lo === 0 && last > nearest.hi) edgePx = nearest.hi;
+      out.needsAlt = { last: last, r: nearest, edge: edgePx, waiting: true };
+      var W = ALT[c._id || c.t];
+      if (W && W.best && W.best.edge) {
+        var wb = W.best;
+        out.opt += '<span class="alt"><b>Prepared for ' + esc(c.t) + " at " + f2(wb.edge) + ":</b> " + (wb.own ? "the card's contract is still best" : "better contract found") + "<br>" + esc(wb.con) + " · now " + f2(wb.bid) + " / " + f2(wb.ask) + " · OI " + esc(wb.oi) +
+          "<br>expected price there ≈ " + f2(wb.limit) + " · max " + f2(wb.max) + " · GTC " + f2(wb.gtc) + "<br>target by " + shortDate(wb.mid) + " " + pc1(wb.rE) + " at the limit, " + pc1(wb.rEa) + " at the ask (by " + shortDate(wb.by) + " " + pc1(wb.rT) + ") · flat " + pc1(wb.rF) + " · stop " + pc1(wb.rS) + "</span>";
+        out.todo += ". Prepared: Buy 1 " + wb.con + " at about " + f2(wb.limit) + " (max " + f2(wb.max) + ") when " + c.t + " reaches " + f2(wb.edge);
+        out.ticket = { title: "Prepared ticket (when " + c.t + " reaches " + f2(wb.edge) + "): " + wb.con, id: "tk-" + (c._id || c.t), lines: [line("Entry order", "Buy to Open 1 " + wb.con + " @ " + f2(wb.limit) + " limit, Day"), line("Before you send", "Only once " + c.t + " is at " + f2(wb.edge) + " and the row turns Ready or Work the order; re-check the price then. Never above " + f2(wb.max))].concat(exitLines(Object.assign({}, c, { gtcText: f2(wb.gtc) + " (board repricing at the target)" }), wb.occ, wb.gtc, stopV)) };
+      } else if (W && W.none) { out.why += ". Prepared search: " + W.none; if (W.near && W.near.length) out.opt += '<span class="alt"><b>Closest at ' + f2(edgePx) + ":</b>" + W.near.map(function (n) { return "<br>" + esc(n.con) + (n.own ? " (card)" : "") + (n.overCap ? " (over cap)" : "") + ": target by " + shortDate(W.midDate) + " " + pc1(n.rE) + ", flat " + pc1(n.rF); }).join("") + "</span>"; }
+    }
+    if (!held && active && !before && !after && !out.needsAlt && (out.sev === "go" || out.sev === "work" || out.sev === "bad")) out.needsAlt = { last: last, r: r0, bigOnly: true };
+    if (!held && active && gatesOk && holdOk && !before && !after && (out.label === "Price high" || out.label === "Spread too wide" || out.label === "Spread eats target")) {
+      out.needsAlt = { last: last, r: r0 };
+      var A = ALT[c._id || c.t];
+      if (A && A.best) {
+        var b = A.best;
+        out.opt += '<span class="alt"><b>Alternative: ' + esc(b.con) + "</b><br>" + f2(b.bid) + " / " + f2(b.ask) + " · OI " + esc(b.oi) + " · spread " + b.spr.toFixed(0) + "%<br>limit " + f2(b.limit) + " · max " + f2(b.max) + " · GTC " + f2(b.gtc) +
+          "<br>target " + f2(b.tv) + " by " + shortDate(b.mid) + ": " + pc1(b.rE) + " at the limit, " + pc1(b.rEa) + " at the ask " + f2(b.entryAsk) + " (by " + shortDate(b.by) + " " + pc1(b.rT) + ") · flat " + pc1(b.rF) + " · stop " + pc1(b.rS) + "</span>";
+        if (b.own) set("work", "Repriced: still +30%", "Above the card's max, but the card's own contract still pays " + pc1(b.rE) + " at the mid " + f2(b.limit) + " and " + pc1(b.rEa) + " at the ask " + f2(b.entryAsk) + " if the target comes by " + shortDate(b.mid) + " (your +30% rule, tested at the ask)", "Buy 1 " + b.con + " at " + f2(b.limit) + " limit (never above " + f2(b.max) + ")");
+        else set("work", "Alternative contract", "The card's " + (r0.con || c.con) + " is " + (out.label === "Price high" ? "too dear" : "too wide") + "; the board repriced the chain and " + b.con + " still pays " + pc1(b.rE) + " if the target comes by " + shortDate(b.mid), "Buy 1 " + b.con + " at " + f2(b.limit) + " limit (never above " + f2(b.max) + ")");
+        out.ticket = { title: "Order ticket (alternative): " + b.con, id: "tk-" + (c._id || c.t), lines: [line("Entry order", "Buy to Open 1 " + b.con + " @ " + f2(b.limit) + " limit, Day"), line("Before you send", "Board-chosen contract: the card's target, stop and exit are kept, the contract is repriced live. Never pay above " + f2(b.max))].concat(exitLines(Object.assign({}, c, { gtcText: f2(b.gtc) + " (board repricing at the target)" }), b.occ, b.gtc, stopV)) };
+      } else if (A && A.none) {
+        out.label = out.label + " · nothing better";
+        out.todo = "Don't buy: " + A.none;
+        if (A.near && A.near.length) out.opt += '<span class="alt"><b>Closest on the chain</b> (card needs +' + Math.round((A.minRet || 0.3) * 100) + "%):" + A.near.map(function (n) { return "<br>" + esc(n.con) + (n.own ? " (card)" : "") + (n.overCap ? " (over the $" + (c.premiumCap || 5) + " cap)" : "") + " " + f2(n.bid) + "/" + f2(n.ask) + ": target by " + shortDate(A.midDate) + " " + pc1(n.rE) + " (" + pc1(n.rEa) + " at the ask), last day " + pc1(n.rT) + ", flat " + pc1(n.rF); }).join("") + "</span>";
+      }
+    }
+    out.bigRender();
+    return out;
+  }
+
+  // ---------- exit evaluation ----------
+  function evalPosition(p, c, Q, now, orders) {
+    var today = now.date, sigs = [];
+    var occ = pad(p.symbol), oq = Q[occ];
+    var u = p["underlying-symbol"], s = Q[u];
+    var last = s ? (num(s.last) != null ? num(s.last) : num(s.mark)) : null;
+    var bid = oq ? num(oq.bid) : null, ask = oq ? num(oq.ask) : null;
+    var mk = num(p["mark-price"]); if (oq && num(oq.mid) != null) mk = num(oq.mid);
+    var avg = num(p["average-open-price"]), qty = num(p.quantity) || 0, mult = num(p.multiplier) || 100;
+    var dir = p["quantity-direction"] === "Short" ? -1 : 1;
+    var plBid = (bid != null && avg != null) ? dir * (bid - avg) * qty * mult : null;
+    var plMid = (mk != null && avg != null) ? dir * (mk - avg) * qty * mult : null;
+    var res = { sev: "idle", label: "Held", sigs: sigs, last: last, s: s, bid: bid, ask: ask, mk: mk, avg: avg, plBid: plBid, plMid: plMid, qty: qty, lines: "No card linked" };
+    var working = ordersFor(p.symbol, orders).filter(isSell);
+    if (!c) {
+      sigs.push(["info", "No card on the board for " + u + ". The board can't call exits; add its lines or manage it by hand."]);
+      if (working.length) sigs.push(["info", "Sell order working @ " + working[0].price]);
+      res.label = "No card"; res.sev = "idle"; return res;
+    }
+    var side = c.side, stopV = stopNow(c, today);
+    var stopHit = last != null && (c.stop.dir === "above" ? last > stopV : last < stopV);
+    var gtcNow = null, rung = null;
+    (c.rungs || []).forEach(function (r) { if (r.occ && key(r.occ) === key(p.symbol)) rung = r; });
+    gtcNow = stepAt((rung && rung.gtcSteps) || c.gtcSteps, today);
+    var left = sessionsUntil(today, c.exit);
+    var open = marketOpen(now);
+
+    if (c.exit && today > c.exit) sigs.push(["bad", "SELL: the time stop was " + shortDate(c.exit) + " 15:50 ET. Overdue"]);
+    else if (c.exit && today === c.exit) sigs.push([now.mins >= 930 ? "bad" : "warn", (now.mins >= 930 ? "SELL now: " : "Exit day: ") + "time stop is today, 15:50 ET" + (c.exitWhy ? " (" + c.exitWhy + ")" : "")]);
+    if (stopHit) {
+      if (open && now.mins >= 945) sigs.push(["bad", "SELL: " + u + " " + f2(last) + " is past the " + f2(stopV) + " stop at the 15:50 check"]);
+      else if (!open) sigs.push(["bad", "Stop line: " + u + " last " + f2(last) + " is past " + f2(stopV) + ". Check the 15:50 price; if it was past, the card says sell"]);
+      else sigs.push(["warn", "Stop risk: " + u + " " + f2(last) + " is past " + f2(stopV) + ". The card decides on the 15:50 ET price"]);
+    }
+    if (gtcNow != null && bid != null && bid >= gtcNow) sigs.push(["go", "SELL: target reached. Bid " + f2(bid) + " ≥ good-till " + f2(gtcNow) + (working.length ? ". Your resting sell should fill" : "")]);
+    if (c.targetStock != null && last != null && (side === "PUT" ? last <= c.targetStock : last >= c.targetStock)) sigs.push(["go", "Target level " + f2(c.targetStock) + " reached (" + u + " " + f2(last) + "): take the profit the card plans"]);
+    if (c.review && today >= c.review.date) sigs.push(["warn", "Review: " + c.review.text]);
+    tierHits(c, last, now).forEach(function (h) {
+      if (!h.hit) return;
+      var msg = h.name + ": " + u + " " + f2(last) + (h.t.dir === "above" ? " is above " : " is below ") + f2(h.t.v) + (h.t.text ? " (" + h.t.text + ")" : "");
+      if (h.t.advisory) sigs.push(["warn", "Auction map (not yet a card rule): " + msg + ". Review against the card"]);
+      else if (h.tier === "expectation") sigs.push([h.late ? "bad" : "warn", (h.late ? "SELL at the 15:50 check (one-contract rule): " : "Watch into 15:50: ") + msg]);
+      else sigs.push([h.late || !open ? "bad" : "warn", (h.late ? "SELL: " : "Exit risk: ") + msg + (h.tier === "campaign" ? ". No re-entry on this thesis" : "")]);
+    });
+    var ARp = auctionRead(c, last, now); if (ARp) sigs.push(["info", ARp.text]);
+    (c.warnLevels || []).forEach(function (w) { if (last != null && (w.dir === "above" ? last > w.v : last < w.v)) sigs.push(["warn", w.text + " (" + u + " " + f2(last) + ")"]); });
+    (c.flags || []).forEach(function (g) { var q = Q[g.s], v = q ? num(q.last) : null; if (v == null) return; var ok = g.op === ">=" ? v >= g.v : v <= g.v; if (!ok) sigs.push(["warn", "Money flag: " + g.label + " failed (" + g.s + " " + f2(v) + "). Review, not an exit"]); });
+    var pSpr = (bid != null && ask != null && mk) ? (ask - bid) / mk * 100 : null;   // 11 Nov: exit liquidity
+    if (pSpr != null && pSpr > 10) sigs.push([pSpr > 20 ? "warn" : "info", "Spread " + pSpr.toFixed(0) + "% of mid (" + f2(bid) + " / " + f2(ask) + "): keep the profit order resting as a GTC so buyers fill it; if a stop or time exit is due, start at 15:30 ET with a limit 1 cent under the mid and step down a cent every 2 minutes. One order at a single price can sit unfilled (OI, 26 Oct)"]);
+    if (gtcNow != null) {
+      if (!working.length) sigs.push(["info", "Card good-till sell: " + f2(gtcNow) + (c.gtcText ? " (" + c.gtcText + ")" : "") + ". No sell order placed today is visible; one resting from an earlier day won't show here, so confirm it in Tastytrade"]);
+      else {
+        var wp = num(working[0].price);
+        if (wp != null && Math.abs(wp - gtcNow) > 0.005) sigs.push(["info", "Resting sell at " + f2(wp) + "; the card's price today is " + f2(gtcNow)]);
+        else sigs.push(["info", "Good-till sell working at " + f2(wp)]);
+      }
+    } else if (working.length) sigs.push(["info", "Sell order working @ " + working[0].price]);
+
+    var order = { bad: 0, go: 1, warn: 2, info: 3 };
+    sigs.sort(function (a, b) { return order[a[0]] - order[b[0]]; });
+    var top = sigs[0];
+    if (top && top[0] === "bad") { res.sev = "bad"; res.label = /^SELL/.test(top[1]) ? "Sell" : "Stop line"; }
+    else if (top && top[0] === "go") { res.sev = "go"; res.label = "Take profit"; }
+    else if (top && top[0] === "warn") { res.sev = "warn"; res.label = "Check"; }
+    else { res.sev = "held"; res.label = "On plan"; }
+    var dist = last == null ? null : (c.stop.dir === "above" ? (stopV - last) : (last - stopV)) / last * 100;
+    res.lines = '<span class="n">stop: close ' + (c.stop.dir === "above" ? "above " : "below ") + f2(stopV) + "</span>" +
+      '<span class="sub">' + (dist == null ? "" : stopHit ? "past it now" : dist.toFixed(1) + "% away") + "</span>" +
+      '<span class="sub">target: ' + esc(gtcNow != null ? "GTC " + f2(gtcNow) : c.targetStock != null ? c.t + " " + f2(c.targetStock) : (c.gtcText || "–")) + "</span>" +
+      '<span class="sub">exit ' + (c.exit ? shortDate(c.exit) + " 15:50 ET" + (left != null && left >= 0 ? " · " + left + " sessions" : "") : "see card") + "</span>" +
+      (c.warnLevels || []).map(function (w) { return '<span class="sub">watch: ' + esc(w.text) + "</span>"; }).join("") +
+      (c.flags || []).map(function (g) { return '<span class="sub">money: ' + esc(g.label) + "</span>"; }).join("") +
+      (c.url ? '<span class="sub"><a href="' + esc(c.url) + '" target="_blank" rel="noopener">open card</a></span>' : "");
+    return res;
+  }
+
+  function posTicket(p, c, e) {
+    var today = etParts(new Date()).date, L = [], name = occLabel(p.symbol);
+    if (e.sev === "bad" || e.sev === "go") L.push(line("Exit now", "Sell to Close 1 " + name + " @ " + f2(e.bid) + " limit (the bid; mid " + f2(e.mk) + "), Day. Cancel any resting GTC first"));
+    if (c) {
+      var rung = null; (c.rungs || []).forEach(function (r) { if (r.occ && key(r.occ) === key(p.symbol)) rung = r; });
+      L = L.concat(exitLines(c, p.symbol, stepAt((rung && rung.gtcSteps) || c.gtcSteps, today), stopNow(c, today)));
+    }
+    return { title: "Exit ticket: " + name, lines: L, id: "tk-pos-" + key(p.symbol) };
+  }
+  // ---------- updated card (20 Nov): a refreshed card from the row + live quotes, without a full build ----------
+  // Mechanical refresh only: levels, contract, liquidity, gates, timing, order tickets. Narrative, news, lifecycle and
+  // the plugins stay as written on the card; the judge says when they need a full rebuild.
+  var BASE = {}, UPD = {}, baseLoaded = false, ucOpen = null, ucBusy = false;
+  function ucBtn(c) { return ' <button type="button" class="ucb" data-uc="' + esc(c._id || c.t) + '">Updated card</button>'; }
+  function cardById(id) { var f = null; CARDS.forEach(function (c) { if ((c._id || c.t) === id) f = c; }); return f; }
+  function heldMap() { var h = {}; (lastPos || []).forEach(function (p) { h[key(p.symbol)] = 1; }); return h; }
+  function nearRung(c, last) {
+    var r0 = null, best = Infinity;
+    (c.rungs || []).forEach(function (r) { var d = last == null ? 0 : last < r.lo ? r.lo - last : last > r.hi ? last - r.hi : 0; if (d < best) { best = d; r0 = r; } });
+    return r0;
+  }
+  function ucSnap(c) {
+    var s = lastQ[c.t], now = etParts(new Date());
+    var last = s ? (num(s.last) != null ? num(s.last) : num(s.mark)) : null;
+    var held = null; (lastPos || []).forEach(function (p) { if (!held && cardOccs(c).indexOf(key(p.symbol)) >= 0) held = p; });
+    var r0 = nearRung(c, last), occ = pad(held ? held.symbol : ((r0 && r0.occ) || c.occ)), q = lastQ[occ];
+    var bid = q ? num(q.bid) : null, ask = q ? num(q.ask) : null, mid = q ? num(q.mid) : null;
+    return { at: new Date().toISOString(), et: now.date + " " + now.hm, date: now.date, hm: now.hm, px: last,
+      prev: s ? num(s["prev-close"]) : null, open: s ? num(s.open) : null, hi: s ? num(s["day-high-price"]) : null, lo: s ? num(s["day-low-price"]) : null,
+      yh: s ? num(s["year-high-price"]) : null, yl: s ? num(s["year-low-price"]) : null,
+      occ: key(occ), bid: bid, ask: ask, mid: mid, spr: (bid != null && ask != null && mid) ? (ask - bid) / mid * 100 : null,
+      oi: q ? q["open-interest"] : null, vol: q ? num(q.volume) : null, iv: q ? num(q.volatility) : null, delta: q ? num(q.delta) : null, theo: q ? num(q["theo-price"]) : null,
+      held: held, rung: r0 };
+  }
+  function ucJudge(c, e, S, B) {
+    var full = [], chk = [], today = S.date;
+    if (S.px != null && S.yl != null && S.px <= S.yl * 1.005) full.push(c.t + " " + f2(S.px) + " is at or under its 52-week low " + f2(S.yl) + ": the 52-week rule needs a fresh read (does the option still pay if this level holds?)");
+    if (S.px != null && S.yh != null && S.px >= S.yh * 0.995) full.push(c.t + " " + f2(S.px) + " is at or over its 52-week high " + f2(S.yh) + ": the 52-week rule needs a fresh read");
+    if (c.cancel && c.cancel.v && S.px != null && !S.held && (c.cancel.dir === "below" ? S.px < c.cancel.v : S.px > c.cancel.v)) full.push("Past the card's cancel line " + f2(c.cancel.v) + " (" + (c.cancel.text || "") + ")");
+    if (!S.held && !c.stopAfterFill && S.px != null && (c.stop.dir === "above" ? S.px > stopNow(c, S.date) : S.px < stopNow(c, S.date))) full.push("Past the stop line " + f2(stopNow(c, S.date)) + " before any fill: the setup the card priced has gone");
+    if (!S.held && c.targetStock != null && S.px != null && (c.side === "PUT" ? S.px <= c.targetStock : S.px >= c.targetStock)) full.push("The card's target " + f2(c.targetStock) + " has been reached without a fill: the move happened without us");
+    if (e.label === "Invalidated") full.push(e.why);
+    if (c.until && today > c.until && !S.held) full.push("Entry window ended " + shortDate(c.until) + ": retire the row or rebuild the card");
+    if (B && B.px && S.px) {
+      var mv = (S.px / B.px - 1) * 100;
+      if (Math.abs(mv) >= 5) full.push(c.t + " has moved " + sgn(mv, 1) + " since the baseline (" + f2(B.px) + "): the levels were set for a different price");
+      else if (Math.abs(mv) >= 2.5) chk.push(c.t + " has moved " + sgn(mv, 1) + " since the baseline");
+    }
+    if (B && B.mid && S.mid && !S.held) { var om = (S.mid / B.mid - 1) * 100; if (Math.abs(om) >= 30) chk.push("Option mid " + sgn(om, 0) + " since the baseline (" + f2(B.mid) + " to " + f2(S.mid) + "): the max may no longer fit"); }
+    if (S.spr != null && S.spr > 20) chk.push("Spread " + S.spr.toFixed(0) + "% of mid: liquidity tier C right now");
+    if (e.label === "Blocked") chk.push("A gate fails right now (see the checks)");
+    var age = c.cardDay ? Math.max((sessionsUntil(c.cardDay, today) || 1) - 1, 0) : null;
+    if (age != null && age >= 3 && !S.held) chk.push("Card is " + age + " sessions old and not filled");
+    return { level: full.length ? "full" : chk.length ? "check" : "mini", full: full, chk: chk, age: age };
+  }
+  function ucNote(t) { return '<span class="ucn">For the trade: ' + esc(t) + "</span>"; }
+  function ucBody(id, forFile) {
+    var c = cardById(id); if (!c) return "<p>Card not found.</p>";
+    var now = etParts(new Date()), today = now.date, S = ucSnap(c);
+    if (S.px == null) return "<p>No live quote for " + esc(c.t) + " yet. Press Refresh now, then open this again.</p>";
+    var e = evalCard(c, lastQ, now, lastOrders, heldMap());
+    var B = c.built || BASE[id] || null, J = ucJudge(c, e, S, B);
+    var uk = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" });
+    var ch = pct(S.px, S.prev), tierTxt = S.spr == null ? "–" : S.spr <= 10 ? "A" : S.spr <= 20 ? "B" : "C";
+    var yPos = (S.yh != null && S.yl != null && S.yh > S.yl) ? Math.round((S.px - S.yl) / (S.yh - S.yl) * 100) : null;
+    var gtcNow = stepAt((S.rung && S.rung.gtcSteps) || c.gtcSteps, today), stopV = stopNow(c, today), left = sessionsUntil(today, c.exit);
+    var gates = (c.gates || []).map(function (g) { var q = lastQ[g.s], v = q ? num(q.last) : null; var ok = v == null ? null : (g.op === ">=" ? v >= g.v : v <= g.v); return { g: g, v: v, ok: ok }; });
+    var gPass = gates.filter(function (x) { return x.ok === true; }).length, gFail = gates.filter(function (x) { return x.ok === false; }).length;
+    var LV = { mini: ["ok", "Mini update: the card still holds", "Levels, contract and gates refreshed from live quotes. Nothing has moved far enough to need a new deep dive."],
+               check: ["warn", "Re-check before you trade", "The card's levels still stand, but something has changed. Read the points below before placing an order."],
+               full: ["bad", "Full rebuild needed", "The market has moved past what this card planned for. Run a new deep dive before trading it."] }[J.level];
+    var h = [];
+    h.push('<div class="uc-head"><div><span class="tk">' + esc(c.t) + " " + esc(c.side) + '</span> <span class="sub">' + esc(c.con || "") + " · card " + shortDate(c.cardDay) + (J.age != null ? " (" + J.age + " sessions old)" : "") + "</span></div>" +
+      '<div class="sub">Updated ' + esc(now.hm) + " ET (" + esc(uk) + " UK) · " + esc(now.wd) + " " + shortDate(today) + (c.url ? ' · <a href="' + esc(c.url) + '" target="_blank" rel="noopener">open the full card</a>' : "") + "</div></div>");
+    h.push('<div class="uc-verdict ' + LV[0] + '"><b>' + esc(LV[1]) + "</b><br>" + esc(LV[2]) +
+      (J.full.length ? "<ul>" + J.full.map(function (x) { return '<li class="dn">' + esc(x) + "</li>"; }).join("") + "</ul>" : "") +
+      (J.chk.length ? "<ul>" + J.chk.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "") + "</div>");
+    h.push('<div class="uc-state"><span class="pill ' + e.sev + '">' + esc(e.label) + "</span> " + (e.todo ? "<b>" + esc(e.todo) + "</b>" : "") + '<span class="why">' + esc(e.why) + "</span></div>");
+    // status strip
+    h.push('<dl class="uc-strip">' +
+      "<div><dt>Pulled</dt><dd>" + esc(now.hm) + " ET</dd></div>" +
+      "<div><dt>" + esc(c.t) + "</dt><dd>" + f2(S.px) + ' <span class="' + (ch >= 0 ? "up" : "dn") + '">' + (ch == null ? "" : sgn(ch, 1)) + "</span></dd></div>" +
+      "<div><dt>Day range</dt><dd>" + f2(S.lo) + "–" + f2(S.hi) + " · open " + f2(S.open) + "</dd></div>" +
+      "<div><dt>52 weeks</dt><dd>" + f2(S.yl) + "–" + f2(S.yh) + (yPos != null ? " · at " + yPos + "%" : "") + "</dd></div>" +
+      "<div><dt>Contract</dt><dd>" + f2(S.bid) + " / " + f2(S.ask) + " · mid " + f2(S.mid) + "</dd></div>" +
+      "<div><dt>Spread · tier</dt><dd>" + (S.spr == null ? "–" : S.spr.toFixed(0) + "%") + " · " + tierTxt + "</dd></div>" +
+      "<div><dt>OI · IV · delta</dt><dd>" + (S.oi == null ? "–" : S.oi) + " · " + (S.iv == null ? "–" : (S.iv * 100).toFixed(0) + "%") + " · " + (S.delta == null ? "–" : S.delta.toFixed(2)) + "</dd></div>" +
+      "<div><dt>Gates</dt><dd>" + (gates.length ? gPass + " pass · " + gFail + " fail" : "none on the row") + "</dd></div>" +
+      "<div><dt>Exit</dt><dd>" + (c.exit ? shortDate(c.exit) + (left != null && left >= 0 ? " · " + left + " sessions" : "") : "–") + "</dd></div></dl>");
+    h.push(ucNote(S.spr == null ? "no option quote right now" : tierTxt === "A" ? "the spread is tight, so the round trip costs little" : tierTxt === "B" ? "one contract only, with a resting limit: a market order would hand the spread to the market maker" : "the spread is too wide to trade: about half of it is lost the moment you buy"));
+    // what changed
+    h.push("<h3>What changed since the card</h3>");
+    if (B) {
+      var row = function (lbl, a, b, isPct) { var d = (a != null && b != null && a) ? (b / a - 1) * 100 : null; return "<tr><td>" + lbl + '</td><td class="n">' + (a == null ? "–" : isPct ? a.toFixed(0) + "%" : f2(a)) + '</td><td class="n">' + (b == null ? "–" : isPct ? b.toFixed(0) + "%" : f2(b)) + '</td><td class="n ' + (d == null ? "" : d >= 0 ? "up" : "dn") + '">' + (isPct ? (a != null && b != null ? (b - a >= 0 ? "+" : "−") + Math.abs(b - a).toFixed(0) + " pts" : "–") : d == null ? "–" : sgn(d, 1)) + "</td></tr>"; };
+      h.push('<table class="uc-t"><thead><tr><th></th><th>' + esc(c.built ? "Card" : "Baseline") + "</th><th>Now</th><th>Change</th></tr></thead><tbody>" +
+        row(c.t, B.px, S.px) + row("Option mid", B.mid, S.held ? S.mid : (key(B.occ || S.occ) === S.occ ? S.mid : null)) + row("Spread", B.spr, S.spr, true) + "</tbody></table>");
+      h.push('<span class="sub">' + (c.built ? "Card values written by the deep dive at " + esc(c.built.et || c.built.at || "build") : "Baseline = the board's first live read of this row (" + esc(B.et || B.at || "") + "), not the card's build price") + "</span>");
+      h.push(ucNote(B.px && S.px ? (Math.abs((S.px / B.px - 1) * 100) < 2.5 ? "the stock is close to where the card was priced, so its levels still fit" : "the stock has travelled since the card; check the zone still makes sense before acting") : "no comparison yet"));
+    } else h.push('<p class="sub">No baseline yet: the board saves one on its first live read of this row.</p>');
+    // refreshed plan
+    h.push("<h3>Trade card, refreshed</h3>");
+    h.push('<div class="uc-plan">' + esc(planText(c)) + "</div>");
+    h.push('<table class="uc-t"><tbody>' +
+      "<tr><td>Entry zones</td><td>" + (e.zone.join("<br>") || "–") + "</td></tr>" +
+      "<tr><td>Contract live</td><td>" + (e.opt || "–") + "</td></tr>" +
+      "<tr><td>Good-till sell today</td><td>" + (gtcNow != null ? f2(gtcNow) : c.targetStock != null ? "sell when " + esc(c.t) + " reaches " + f2(c.targetStock) : "–") + (c.gtcText ? '<span class="sub">' + esc(c.gtcText) + "</span>" : "") + "</td></tr>" +
+      "<tr><td>Stop</td><td>15:50 ET price " + (c.stop.dir === "above" ? "above " : "below ") + f2(stopV) + '<span class="sub">' + (S.px == null ? "" : Math.abs((S.px - stopV) / S.px * 100).toFixed(1) + "% away") + "</span></td></tr>" +
+      (c.cancel && c.cancel.v ? "<tr><td>Cancel line</td><td>" + esc(c.cancel.text || f2(c.cancel.v)) + "</td></tr>" : "") +
+      (c.targetStock != null ? "<tr><td>Stock target</td><td>" + f2(c.targetStock) + '<span class="sub">' + (S.px == null ? "" : sgn((c.targetStock / S.px - 1) * 100, 1) + " from here") + "</span></td></tr>" : "") +
+      "<tr><td>Window</td><td>" + (c.from ? "from " + shortDate(c.from) + " " : "") + (c.until ? "to " + shortDate(c.until) : "open") + (c.at1550 ? " · read at 15:50 ET only" : "") + "</td></tr>" +
+      "<tr><td>Gates and checks</td><td>" + (e.checks.join("") || "–") + "</td></tr></tbody></table>");
+    h.push(ucNote("the board re-reads every line of the card against live prices; only the items marked ? still need your eyes"));
+    if (e.ticket && e.ticket.lines && e.ticket.lines.length && !S.held) h.push("<h3>Order ticket</h3><ol class=\"uc-tk\">" + e.ticket.lines.map(function (l) { return "<li><b>" + esc(l.label) + ":</b> <span class=\"tline\">" + esc(l.text) + "</span></li>"; }).join("") + "</ol>");
+    if (S.held) {
+      var pe = evalPosition(S.held, c, lastQ, now, lastOrders);
+      h.push("<h3>Your position</h3><p>" + esc(key(S.held.symbol)) + " × " + pe.qty + " · paid " + f2(pe.avg) + " · bid " + f2(pe.bid) + " · P&amp;L at the bid " + (pe.plBid == null ? "–" : (pe.plBid >= 0 ? "+$" : "−$") + Math.abs(pe.plBid).toFixed(0)) + "</p><ul>" + pe.sigs.map(function (s) { return '<li class="sig ' + s[0] + '">' + esc(s[1]) + "</li>"; }).join("") + "</ul>");
+    }
+    h.push("<h3>Not refreshed here</h3><p class=\"sub\">Narrative, news, the 7-stage lifecycle, the market-player read and the plugin evidence stay as written on the card of " + shortDate(c.cardDay) + ". The board can't run the plugins. When the verdict says Full rebuild, run a new deep dive for " + esc(c.t) + ".</p>");
+    if (!forFile) {
+      var U = UPD[id];
+      if (U && U.history && U.history.length) h.push("<h3>Saved updates</h3><table class=\"uc-t\"><thead><tr><th>When (ET)</th><th>Verdict</th><th>" + esc(c.t) + "</th><th>Mid</th><th>State</th></tr></thead><tbody>" +
+        U.history.slice(-8).reverse().map(function (r) { return "<tr><td>" + esc(r.et) + (r.auto ? " (auto)" : "") + "</td><td>" + esc(r.level) + '</td><td class="n">' + f2(r.px) + '</td><td class="n">' + f2(r.mid) + "</td><td>" + esc(r.label) + "</td></tr>"; }).join("") + "</tbody></table>");
+    }
+    return h.join("");
+  }
+  function ucRecord(id, auto) {
+    var c = cardById(id); if (!c) return null;
+    var now = etParts(new Date()), S = ucSnap(c); if (S.px == null) return null;
+    var e = evalCard(c, lastQ, now, lastOrders, heldMap()), J = ucJudge(c, e, S, c.built || BASE[id] || null);
+    return { at: S.at, et: S.et, slot: auto || "manual", auto: !!auto, level: J.level, reasons: J.full.concat(J.chk), label: e.label, todo: e.todo || "", px: S.px, bid: S.bid, ask: S.ask, mid: S.mid, spr: S.spr == null ? null : Math.round(S.spr * 10) / 10, occ: S.occ };
+  }
+  async function ucSave(id, auto) {
+    if (!DB) return false;
+    var rec = ucRecord(id, auto); if (!rec) return false;
+    var c = cardById(id), prev = UPD[id] || {}, hist = (prev.history || []).slice();
+    hist.push(rec); if (hist.length > 30) hist = hist.slice(-30);
+    var doc = { id: id, t: c.t, side: c.side, cardDay: c.cardDay || null, last: rec, history: hist, updated: rec.at };
+    UPD[id] = doc;
+    try { await DB.doc("updates/" + id).set(doc); return true; } catch (err) { return false; }
+  }
+  function ucFileHtml(id) {
+    var c = cardById(id), body = ucBody(id, true);
+    var css = "body{font:15px/1.5 'Segoe UI',Arial,sans-serif;background:#fff;color:#151a1f;max-width:980px;margin:20px auto;padding:0 16px}" +
+      "h1,h3{color:#151a1f}a{color:#8f2f2a}.sub{display:block;color:#4a5560;font-size:.82rem}.why{display:block;color:#4a5560;font-size:.85rem}.n{font-family:Consolas,monospace}" +
+      ".up{color:#1f7a4d}.dn{color:#b3261e}.tk{font-weight:700;font-size:1.2rem;color:#151a1f}.pill{border:1px solid currentColor;padding:0 6px;font-size:.7rem;text-transform:uppercase;font-weight:600}" +
+      ".pill.go{color:#1f7a4d}.pill.work{color:#2b5c8a}.pill.warn{color:#9a6400}.pill.bad{color:#b3261e}.pill.idle,.pill.held{color:#4a5560}" +
+      ".uc-verdict{border:1px solid #d6dbe0;border-left:4px solid #9a6400;padding:10px 14px;margin:12px 0;color:#151a1f}.uc-verdict.ok{border-left-color:#1f7a4d}.uc-verdict.bad{border-left-color:#b3261e}" +
+      ".uc-strip{display:flex;flex-wrap:wrap;gap:6px 20px;border:1px solid #d6dbe0;border-left:3px solid #8f2f2a;padding:8px 12px;color:#151a1f}.uc-strip dt{font-size:.68rem;text-transform:uppercase;color:#4a5560}.uc-strip dd{margin:0;font-family:Consolas,monospace}" +
+      "table{border-collapse:collapse;width:100%;margin:6px 0;color:#151a1f}td,th{border-bottom:1px solid #d6dbe0;padding:5px 8px;text-align:left;vertical-align:top;color:#151a1f}th{background:#e9edf0;font-size:.72rem;text-transform:uppercase}" +
+      ".chk{display:block;font-size:.85rem}.chk.pass::before{content:'✓ ';color:#1f7a4d}.chk.fail::before{content:'✗ ';color:#b3261e}.chk.man::before{content:'? ';color:#9a6400}" +
+      ".ucn{display:block;font-size:.82rem;color:#2b5c8a;font-style:italic;margin:4px 0}.uc-plan{background:#f4f6f7;padding:8px 10px;color:#151a1f}.alt{display:block;border:1px dashed #2b5c8a;padding:4px 6px;margin-top:4px;font-size:.8rem;color:#151a1f}.tline{font-family:Consolas,monospace;font-size:.85rem}";
+    return "<!DOCTYPE html><html lang=\"en-GB\"><head><meta charset=\"utf-8\"><title>" + esc(c.t + " " + c.side + " updated card") + "</title><style>" + css + "</style></head><body><h1>" + esc(c.t + " " + c.side) + ": updated card</h1>" + body + "</body></html>";
+  }
+  var DL = null;
+  if (window.claude && window.claude.use) window.claude.use("downloads").then(function (d) { DL = d; }, function () { DL = null; });
+  async function ucDownload(id) {
+    var c = cardById(id), now = etParts(new Date());
+    var name = c.t + "_" + c.side + "_updated_card_" + now.date + "_" + now.hm.replace(":", "") + ".html";
+    if (!DL) return { ok: false, msg: "Download is not available in this view" };
+    try { await DL.save({ filename: name, data: ucFileHtml(id) }); return { ok: true, msg: "Saved " + name + " (put it in the hand-off folder)" }; }
+    catch (e) { var code = e && e.code; return { ok: false, msg: code === "declined" ? "Download cancelled" : code === "rate_limited" ? "A save prompt is already open" : "Download failed (" + (code || "error") + ")" }; }
+  }
+  function ucRender() {
+    if (!ucOpen) return;
+    var box = $("uc-body"), y = box.scrollTop; box.innerHTML = ucBody(ucOpen, false); box.scrollTop = y;
+  }
+  function ucShow(id) { ucOpen = id; $("uc-msg").textContent = ""; ucRender(); var d = $("uc"); if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute("open", ""); }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("button.ucb") : null; if (b) { ucShow(b.getAttribute("data-uc")); return; }
+    var t = ev.target && ev.target.id;
+    if (t === "uc-close") { ucOpen = null; var d = $("uc"); if (d.close) d.close(); else d.removeAttribute("open"); }
+    if (t === "uc-save" && ucOpen) { $("uc-msg").textContent = "Saving…"; ucSave(ucOpen, null).then(function (ok) { $("uc-msg").textContent = ok ? "Saved to the board at " + etParts(new Date()).hm + " ET" : "Not saved: no live quote or the board data is read-only here"; ucRender(); }); }
+    if (t === "uc-dl" && ucOpen) { $("uc-msg").textContent = "Preparing the file…"; ucDownload(ucOpen).then(function (r) { $("uc-msg").textContent = r.msg; }); }
+  });
+  document.addEventListener("close", function (ev) { if (ev.target && ev.target.id === "uc") ucOpen = null; }, true);
+  function ucSubscribe(db) {
+    db.collection("baselines").onSnapshot(function (snap) { snap.docs.forEach(function (d) { BASE[d.id] = d.data(); }); baseLoaded = true; ucRender(); }, function () { baseLoaded = false; });
+    db.collection("updates").onSnapshot(function (snap) { snap.docs.forEach(function (d) { UPD[d.id] = d.data(); }); ucRender(); }, function () {});
+  }
+  async function ucAfterRefresh() {
+    ucRender();
+    if (!DB || ucBusy) return;
+    ucBusy = true;
+    try {
+      var now = etParts(new Date()), live = CARDS.filter(function (c) { return !c.retired && lastQ[c.t]; });
+      if (baseLoaded) for (var i = 0; i < live.length; i++) {
+        var c = live[i], id = c._id || c.t; if (c.built || BASE[id]) continue;
+        var S = ucSnap(c); if (S.px == null) continue;
+        BASE[id] = { px: S.px, bid: S.bid, ask: S.ask, mid: S.mid, spr: S.spr == null ? null : Math.round(S.spr * 10) / 10, occ: S.occ, at: S.at, et: S.et, src: "first board read" };
+        try { await DB.doc("baselines/" + id).set(BASE[id]); } catch (e) {}
+      }
+      // auto-save twice a day while the board is open: the 09:45 open read and the 15:50 check
+      var slot = !marketOpen(now) ? null : (now.mins >= 585 && now.mins < 600) ? "0945" : (now.mins >= 950 && now.mins < 958) ? "1550" : null;
+      if (slot) for (var j = 0; j < live.length; j++) {
+        var cj = live[j], idj = cj._id || cj.t, U = UPD[idj], tag = now.date + "_" + slot;
+        if (cj.until && now.date > cj.until && cj.group !== "position") continue;
+        if (U && U.last && U.last.slotTag === tag) continue;
+        var rec = ucRecord(idj, slot); if (!rec) continue; rec.slotTag = tag;
+        var hist = ((U && U.history) || []).concat([rec]).slice(-30), doc = { id: idj, t: cj.t, side: cj.side, cardDay: cj.cardDay || null, last: rec, history: hist, updated: rec.at };
+        UPD[idj] = doc;
+        try { await DB.doc("updates/" + idj).set(doc); } catch (e) {}
+      }
+    } finally { ucBusy = false; }
+  }
+
+  // ---------- triage pipeline (20 Nov): every triaged name, live, with when to deep dive ----------
+  // Rows come from the triage collection (written from the triage; later by the PC feed). Joined to cards on ticker + side.
+  // Levels (trigger, invalidation, half target) are read from the triage text; rows marked chk need a check.
+  var TRI = [], TRIQ = {}, triBusy = false, triTimer = null, triView = "act", triEarlier = false, triAsOf = "";
+  try { var tv0 = localStorage.getItem("triView"); if (tv0) triView = tv0; triEarlier = localStorage.getItem("triEarlier") === "1"; } catch (e) {}
+  function triSubscribe(db) {
+    db.collection("triage").onSnapshot(function (snap) {
+      var all = [];
+      snap.docs.forEach(function (d) { var x = d.data() || {}; if (d.id === "meta") triAsOf = x.asOf || ""; if (x.rows) all = all.concat(x.rows); });
+      var seen = {}; TRI = all.filter(function (r) { var k = r.t + "_" + r.s + "_" + r.sess; if (seen[k]) return false; seen[k] = 1; return true; });
+      renderTri();
+    }, function () {});
+  }
+  function triCard(r) {
+    var best = null;
+    CARDS.forEach(function (c) { if (c.t !== r.t || c.side !== r.s) return; if (!best || (c.cardDay || "") > (best.cardDay || "") || (best.retired && !c.retired)) best = c; });
+    return best;
+  }
+  function triEval(r, now) {
+    var q = TRIQ[r.t] || lastQ[r.t] || TQ[r.t], last = q ? (num(q.last) != null ? num(q.last) : num(q.mark)) : null;
+    var call = r.s === "CALL", T = r.trig || null, o = { last: last, q: q };
+    var c = triCard(r), held = c && cardOccs(c).some(function (k) { return heldMap()[k]; });
+    o.card = c;
+    if (c && !c.retired) { var age = revAge(c, now.date); o.cardAge = age; }
+    if (last == null) { o.call = "WAIT"; o.why = "no live quote yet"; return o; }
+    if (r.inval != null && (call ? last < r.inval : last > r.inval)) { o.closed = true; }
+    if (r.half != null && (call ? last >= r.half : last <= r.half)) { o.missed = true; }
+    var dist = null, fired = false, where = "";
+    if (T) {
+      if (T.kind === "above") { fired = last >= T.v; dist = fired ? 0 : (T.v - last) / last * 100; where = (fired ? "above " : "needs ") + f2(T.v); }
+      else if (T.kind === "below") { fired = last <= T.v; dist = fired ? 0 : (last - T.v) / last * 100; where = (fired ? "below " : "needs ") + f2(T.v); }
+      else if (T.kind === "zone") { var inZ = last >= T.lo && last <= T.hi; dist = inZ ? 0 : (last < T.lo ? (T.lo - last) : (last - T.hi)) / last * 100; fired = inZ; where = "zone " + f2(T.lo) + "–" + f2(T.hi); }
+      else if (T.kind === "fired") { fired = true; if (T.lo != null) { var inF = last >= T.lo && last <= T.hi; dist = inF ? 0 : (last < T.lo ? (T.lo - last) : (last - T.hi)) / last * 100; where = "fired; entry zone " + f2(T.lo) + "–" + f2(T.hi); } else { dist = 0; where = "fired" + (T.v != null ? " at " + f2(T.v) : ""); } }
+      else if (T.kind === "pre") { fired = last < T.v; dist = fired ? 0 : (last - T.v) / last * 100; where = "buy below " + f2(T.v) + " (sell at it)"; }
+    }
+    o.fired = fired; o.dist = dist; o.where = where;
+    var cardCurrent = c && !c.retired && (c.group !== "review") && !(c.until && now.date > c.until);
+    if (held) { o.call = "HELD"; o.why = "position open: see Live trades"; }
+    else if (o.closed) { o.call = "CLOSED"; o.why = "invalidation " + f2(r.inval) + " already crossed: nothing to dive"; }
+    else if (cardCurrent && o.cardAge != null && o.cardAge <= 5) { o.call = "DONE"; o.why = "card on the board (" + shortDate(c.cardDay) + ")"; }
+    else if (c && !c.retired && !cardCurrent) { o.call = "VALIDATE"; o.why = "card " + shortDate(c.cardDay) + " has aged out: in the Review queue"; }
+    else if (/^E6/.test(r.cl)) { o.call = "LATER"; o.why = "pass / side open (deal-pinned or unresolved)"; }
+    else if (o.missed) { o.call = "LATER"; o.why = "already beyond the half target " + f2(r.half) + ": re-plan, do not chase"; }
+    else if (fired) { o.call = "NOW"; o.why = "trigger condition met now" + (T && T.kind === "fired" && dist ? ", " + dist.toFixed(1) + "% from the entry zone" : ""); }
+    else if (dist != null && dist <= 1.5) { o.call = "NOW"; o.why = dist.toFixed(1) + "% from the trigger: card it before the herd"; }
+    else if (/^E1/.test(r.cl)) { o.call = "NOW"; o.why = "triage class E1 ready"; }
+    else if ((dist != null && dist <= 4) || (!T && /^E[23]/.test(r.cl))) { o.call = "NEXT"; o.why = dist != null ? dist.toFixed(1) + "% from the trigger" : "no level read: check the prompt"; }
+    else { o.call = "LATER"; o.why = dist != null ? dist.toFixed(1) + "% from the trigger" : "no level read"; }
+    if (/^E4/.test(r.cl) && (o.call === "NOW" || o.call === "NEXT")) o.why += " · E4: fix the contract in the dive";
+    if (/^E5/.test(r.cl) && (o.call === "NOW" || o.call === "NEXT")) o.why += " · E5: money against the side";
+    return o;
+  }
+  var TRI_ORDER = { NOW: 0, NEXT: 1, VALIDATE: 2, HELD: 3, DONE: 4, LATER: 5, WAIT: 6, CLOSED: 7 };
+  var TRI_SEV = { NOW: "go", NEXT: "work", VALIDATE: "warn", HELD: "held", DONE: "idle", LATER: "idle", WAIT: "idle", CLOSED: "bad" };
+  function triPrompt(r, o, now) {
+    var folder = r.dir || "lab_2026-11-20";
+    return "AVSHUNTER deep dive: " + r.t + " " + r.s + " (triage " + r.sess + ", batch " + r.b + " rank " + r.br + ", " + r.cl + (r.etf ? ", " + r.etf + " " + (r.st || "") : "") + "). " +
+      "Prompt: " + (r.pf || "the batch prompts file") + " section \"" + (r.sec_h || ("## " + r.br + " " + r.t)) + "\" in data\\scratch\\workaround\\handoff\\" + folder + ". " +
+      "Live at " + now.hm + " ET " + shortDate(now.date) + ": " + r.t + " " + f2(o.last) + (o.where ? "; trigger " + o.where : "") + (r.inval != null ? "; invalidation " + f2(r.inval) : "") + (r.half != null ? "; half target " + f2(r.half) : "") + ". " +
+      "Triage contract " + (r.c || "none") + (r.stop ? "; triage stop: " + r.stop : "") + ". " +
+      (o.card ? "A prior card exists (" + (o.card._id || "") + ", " + (o.card.url || "") + "): read it in full and merge, and set supersedes. " : "") +
+      "Board call: " + o.call + " (" + o.why + "). Cover both sides where feasible, run the liquidity tiers, the 52-week check and the 7-stage lifecycle, then write the card, the decision file and the board row with built prices.";
+  }
+  function triTier(q) {
+    if (!q) return null; var b = num(q.bid), a = num(q.ask), m = num(q.mid); if (b == null || a == null || !m || !(b > 0)) return { t: "C", p: null };
+    var p = (a - b) / m * 100, oi = q["open-interest"];
+    var t = (p <= 10 && !(m < 1.5 && a - b > 0.10 + 1e-9)) ? "A" : p <= 20 ? "B" : "C"; if (oi != null && oi < 100) t = "C";
+    return { t: t, p: p, b: b, a: a, oi: oi };
+  }
+  function renderTri() {
+    var tb = document.querySelector("#t-tri tbody"); if (!tb) return;
+    var now = etParts(new Date());
+    var list = TRI.filter(function (r) { return triEarlier || !r.stale; });
+    if (!list.length) { tb.innerHTML = emptyRow(6, TRI.length ? "No rows in this view." : "No triage loaded yet."); $("tri-sum").textContent = ""; return; }
+    var ev = list.map(function (r) { return { r: r, o: triEval(r, now) }; });
+    var cnt = {}; ev.forEach(function (x) { cnt[x.o.call] = (cnt[x.o.call] || 0) + 1; });
+    $("tri-sum").innerHTML = "<b>" + list.length + " triaged</b>" + (triAsOf ? " (" + esc(triAsOf) + ")" : "") + " · " + ["NOW", "NEXT", "VALIDATE", "HELD", "DONE", "LATER", "CLOSED", "WAIT"].filter(function (k) { return cnt[k]; }).map(function (k) { return '<span class="pill ' + TRI_SEV[k] + '">' + cnt[k] + " " + k + "</span>"; }).join(" ");
+    if (triView === "act") ev = ev.filter(function (x) { return x.o.call === "NOW" || x.o.call === "NEXT" || x.o.call === "VALIDATE" || x.o.call === "HELD"; });
+    ev.sort(function (a, b) { return (TRI_ORDER[a.o.call] - TRI_ORDER[b.o.call]) || ((parseFloat(a.r.br) || 999) - (parseFloat(b.r.br) || 999)) || (a.r.b - b.r.b); });
+    if (!ev.length) { tb.innerHTML = emptyRow(6, "Nothing to dive right now. Switch to All to see the full list."); return; }
+    tb.innerHTML = ev.map(function (x) {
+      var r = x.r, o = x.o, q = o.q, ch = q ? pct(o.last, num(q["prev-close"])) : null, cq = r.c ? (TRIQ[pad(r.c)] || lastQ[pad(r.c)]) : null, tier = triTier(cq);
+      var cardLink = o.card ? (o.card.retired ? '<span class="sub">card ' + esc(o.card._id) + " retired" + (o.card.outcome && o.card.outcome.result ? ": " + esc(o.card.outcome.result) : "") + "</span>" : '<a class="sub" href="#row-' + esc(o.card._id) + '">board row ' + esc(o.card._id) + "</a>") : '<span class="sub">no card yet</span>';
+      return '<tr class="sev-' + TRI_SEV[o.call] + '">' +
+        '<td data-label="Name"><span class="tk">' + esc(r.t) + "</span> " + esc(r.s) + '<span class="sub">' + esc(r.sess) + " · batch " + esc(r.b) + " #" + esc(r.br) + (r.lab ? " · Lab " + esc(r.lab) : "") + "</span>" + (r.flags ? '<span class="sub">' + esc(r.flags) + "</span>" : "") + "</td>" +
+        '<td data-label="Deep dive"><span class="pill ' + TRI_SEV[o.call] + '">' + esc(o.call) + '</span><span class="why">' + esc(o.why) + "</span>" + cardLink +
+          (o.call === "NOW" || o.call === "NEXT" || o.call === "VALIDATE" || o.call === "LATER" ? ' <button type="button" class="cp" data-copy="' + esc(triPrompt(r, o, now)) + '">Copy deep-dive prompt</button>' : "") + "</td>" +
+        '<td data-label="Triage"><span class="n">' + esc(r.cl) + '</span><span class="sub">' + esc(r.etf || "") + " " + esc(r.st || "") + (r.fit ? " · side " + esc(r.fit) : "") + "</span></td>" +
+        '<td data-label="Stock vs trigger"><span class="n">' + f2(o.last) + '</span> <span class="n ' + (ch >= 0 ? "up" : "dn") + '">' + (ch == null ? "" : sgn(ch, 1)) + "</span>" +
+          '<span class="sub">' + esc(o.where || "no trigger level") + (o.dist != null && o.dist > 0 ? " · " + o.dist.toFixed(1) + "% away" : "") + "</span>" +
+          '<span class="sub">invalidation ' + f2(r.inval) + " · half target " + f2(r.half) + (r.chk ? " · levels read from text: check" : "") + "</span></td>" +
+        '<td data-label="Contract"><span class="sub">' + esc(r.c || "none") + "</span>" + (tier && tier.p != null ? '<span class="n">' + f2(tier.b) + " / " + f2(tier.a) + '</span><span class="sub">spread ' + tier.p.toFixed(0) + "% · tier " + tier.t + (tier.oi != null ? " · OI " + tier.oi : "") + "</span>" : '<span class="sub">' + (r.c ? (cq ? "no bid: tier C" : "quote on the next loop") : "") + (r.sp ? " · triage spread " + esc(r.sp) + "%" : "") + "</span>") + "</td>" +
+        '<td data-label="Stop (triage)"><span class="sub">' + esc(r.stop || "–") + "</span></td></tr>";
+    }).join("");
+  }
+  async function triTick() {
+    if (!mcp || triBusy || !TRI.length) return;
+    triBusy = true;
+    try {
+      var eq = {}, opt = {};
+      TRI.forEach(function (r) { if (!triEarlier && r.stale) return; eq[r.t] = 1; });
+      var nowP = etParts(new Date());
+      TRI.forEach(function (r) { if (!r.c || (!triEarlier && r.stale)) return; var o = triEval(r, nowP); if (o.call === "NOW" || o.call === "NEXT" || triView === "all") opt[pad(r.c)] = 1; });
+      var syms = Object.keys(eq).filter(function (s) { return !lastQ[s] && !TQ[s]; }).map(function (s) { return { symbol: s, instrument_type: "Equity" }; })
+        .concat(Object.keys(opt).map(function (s) { return { symbol: s, instrument_type: "Equity Option" }; }));
+      for (var i = 0; i < syms.length; i += 100) {
+        items(await call("tastytrade_get_quote_snapshot", { symbols: syms.slice(i, i + 100) })).forEach(function (q) { TRIQ[q.symbol] = q; });
+      }
+      renderTri();
+    } catch (e) { /* the triage loop is best effort; card rows never depend on it */ }
+    finally { triBusy = false; }
+  }
+  function triStart() {
+    if (triTimer) clearInterval(triTimer);
+    triTick();
+    triTimer = setInterval(function () { if (document.visibilityState === "visible" && auto) triTick(); }, 60000);
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("button[data-triview]") : null; if (!b) return;
+    var v = b.getAttribute("data-triview");
+    if (v === "earlier") { triEarlier = !triEarlier; try { localStorage.setItem("triEarlier", triEarlier ? "1" : "0"); } catch (e) {} }
+    else { triView = v; try { localStorage.setItem("triView", v); } catch (e) {} }
+    document.querySelectorAll("button[data-triview]").forEach(function (x) { var k = x.getAttribute("data-triview"); x.setAttribute("aria-pressed", String(k === "earlier" ? triEarlier : k === triView)); });
+    renderTri(); triTick();
+  });
+
+  // ---------- lineage (20 Nov): a card that names supersedes retires the cards it replaces ----------
+  var linBusy = false;
+  async function lineageSweep() {
+    if (!DB || linBusy || lastPos === null) return;
+    linBusy = true;
+    try {
+      var byId = {}, held = heldMap();
+      CARDS.forEach(function (c) { byId[c._id] = c; });
+      for (var i = 0; i < CARDS.length; i++) {
+        var c = CARDS[i]; if (!c.supersedes || c.retired) continue;
+        var olds = [].concat(c.supersedes);
+        for (var j = 0; j < olds.length; j++) {
+          var old = byId[olds[j]]; if (!old || old.retired || old._id === c._id) continue;
+          if (cardOccs(old).some(function (k) { return held[k]; })) continue;      // a held trade keeps its row until it is sold
+          var ref = DB.doc("cards/" + old._id);
+          try {
+            var snap = await ref.get(); if (!snap.exists) continue;
+            var d = snap.data() || {};
+            await ref.set(Object.assign({}, d, { retired: true, supersededBy: c._id, retiredAt: new Date().toISOString(),
+              outcome: d.outcome || { result: "superseded", note: "replaced by " + c._id + (c.cardDay ? " (card of " + shortDate(c.cardDay) + ")" : "") } }));
+          } catch (e) { /* best effort; the next sweep tries again */ }
+        }
+      }
+    } finally { linBusy = false; }
+  }
+
+  // ---------- review queue (20 Nov): older cards to validate or rebuild ----------
+  // A row joins the queue when its entry window has passed (and it is not held) or when it is filed as group "review".
+  // Up to 5 sessions old = Validate (is the trade still valid as written?); older = Fresh card (trade and option have likely changed).
+  function isReview(c, today, heldKeys) {
+    if (c.retired || c.group === "position") return false;
+    if (cardOccs(c).some(function (k) { return heldKeys && heldKeys[k]; })) return false;
+    if (c.group === "review") return true;
+    return !!(c.until && today > c.until);
+  }
+  function revAge(c, today) { return c.cardDay ? Math.max((sessionsUntil(c.cardDay, today) || 1) - 1, 0) : null; }
+  function revKind(age) { return age != null && age <= 5 ? "validate" : "fresh"; }
+  function freshPrompt(c, S, J, age, kind, now) {
+    var ch = pct(S.px, S.prev);
+    var why = J.full.concat(J.chk);
+    return "AVSHUNTER card review for " + c.t + " (" + c.side + " " + (c.con || "") + ", card of " + shortDate(c.cardDay) + (age != null ? ", " + age + " sessions old" : "") + "): " + (c.url || "no card link on the row") + ". " +
+      "Read the prior card in full and merge it with today's read. " +
+      "Live at " + now.hm + " ET " + shortDate(now.date) + ": " + c.t + " " + f2(S.px) + (ch == null ? "" : " (" + sgn(ch, 1) + " on the day)") + ", 52-week " + f2(S.yl) + " to " + f2(S.yh) + "; card contract " + S.occ + " " + f2(S.bid) + "/" + f2(S.ask) + ". " +
+      "Card plan: " + planText(c) + ". " +
+      "Board verdict: " + ({ mini: "mini update", check: "re-check", full: "full rebuild" })[J.level] + (why.length ? " (" + why.join("; ") + ")" : "") + ". " +
+      (kind === "validate"
+        ? "Validate: is the trade still valid as written? If yes, re-arm it with new dates and today's prices (same contract only if it still passes the liquidity tiers); if not, say what broke and whether the other side is now the trade."
+        : "Fresh card: the trade and the option have likely changed. Rebuild the card on today's data, both sides where feasible, with a contract that passes the liquidity tiers, the 52-week check and the 7-stage lifecycle read.") +
+      " Then write the board row, including the built prices.";
+  }
+  function revRow(c, now, heldKeys) {
+    var id = c._id || c.t, today = now.date, age = revAge(c, today), kind = revKind(age), S = ucSnap(c);
+    var head = '<td data-label="Card"><a class="tk" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.t) + "</a> " + esc(c.side) +
+      '<span class="sub">' + esc(c.con || "") + "</span><span class=\"sub\">card " + shortDate(c.cardDay) + (age != null ? " · " + age + " sessions old" : "") + (c.until ? " · window ended " + shortDate(c.until) : "") + "</span></td>";
+    if (S.px == null) return '<tr class="sev-idle" id="row-' + esc(id) + '">' + head + '<td data-label="Review" colspan="4"><span class="sub">No live quote for ' + esc(c.t) + " yet.</span>" + ucBtn(c) + "</td></tr>";
+    var e = evalCard(c, lastQ, now, lastOrders, heldKeys), J = ucJudge(c, e, S, c.built || BASE[id] || null);
+    var sev = J.level === "full" ? "bad" : J.level === "check" ? "warn" : "go";
+    var ch = pct(S.px, S.prev), stopV = stopNow(c, today);
+    var stopPast = c.stop.dir === "above" ? S.px > stopV : S.px < stopV;
+    var tgtHit = c.targetStock != null && (c.side === "PUT" ? S.px <= c.targetStock : S.px >= c.targetStock);
+    var r0 = nearRung(c, S.px), dist = !r0 ? null : S.px < r0.lo ? r0.lo - S.px : S.px > r0.hi ? S.px - r0.hi : 0;
+    var yPos = (S.yh != null && S.yl != null && S.yh > S.yl) ? Math.round((S.px - S.yl) / (S.yh - S.yl) * 100) : null;
+    var reasons = J.full.concat(J.chk).filter(function (x) { return !/Entry window ended|sessions old and not filled/.test(x); });
+    var note = c.outcome ? (typeof c.outcome === "string" ? c.outcome : (c.outcome.result || "") + (c.outcome.note ? ": " + c.outcome.note : "")) : "";
+    var prompt = freshPrompt(c, S, J, age, kind, now);
+    return '<tr class="sev-' + sev + '" id="row-' + esc(id) + '">' + head +
+      '<td data-label="Review"><span class="pill ' + (kind === "validate" ? "work" : "warn") + '">' + (kind === "validate" ? "Validate" : "Fresh card") + "</span>" +
+        '<span class="todo">' + (kind === "validate" ? "Is the trade still valid as written?" : "The trade and the option have likely changed: ask for a fresh card") + "</span>" +
+        '<span class="why">Board read: ' + esc(({ mini: "levels still fit", check: "re-check", full: "past what the card planned for" })[J.level]) + (reasons.length ? ". " + esc(reasons.slice(0, 2).join("; ")) : "") + "</span></td>" +
+      '<td data-label="Stock now"><span class="n">' + f2(S.px) + '</span> <span class="n ' + (ch >= 0 ? "up" : "dn") + '">' + (ch == null ? "" : sgn(ch, 1)) + "</span>" +
+        '<span class="sub">' + (dist == null ? "no zone" : dist === 0 ? "inside the card's zone" : f2(dist) + " (" + (dist / S.px * 100).toFixed(1) + "%) from the zone") + "</span>" +
+        '<span class="sub ' + (stopPast ? "dn" : "") + '">stop ' + f2(stopV) + (stopPast ? ": past it" : ": not hit") + "</span>" +
+        (c.targetStock != null ? '<span class="sub">target ' + f2(c.targetStock) + (tgtHit ? ": reached (move happened without us)" : "") + "</span>" : "") +
+        '<span class="sub">52 weeks ' + f2(S.yl) + "–" + f2(S.yh) + (yPos != null ? " · at " + yPos + "%" : "") + "</span></td>" +
+      '<td data-label="Card plan"><span class="plan" style="border-top:0;margin-top:0;padding-top:0">' + esc(planText(c)) + "</span>" +
+        '<span class="sub">contract now ' + f2(S.bid) + " / " + f2(S.ask) + (S.spr == null ? "" : " · spread " + S.spr.toFixed(0) + "%") + "</span>" +
+        (note ? '<span class="sub">' + esc(note) + "</span>" : "") + "</td>" +
+      '<td data-label="Actions">' + ucBtn(c) + ' <button type="button" class="cp" data-copy="' + esc(prompt) + '">Copy ' + (kind === "validate" ? "validation" : "fresh-card") + " prompt</button>" +
+        ' <button type="button" class="rvr" data-rv="' + esc(id) + '">Retire</button></td></tr>';
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("button.rvr") : null; if (!b || !DB) return;
+    var id = b.getAttribute("data-rv"); b.disabled = true; b.textContent = "Retiring…";
+    var ref = DB.doc("cards/" + id);
+    ref.get().then(function (snap) { if (!snap.exists) throw new Error("missing"); return ref.set(Object.assign({}, snap.data(), { retired: true, reviewedAt: new Date().toISOString() })); })
+      .then(function () { b.textContent = "Retired"; }, function () { b.disabled = false; b.textContent = "Retire failed"; });
+  });
+  function renderReview(list, now, hk) {
+    var tb = document.querySelector("#t-rev tbody"); if (!tb) return;
+    if (!list.length) { tb.innerHTML = emptyRow(5, "Nothing to review."); return; }
+    list.sort(function (a, b) { return (b.cardDay || "").localeCompare(a.cardDay || "") || String(a.t).localeCompare(String(b.t)); });
+    if (!liveOk) { tb.innerHTML = list.map(function (c) { return '<tr class="sev-idle"><td data-label="Card"><span class="tk">' + esc(c.t) + "</span> " + esc(c.side) + '<span class="sub">' + esc(c.con || "") + " · card " + shortDate(c.cardDay) + '</span></td><td data-label="Review" colspan="4"><span class="sub">Needs live data: open the board in the desktop app</span></td></tr>'; }).join(""); return; }
+    tb.innerHTML = list.map(function (c) { return revRow(c, now, hk); }).join("");
+  }
+
+  // ---------- rendering ----------
+  function rowHtml(c, e) {
+    return '<tr class="sev-' + e.sev + '" id="row-' + esc(c._id || c.t) + '">' +
+      '<td data-label="Card"><a class="tk" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.t) + "</a> " + esc(c.side) + '<span class="sub">' + esc(c.con) + "</span>" + (c.supersedes ? '<span class="sub">replaces ' + esc([].concat(c.supersedes).join(", ")) + "</span>" : "") + ucBtn(c) + "</td>" +
+      '<td data-label="State"><span class="pill ' + e.sev + '">' + esc(e.label) + '</span>' + (e.todo ? '<span class="todo">' + esc(e.todo) + "</span>" : "") + '<span class="why">' + esc(e.why) + "</span>" + (e.plan ? '<span class="plan">' + esc(e.plan) + "</span>" : "") + (e.auction || "") + ((e.sev === "go" || e.sev === "work" || e.sev === "warn" || e.sev === "bad") ? ticketHtml(e.ticket) : "") + "</td>" +
+      '<td data-label="Stock">' + e.stock + "</td>" +
+      '<td data-label="Entry zone">' + (e.zone.join('<span class="sub"> </span>') || "–") + "</td>" +
+      '<td data-label="Contract live">' + (e.opt || "–") + "</td>" +
+      '<td data-label="Gates and checks">' + (e.checks.join("") || "–") + "</td>" +
+      '<td data-label="Stop · exit">' + (e.stopTxt || "–") + "</td></tr>";
+  }
+  function staticRow(c) {
+    return '<tr class="sev-idle"><td data-label="Card"><a class="tk" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.t) + "</a> " + esc(c.side) + '<span class="sub">' + esc(c.con) + "</span></td>" +
+      '<td data-label="State"><span class="pill idle">No live data</span></td><td data-label="Stock">–</td>' +
+      '<td data-label="Entry zone">' + (c.rungs || []).map(function (r) { return esc(r.label); }).join("<br>") + "</td><td data-label=\"Contract live\">–</td>" +
+      '<td data-label="Gates and checks">' + (c.gates || []).map(function (g) { return '<span class="chk man">' + esc(g.label || "QQQ ≥ 706.52 or the stock beats XLY") + "</span>"; }).join("") + (c.manual || []).map(function (m) { return '<span class="chk man">' + esc(m) + "</span>"; }).join("") + "</td>" +
+      '<td data-label="Stop · exit"><span class="n">close ' + esc(c.stop.dir) + " " + f2(c.stop.v) + '</span><span class="sub">GTC ' + esc(c.gtcText || "–") + '</span><span class="sub">exit ' + (c.exit ? shortDate(c.exit) : "see card") + "</span></td></tr>";
+  }
+  function emptyRow(cols, text) { return '<tr><td colspan="' + cols + '" class="empty">' + esc(text) + "</td></tr>"; }
+
+  function render() {
+    var now = etParts(new Date());
+    var groups = { today: [], older: [] }, review = [], hk0 = heldMap();
+    CARDS.forEach(function (c) { if (c.retired) return; if (isReview(c, now.date, hk0)) review.push(c); else if (groups[c.group]) groups[c.group].push(c); });
+    $("s-cards").textContent = groups.today.length + " waiting · " + groups.older.length + " older · " + review.length + " to review";
+    renderReview(review, now, hk0);
+    renderTri();
+    if (!liveOk) {
+      document.querySelector("#t-cards tbody").innerHTML = groups.today.length ? groups.today.map(staticRow).join("") : emptyRow(7, "No cards stored yet. Each deep dive adds its card here.");
+      document.querySelector("#t-old tbody").innerHTML = groups.older.length ? groups.older.map(staticRow).join("") : emptyRow(7, "None.");
+      return;
+    }
+    var Q = lastQ, orders = lastOrders, heldKeys = {};
+    (lastPos || []).forEach(function (p) { heldKeys[key(p.symbol)] = 1; });
+    var tally = { bad: 0, go: 0, work: 0, held: 0, warn: 0, idle: 0 }, doNow = [], glance = "";
+    ["today", "older"].forEach(function (g) {
+      var rows = groups[g].map(function (c) { return { c: c, e: evalCard(c, Q, now, orders, heldKeys) }; });
+      rows.sort(function (a, b) { return SEV[a.e.sev] - SEV[b.e.sev]; });
+      if (g === "today") { rows.forEach(function (r) { tally[r.e.sev]++; }); glance = rows.map(function (r) { return '<a class="g-' + r.e.sev + '" href="#row-' + esc(r.c._id || r.c.t) + '">' + esc(r.c.t) + " " + esc(r.c.side) + "<span>" + esc(r.e.label) + "</span></a>"; }).join(""); }
+      rows.forEach(function (r) { if (r.e.sev === "go" || r.e.sev === "work") doNow.push("<b>" + esc(r.c.t) + "</b>: " + esc(r.e.todo)); });
+      document.querySelector(g === "today" ? "#t-cards tbody" : "#t-old tbody").innerHTML = rows.length ? rows.map(function (r) { return rowHtml(r.c, r.e); }).join("") : emptyRow(7, g === "today" ? "No cards stored yet." : "None.");
+    });
+    // positions
+    var tb = document.querySelector("#t-pos tbody");
+    if (!lastPos) tb.innerHTML = emptyRow(6, "Positions could not be read.");
+    else if (!lastPos.length) tb.innerHTML = emptyRow(6, "No open positions.");
+    else {
+      var pr = lastPos.map(function (p) {
+        var c = null; CARDS.forEach(function (x) { if (!c && cardOccs(x).indexOf(key(p.symbol)) >= 0) c = x; });
+        return { p: p, c: c, e: evalPosition(p, c, Q, now, orders) };
+      });
+      var PSEV = { bad: 0, go: 1, warn: 2, held: 3, idle: 4 };
+      pr.sort(function (a, b) { return PSEV[a.e.sev] - PSEV[b.e.sev]; });
+      var sellN = 0;
+      tb.innerHTML = pr.map(function (r) {
+        var e = r.e, p = r.p; if (e.sev === "bad" || e.sev === "go") { sellN++; doNow.unshift("<b>" + esc(p["underlying-symbol"]) + " (held)</b>: " + esc(e.sigs[0] ? e.sigs[0][1] : e.label)); }
+        var ch = e.s ? pct(e.last, num(e.s["prev-close"])) : null;
+        var plp = (e.mk != null && e.avg) ? (e.mk / e.avg - 1) * 100 : null;
+        return '<tr class="sev-' + e.sev + '"><td data-label="Position"><span class="tk">' + esc(p["underlying-symbol"]) + "</span> " + esc(r.c ? r.c.side : "") + '<span class="sub">' + esc(key(p.symbol)) + " × " + e.qty + "</span></td>" +
+          '<td data-label="Signal"><span class="pill ' + e.sev + '">' + esc(e.label) + "</span>" + e.sigs.map(function (s) { return '<span class="sig ' + s[0] + '">' + esc(s[1]) + "</span>"; }).join("") + "</td>" +
+          '<td data-label="Stock"><span class="n">' + f2(e.last) + '</span> <span class="n ' + (ch >= 0 ? "up" : "dn") + '">' + (ch == null ? "" : (ch >= 0 ? "+" : "") + ch.toFixed(1) + "%") + "</span></td>" +
+          '<td data-label="Option"><span class="n">' + f2(e.bid) + " / " + f2(e.ask) + '</span><span class="sub">paid ' + f2(e.avg) + " · mid " + f2(e.mk) + "</span></td>" +
+          '<td data-label="P&amp;L"><span class="n ' + (e.plMid >= 0 ? "up" : "dn") + '">' + (e.plMid == null ? "–" : (e.plMid >= 0 ? "+$" : "−$") + Math.abs(e.plMid).toFixed(0)) + '</span><span class="sub">' + (plp == null ? "" : (plp >= 0 ? "+" : "") + plp.toFixed(0) + "% at mid") + "</span>" +
+          '<span class="sub">at the bid ' + (e.plBid == null ? "–" : (e.plBid >= 0 ? "+$" : "−$") + Math.abs(e.plBid).toFixed(0)) + "</span></td>" +
+          '<td data-label="Card exits">' + e.lines + (r.c ? ucBtn(r.c) : "") + ticketHtml(posTicket(p, r.c, e)) + "</td></tr>";
+      }).join("");
+      if (sellN) tally.sell = sellN;
+    }
+    $("donow-list").innerHTML = doNow.length ? doNow.map(function (x) { return "<li>" + x + "</li>"; }).join("") : "<li>Nothing needs you right now. Rows below say what each card is waiting for.</li>";
+    $("donow").hidden = false;
+    $("glance").innerHTML = glance;
+    var names = { sell: "Live trade to act on", go: "Ready to buy", work: "Work the order / alternative / wait 15:50", bad: "Blocked or stop risk", warn: "Waiting or price high", held: "Filled", idle: "Not yet or closed" };
+    $("tally").innerHTML = ["sell", "go", "work", "bad", "warn", "held", "idle"].filter(function (k) { return tally[k]; }).map(function (k) { return '<span><span class="pill ' + (k === "sell" ? "bad" : k) + '">' + tally[k] + "</span> " + names[k] + "</span>"; }).join("");
+  }
+
+  function banner(kind, html) { var b = $("banner"); b.className = "banner" + (kind ? " " + kind : ""); b.innerHTML = html; b.hidden = !html; }
+
+  // ---------- live ----------
+  function clock() { var n = etParts(new Date()); $("s-et").textContent = n.wd + " " + n.hm + " ET"; }
+  setInterval(clock, 15000); clock();
+
+  function explain(err) {
+    var c = err && err.code;
+    if (c === "server_not_connected") return "The Tastytrade server can't be reached from here. Open this board in the Claude desktop app on the computer that runs the Tastytrade server. In a browser the board shows the stored card levels only.";
+    if (c === "not_in_manifest" || c === "approval_required" || c === "consent_required") return "The board needs your permission to read Tastytrade. Press Refresh now and allow it when the app asks.";
+    if (c === "cancelled") return "The read was declined in the app. Press Refresh now to ask again.";
+    if (c === "server_unavailable" || c === "upstream_error") return "Tastytrade did not answer just now (" + esc(c) + "). The last good data stays on screen; the next refresh tries again.";
+    if (c === "tool_error") return "Tastytrade returned an error: " + esc(err.message || "");
+    return "Live data is not available (" + esc(c || "unknown") + ").";
+  }
+  async function call(tool, input) { var r = await mcp.callTool(SERVER, tool, input, { cache: false }); return r.payload; }
+  function items(x) { return (x && x.items) || (Array.isArray(x) ? x : []); }
+
+  // ---------- position path log (19 Oct): one sample a minute per held option, for the best executable exit ----------
+  var DB = null, PATHS = {}, pathBusy = false;
+  async function logPaths(pos, Q) {
+    var now = etParts(new Date());
+    if (!DB || !pos || !marketOpen(now) || pathBusy) return;
+    pathBusy = true;
+    try { for (var i = 0; i < pos.length; i++) {
+      var p = pos[i]; if (p["instrument-type"] !== "Equity Option") continue;
+      var oq = Q[pad(p.symbol)], u = p["underlying-symbol"], s = Q[u];
+      var bid = oq ? num(oq.bid) : null, ask = oq ? num(oq.ask) : null, stock = s ? (num(s.last) != null ? num(s.last) : num(s.mark)) : null;
+      if (bid == null) continue;
+      var id = key(p.symbol) + "_" + now.date, ref = DB.doc("paths/" + id), rec = PATHS[id];
+      if (!rec) {
+        try { var snap = await ref.get(); rec = snap.exists ? Object.assign({}, snap.data()) : null; } catch (e) { rec = null; }
+        if (!rec) rec = { occ: key(p.symbol), t: u, date: now.date, avg: num(p["average-open-price"]), qty: num(p.quantity), samples: [] };
+        rec.samples = (rec.samples || []).slice(); PATHS[id] = rec;
+      }
+      var lastS = rec.samples[rec.samples.length - 1];
+      if (lastS && lastS[0] === now.hm) continue;            // one sample a minute
+      rec.samples.push([now.hm, bid, ask, stock]);
+      if (rec.maxBid == null || bid > rec.maxBid) { rec.maxBid = bid; rec.maxBidAt = now.hm; rec.maxStock = stock; }
+      if (rec.minBid == null || bid < rec.minBid) { rec.minBid = bid; rec.minBidAt = now.hm; }
+      rec.maxPct = rec.avg ? Math.round((rec.maxBid / rec.avg - 1) * 1000) / 1000 : null;
+      rec.lastBid = bid; rec.updated = new Date().toISOString();
+      try { await ref.set(rec); } catch (e) { /* the log is best-effort; trading signals never depend on it */ }
+    } } finally { pathBusy = false; }
+  }
+  async function refresh(full) {
+    if (!mcp || busy) return;
+    busy = true; $("btn-refresh").disabled = true; $("btn-refresh").textContent = "Refreshing…";
+    try {
+      var pos = lastPos, orders = lastOrders;
+      if (full !== false || lastPos === null) {
+      try { var ses = await call("tastytrade_get_market_session", { collections: ["Equity"], when: "current" }); $("s-session").textContent = (ses && ses.state) || "–"; } catch (e) { $("s-session").textContent = "–"; }
+      if (!acct) {
+        var ac = items(await call("tastytrade_get_accounts", {}));
+        acct = ac[0] && ac[0].account && ac[0].account["account-number"];
+      }
+      if (acct) {
+        try { pos = items(await call("tastytrade_get_positions", { account_number: acct })).filter(function (p) { return (num(p.quantity) || 0) !== 0; }); } catch (e) { pos = null; }
+        try { orders = items(await call("tastytrade_get_live_orders", { account_number: acct })).filter(function (o) { return WORKING.indexOf(o.status) >= 0; }); } catch (e) { orders = []; }
+      }
+      }
+      var eq = {}, opt = {};
+      CARDS.forEach(function (c) { if (c.retired) return; eq[c.t] = 1; cardOccs(c).forEach(function (k) { opt[pad(k)] = 1; }); (c.gates || []).concat(c.flags || []).forEach(function (g) { if (g.s && INDEX.indexOf(g.s) < 0) eq[g.s] = 1; }); });
+      EXTRA.forEach(function (s) { eq[s] = 1; });
+      (pos || []).forEach(function (p) { if (p["underlying-symbol"]) eq[p["underlying-symbol"]] = 1; if (p["instrument-type"] === "Equity Option") opt[pad(p.symbol)] = 1; });
+      var syms = Object.keys(eq).map(function (s) { return { symbol: s, instrument_type: "Equity" }; })
+        .concat(INDEX.map(function (s) { return { symbol: s, instrument_type: "Index" }; }))
+        .concat(Object.keys(opt).map(function (s) { return { symbol: s, instrument_type: "Equity Option" }; }));
+      var Q = {}, latest = "";
+      for (var i = 0; i < syms.length; i += 100) {
+        items(await call("tastytrade_get_quote_snapshot", { symbols: syms.slice(i, i + 100) })).forEach(function (q) { Q[q.symbol] = q; if (q["updated-at"] && q["updated-at"] > latest) latest = q["updated-at"]; });
+      }
+      Object.keys(TQ).forEach(function (s) { if (!Q[s] || (TQ[s]["updated-at"] || "") > (Q[s]["updated-at"] || "")) Q[s] = TQ[s]; });
+      lastQ = Q; lastPos = pos; lastOrders = orders; liveOk = true;
+      logPaths(pos, Q);
+      try {
+        var nowP = etParts(new Date()), hk = {}; (pos || []).forEach(function (p) { hk[key(p.symbol)] = 1; });
+        var todo = [];
+        CARDS.forEach(function (c) { if (c.retired || c.group === "position") return; var e = evalCard(c, Q, nowP, orders, hk); var id = c._id || c.t; if (e.needsAlt) { var A0 = ALT[id], ttl = (e.needsAlt.waiting || e.needsAlt.bigOnly) ? 300000 : 60000, wrongKind = A0 && !!(A0.best && A0.best.edge) !== !!e.needsAlt.waiting && !A0.none; if (!A0 || wrongKind || Date.now() - A0.t > ttl) todo.push([c, e.needsAlt]); } });
+        todo.sort(function (x, y) { var k = function (n) { return n.bigOnly ? 2 : n.waiting ? 1 : 0; }; return k(x[1]) - k(y[1]); });
+        for (var a = 0; a < todo.length && a < 4; a++) { try { ALT[todo[a][0]._id || todo[a][0].t] = await findAlt(todo[a][0], todo[a][1].r, todo[a][1].last, todo[a][1].edge); } catch (e) { ALT[todo[a][0]._id || todo[a][0].t] = { t: Date.now(), none: "chain search failed (" + esc(e && e.code || e && e.message) + ")" }; } }
+      } catch (e) {}
+      if (!TQ.QQQ) $("s-mkt").textContent = (Q.QQQ ? f2(num(Q.QQQ.last)) : "–") + " · " + (Q.VIX ? f2(num(Q.VIX.last)) : "–");
+      $("s-asof").textContent = latest ? new Date(latest).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/New_York" }) + " ET" : "–";
+      render();
+      ucAfterRefresh();
+      lineageSweep();
+      var missing = syms.filter(function (s) { return !Q[s.symbol]; }).map(function (s) { return s.symbol.replace(/\s+/g, ""); });
+      banner("", missing.length ? "No quote came back for: " + esc(missing.join(", ")) + ". Those rows show what they can." : "");
+    } catch (err) {
+      banner(err && err.code === "server_not_connected" ? "bad" : "", explain(err));
+    } finally {
+      busy = false; $("btn-refresh").disabled = false; $("btn-refresh").textContent = "Refresh now";
+    }
+  }
+
+  // ---------- market tape (13 Nov): QQQ, index, sector and macro ETFs on their own fast loop ----------
+  var TAPE = [
+    { g: "Indices and volatility", list: [["SPY", "S&P 500"], ["QQQ", "Nasdaq 100"], ["IWM", "Russell 2000"], ["DIA", "Dow 30"], ["RSP", "S&P 500 equal weight"], ["VIX", "Volatility index"]] },
+    { g: "Sectors", list: [["XLK", "Technology"], ["SMH", "Semiconductors"], ["XLC", "Communication"], ["XLY", "Consumer discretionary"], ["XLF", "Financials"], ["XLI", "Industrials"], ["XLE", "Energy"], ["XLB", "Materials"], ["XLV", "Health care"], ["XLP", "Consumer staples"], ["XLU", "Utilities"], ["XLRE", "Real estate"], ["XRT", "Retail"], ["KWEB", "China internet"]] },
+    { g: "Rates, credit, dollar, commodities", list: [["TLT", "20y+ Treasuries"], ["HYG", "High-yield credit"], ["UUP", "US dollar"], ["GLD", "Gold"], ["USO", "Oil"]] }
+  ];
+  var SECT = ["XLK", "XLC", "XLY", "XLF", "XLI", "XLE", "XLB", "XLV", "XLP", "XLU", "XLRE"];
+  var TQ = {}, THIST = {}, tapeBusy = false, tapeTimer = null, tapeGen = 0, tapeHold = 0, tapeErr = "";
+  var tapeEvery = 5000;
+  try { var te0 = parseInt(localStorage.getItem("tapeEvery"), 10); if (te0 >= 3000) tapeEvery = te0; } catch (e) {}
+  function tapeHours(now) { return !(now.wd === "Sat" || now.wd === "Sun") && now.mins >= 240 && now.mins < 1200; } // 04:00-20:00 ET, extended hours included
+  function tapeLastOf(q) { return q ? (num(q.last) != null ? num(q.last) : num(q.mark)) : null; }
+  function ago(s, ms) {
+    var h = THIST[s]; if (!h || h.length < 2) return null;
+    var cut = Date.now() - ms, ref = null;
+    for (var i = h.length - 1; i >= 0; i--) { if (h[i][0] <= cut) { ref = h[i][1]; break; } }
+    return ref == null ? null : (h[h.length - 1][1] / ref - 1) * 100;
+  }
+  function sgn(x, d) { return x == null ? "–" : (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(d == null ? 2 : d) + "%"; }
+  function cls(x, inv) { if (x == null || x === 0) return ""; return (x > 0) !== !!inv ? "up" : "dn"; }
+  function spark(s, inv) {
+    var h = THIST[s]; if (!h || h.length < 2) return '<span class="sub">building</span>';
+    var pts = h, step = Math.max(1, Math.floor(h.length / 120)); if (step > 1) { pts = []; for (var i = 0; i < h.length; i += step) pts.push(h[i]); pts.push(h[h.length - 1]); }
+    var lo = Infinity, hi = -Infinity; pts.forEach(function (p) { if (p[1] < lo) lo = p[1]; if (p[1] > hi) hi = p[1]; });
+    var W = 120, H = 26, t0 = pts[0][0], t1 = pts[pts.length - 1][0], span = Math.max(t1 - t0, 1), rng = hi - lo || 1;
+    var line = pts.map(function (p) { return ((p[0] - t0) / span * W).toFixed(1) + "," + (H - (p[1] - lo) / rng * H).toFixed(1); }).join(" ");
+    var y0 = (H - (pts[0][1] - lo) / rng * H).toFixed(1), up = pts[pts.length - 1][1] >= pts[0][1];
+    var col = (up !== !!inv) ? "var(--ok)" : "var(--bad)", mins = Math.round(span / 60000);
+    return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(s) + " over the last " + mins + ' minutes"><line x1="0" x2="' + W + '" y1="' + y0 + '" y2="' + y0 + '"></line><polyline stroke="' + col + '" points="' + line + '"></polyline></svg><span class="sub">' + (mins < 1 ? "under 1 min" : mins + " min") + " · " + f2(lo) + "–" + f2(hi) + "</span>";
+  }
+  function tapeCards(s, last, today) {
+    var out = [];
+    CARDS.forEach(function (c) {
+      if (c.retired || (c.until && today > c.until && c.group !== "position")) return;
+      (c.gates || []).forEach(function (g) { if (g.s !== s || last == null) return; var ok = g.op === ">=" ? last >= g.v : last <= g.v; out.push('<span class="chk ' + (ok ? "pass" : "fail") + '">' + esc(c.t) + ": " + esc(g.label) + "</span>"); });
+      (c.flags || []).forEach(function (g) { if (g.s !== s || last == null) return; var ok = g.op === ">=" ? last >= g.v : last <= g.v; out.push('<span class="chk ' + (ok ? "pass" : "fail") + '">' + esc(c.t) + " money flag: " + esc(g.label) + "</span>"); });
+    });
+    return out.join("") || '<span class="sub">–</span>';
+  }
+  function tapeReadHtml() {
+    var d = function (s) { var q = TQ[s]; return q ? pct(tapeLastOf(q), num(q["prev-close"])) : null; };
+    var spy = d("SPY"), qqq = d("QQQ"), iwm = d("IWM"), rsp = d("RSP"), vix = d("VIX"), xly = d("XLY"), xlp = d("XLP"), hyg = d("HYG"), tlt = d("TLT"), uup = d("UUP");
+    if (qqq == null || spy == null) return null;
+    var secs = SECT.map(function (s) { return [s, d(s)]; }).filter(function (x) { return x[1] != null; }).sort(function (a, b) { return b[1] - a[1]; });
+    var upN = secs.filter(function (x) { return x[1] > 0; }).length;
+    var tells = [
+      ["Growth vs broad", qqq - spy, "QQQ " + (qqq >= spy ? "leading" : "lagging") + " SPY by " + Math.abs(qqq - spy).toFixed(2) + " pts"],
+      ["Small caps", iwm == null ? null : iwm - spy, iwm == null ? "IWM –" : "IWM " + (iwm >= spy ? "leading" : "lagging") + " SPY by " + Math.abs(iwm - spy).toFixed(2) + " pts"],
+      ["Breadth", rsp == null ? null : rsp - spy, rsp == null ? "RSP –" : "equal weight " + (rsp >= spy ? "ahead of" : "behind") + " SPY by " + Math.abs(rsp - spy).toFixed(2) + " pts · " + upN + " of " + secs.length + " sectors up"],
+      ["Offence vs defence", (xly == null || xlp == null) ? null : xly - xlp, (xly == null || xlp == null) ? "XLY/XLP –" : "XLY " + sgn(xly) + " vs XLP " + sgn(xlp)],
+      ["Credit", hyg, "HYG " + sgn(hyg)],
+      ["Fear", vix == null ? null : -vix, "VIX " + sgn(vix, 1)]
+    ];
+    var on = 0, off = 0; tells.forEach(function (t) { if (t[1] == null) return; if (t[1] > 0) on++; else if (t[1] < 0) off++; });
+    var mood = on >= 4 ? "on" : off >= 4 ? "off" : "mixed";
+    var word = mood === "on" ? "Risk-on" : mood === "off" ? "Risk-off" : "Mixed";
+    var q1 = ago("QQQ", 60000), q5 = ago("QQQ", 300000), Q = TQ.QQQ, qlo = num(Q["day-low-price"]), qhi = num(Q["day-high-price"]), ql = tapeLastOf(Q);
+    var pos = (qhi != null && qlo != null && qhi > qlo && ql != null) ? (ql - qlo) / (qhi - qlo) : null;
+    var edge = pos == null ? "" : pos >= 0.9 ? " · pressing the day high" : pos <= 0.1 ? " · pressing the day low" : "";
+    var lead = secs.slice(0, 2).map(function (x) { return x[0] + " " + sgn(x[1]); }).join(", "), lag = secs.slice(-2).reverse().map(function (x) { return x[0] + " " + sgn(x[1]); }).join(", ");
+    var html = "<b>" + word + "</b>: " + on + " of " + (on + off) + " tells lean risk-on. QQQ " + f2(ql) + " " + sgn(qqq) + " on the day" +
+      (q1 != null ? ", " + sgn(q1) + " in the last minute" : "") + (q5 != null ? ", " + sgn(q5) + " in 5 minutes" : "") +
+      (pos != null ? "; it sits at " + Math.round(pos * 100) + "% of today's range" + edge : "") + ". Leaders " + (lead || "–") + "; laggards " + (lag || "–") + "." +
+      '<span class="chips">' + tells.map(function (t) { return '<span class="' + cls(t[1]) + '">' + esc(t[0]) + ": " + esc(t[2]) + "</span>"; }).join("") +
+      '<span class="' + cls(tlt) + '">Bonds: TLT ' + sgn(tlt) + "</span>" + '<span class="' + cls(uup, true) + '">Dollar: UUP ' + sgn(uup) + "</span></span>";
+    return { html: html, mood: mood };
+  }
+  function renderTape(latest) {
+    var today = etParts(new Date()).date, qqq = TQ.QQQ ? pct(tapeLastOf(TQ.QQQ), num(TQ.QQQ["prev-close"])) : null, rows = [];
+    TAPE.forEach(function (G) {
+      rows.push('<tr class="grp"><td colspan="9">' + esc(G.g) + "</td></tr>");
+      G.list.forEach(function (r) {
+        var s = r[0], q = TQ[s], inv = s === "VIX";
+        if (!q) { rows.push('<tr><td data-label="ETF"><span class="tk">' + esc(s) + '</span><span class="nm">' + esc(r[1]) + '</span></td><td data-label="Last" colspan="8"><span class="sub">no quote</span></td></tr>'); return; }
+        var last = tapeLastOf(q), prev = num(q["prev-close"]), open = num(q.open), lo = num(q["day-low-price"]), hi = num(q["day-high-price"]);
+        var day = pct(last, prev), fo = pct(last, open), vs = (s === "QQQ" || inv || day == null || qqq == null) ? null : day - qqq;
+        var m1 = ago(s, 60000), m5 = ago(s, 300000), pos = (hi != null && lo != null && hi > lo && last != null) ? Math.min(Math.max((last - lo) / (hi - lo), 0), 1) : null;
+        var fl = q._tick > 0 ? (inv ? "fd" : "fu") : q._tick < 0 ? (inv ? "fu" : "fd") : "";
+        rows.push("<tr>" +
+          '<td data-label="ETF"><span class="tk">' + esc(s) + '</span><span class="nm">' + esc(r[1]) + "</span></td>" +
+          '<td data-label="Last" class="' + fl + '"><span class="n">' + f2(last) + "</span></td>" +
+          '<td data-label="Day"><span class="n ' + cls(day, inv) + '">' + sgn(day) + "</span></td>" +
+          '<td data-label="From open"><span class="n ' + cls(fo, inv) + '">' + sgn(fo) + "</span></td>" +
+          '<td data-label="vs QQQ"><span class="n ' + cls(vs) + '">' + (vs == null ? "–" : (vs >= 0 ? "+" : "−") + Math.abs(vs).toFixed(2) + " pts") + "</span></td>" +
+          '<td data-label="1 min / 5 min"><span class="n ' + cls(m1, inv) + '">' + sgn(m1) + '</span> / <span class="n ' + cls(m5, inv) + '">' + sgn(m5) + "</span></td>" +
+          '<td data-label="Day range">' + (pos == null ? "–" : '<span class="rng" title="' + f2(lo) + " to " + f2(hi) + '"><i style="left:' + (pos * 100).toFixed(0) + '%"></i></span><span class="sub">' + f2(lo) + "–" + f2(hi) + " · " + Math.round(pos * 100) + "%</span>") + "</td>" +
+          '<td data-label="Since board opened">' + spark(s, inv) + "</td>" +
+          '<td data-label="Cards">' + tapeCards(s, last, today) + "</td></tr>");
+      });
+    });
+    $("t-tape").tBodies[0].innerHTML = rows.join("");
+    var R = tapeReadHtml(), box = $("tape-read");
+    if (R) { box.innerHTML = R.html; box.className = "tape-read " + R.mood; }
+    var when = latest ? new Date(latest).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/New_York" }) + " ET" : "–";
+    $("tape-asof").textContent = tapeErr ? tapeErr : "quotes " + when;
+    if (TQ.QQQ || TQ.VIX) $("s-mkt").textContent = (TQ.QQQ ? f2(tapeLastOf(TQ.QQQ)) : "–") + " · " + (TQ.VIX ? f2(tapeLastOf(TQ.VIX)) : "–");
+  }
+  async function tapeTick() {
+    if (!mcp || tapeBusy || Date.now() < tapeHold) return;
+    tapeBusy = true;
+    try {
+      var syms = [];
+      TAPE.forEach(function (G) { G.list.forEach(function (r) { syms.push({ symbol: r[0], instrument_type: r[0] === "VIX" ? "Index" : "Equity" }); }); });
+      var got = items(await call("tastytrade_get_quote_snapshot", { symbols: syms })), t = Date.now(), latest = "";
+      got.forEach(function (q) {
+        var s = q.symbol, last = tapeLastOf(q), prev = TQ[s], pl = prev ? tapeLastOf(prev) : null;
+        q._tick = (pl != null && last != null) ? (last > pl ? 1 : last < pl ? -1 : 0) : 0;
+        TQ[s] = q; lastQ[s] = q;                 // card gates read the freshest ETF quote too
+        var h = THIST[s] || (THIST[s] = []);
+        if (last != null && (!h.length || h[h.length - 1][1] !== last || t - h[h.length - 1][0] > 30000)) h.push([t, last]);
+        if (h.length > 2000) h.splice(0, h.length - 2000);
+        if (q["updated-at"] && q["updated-at"] > latest) latest = q["updated-at"];
+      });
+      tapeErr = "";
+      renderTape(latest);
+    } catch (err) {
+      if (err && err.code === "rate_limit_exceeded") { var wait = (err.retry_after_ms || (err.data && err.data.retry_after_ms) || 5000); tapeHold = Date.now() + wait; tapeErr = "Tastytrade asked the board to slow down; next try in " + Math.ceil(wait / 1000) + " s"; }
+      else tapeErr = "ETF quotes failed (" + (err && err.code || "error") + "); retrying";
+      $("tape-asof").textContent = tapeErr;
+    } finally { tapeBusy = false; }
+  }
+  function tapeStart() {
+    if (tapeTimer) clearTimeout(tapeTimer);
+    var gen = ++tapeGen;
+    if (!mcp) return;
+    if (!auto) { $("tape-asof").textContent = "paused (Live: off)"; return; }
+    (async function loop() {
+      if (gen !== tapeGen) return;
+      if (document.visibilityState === "visible") await tapeTick();
+      if (gen !== tapeGen) return;
+      tapeTimer = setTimeout(loop, tapeHours(etParts(new Date())) ? tapeEvery : 60000);
+    })();
+  }
+  (function () { var sel = $("tape-every"); sel.value = String(tapeEvery); if (sel.value !== String(tapeEvery)) { tapeEvery = 5000; sel.value = "5000"; }
+    sel.addEventListener("change", function () { tapeEvery = parseInt(sel.value, 10) || 5000; try { localStorage.setItem("tapeEvery", String(tapeEvery)); } catch (e) {} tapeStart(); }); })();
+
+  function schedule() {
+    if (timer) clearInterval(timer);
+    var tick = 0;
+    timer = auto ? setInterval(function () {
+      if (document.visibilityState !== "visible") return;
+      tick++;
+      var open = marketOpen(etParts(new Date()));
+      if (open) refresh(tick % 4 === 0); else if (tick % 4 === 0) refresh(true);
+    }, 15000) : null;
+  }
+  $("btn-refresh").addEventListener("click", function () { refresh(true); });
+  $("btn-auto").addEventListener("click", function () {
+    auto = !auto; this.setAttribute("aria-pressed", String(auto)); this.textContent = "Live: " + (auto ? "on" : "off"); schedule(); tapeStart();
+  });
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && auto) { refresh(); tapeStart(); } });
+
+  if (!(window.claude && window.claude.use)) {
+    banner("bad", "This copy of the page has no connection. Open it from Claude.");
+    $("btn-refresh").disabled = true; $("btn-auto").disabled = true;
+    return;
+  }
+  window.claude.use("db").then(function (db) {
+    if (!db) { banner("bad", "The card list can't be loaded in this view."); return; }
+    DB = db; ucSubscribe(db); triSubscribe(db);
+    db.collection("cards").onSnapshot(function (snap) {
+      try {
+        CARDS = snap.docs.map(function (d) { return Object.assign({}, d.data() || {}, { _id: d.id }); }).filter(function (o) { return o.t && o.stop; });
+      } catch (e) { banner("bad", "The card list could not be read (" + esc(e && e.message) + ")."); return; }
+      render();
+      lineageSweep();
+      if (mcp) { if (busy) setTimeout(refresh, 1500); else refresh(); }
+    }, function (e) { banner("bad", "The card list stopped updating (" + esc(e && e.code) + "). Reload the board."); });
+  });
+  window.claude.use("mcp").then(function (m) {
+    if (!m) { banner("bad", "Live data is off in this view. Open the board in the Claude desktop app on the computer that runs the Tastytrade server. Card levels still show."); $("btn-refresh").disabled = true; $("btn-auto").disabled = true; return; }
+    mcp = m; refresh(); schedule(); tapeStart(); triStart();
+  });
+})();
+</script>
+
+</body></html>
