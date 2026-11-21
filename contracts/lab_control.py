@@ -5078,16 +5078,19 @@ def write_final_opportunity_book(
     # C5 is frozen from the pre-option Discovery packet. Morning reads the
     # same packet; neither selected contracts nor legacy EV can fill its facts.
     from contracts.descriptive_forecast_packet import (
-        load_or_publish_descriptive_packet, project_lab_descriptive_rows,
+        load_or_publish_descriptive_packet, may_publish_descriptive_packet, project_lab_descriptive_rows,
     )
     packet_root = Path(runs_dir) / run_id
     packet_dir = packet_root / "forecast" / "ticker_forecast_descriptive_v1"
     discovery_source = packet_root / "discovery" / f"discovery_candidates_ultimate_{run_id}.csv"
     packet = None
+    # ACK 21 Nov 2026: when the Evening recorded that the pre-option freeze failed,
+    # the Lab shows the description as unavailable; it never publishes one late.
     if packet_dir.exists() or (
         _u((run_manifest or {}).get("pipeline_mode")) == "EOD"
         and discovery_source.is_file()
         and (packet_root / "run_meta.json").is_file()
+        and may_publish_descriptive_packet(packet_root)
     ):
         packet = load_or_publish_descriptive_packet(packet_root)
     expression_packet = None

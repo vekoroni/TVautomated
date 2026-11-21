@@ -32,6 +32,74 @@ def _packet_dir(run_root: Path) -> Path:
     return run_root / "forecast" / PACKET_VERSION
 
 
+# ── Advisory publication status (ACK 21 Nov 2026) ────────────────────────────
+# C5, C6 and C8 describe; they hold no trading authority, so a failure to
+# publish one is recorded here and never ends the Evening. Only failures are
+# written: a healthy run has no status file.
+ADVISORY_STATUS_FILE = "advisory_publication_status.json"
+ADVISORY_STATUS_VERSION = "advisory_publication_status_v1"
+C5_STAGE = "C5_DESCRIPTIVE_FORECAST"
+
+
+def _advisory_status_path(run_root: Path) -> Path:
+    return Path(run_root) / "forecast" / ADVISORY_STATUS_FILE
+
+
+def _read_advisory_status(run_root: Path) -> dict[str, Any]:
+    path = _advisory_status_path(run_root)
+    if not path.is_file():
+        return {}
+    try:
+        stages = json.loads(path.read_text(encoding="utf-8")).get("stages")
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return dict(stages) if isinstance(stages, dict) else {}
+
+
+def _write_advisory_status(run_root: Path, stages: Mapping[str, Any]) -> None:
+    path = _advisory_status_path(run_root)
+    if not stages:
+        path.unlink(missing_ok=True)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(
+        json.dumps({"version": ADVISORY_STATUS_VERSION, "run_id": Path(run_root).name,
+                    "stages": dict(stages)}, sort_keys=True, indent=2),
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def record_advisory_publication(
+    run_root: Path | str, stage: str, state: str, *, reason: str = "", recorded_at_utc: str = "",
+) -> None:
+    """Record that an advisory packet is missing, and why. Missing is never neutral."""
+    root = Path(run_root)
+    stages = _read_advisory_status(root)
+    stages[stage] = {"state": state, "reason": str(reason)[:500], "authority": "ADVISORY_ONLY",
+                     "recorded_at_utc": recorded_at_utc}
+    _write_advisory_status(root, stages)
+
+
+def clear_advisory_publication(run_root: Path | str, stage: str) -> None:
+    """Drop an earlier failure record for a stage that is being attempted again."""
+    root = Path(run_root)
+    stages = _read_advisory_status(root)
+    if stages.pop(stage, None) is not None:
+        _write_advisory_status(root, stages)
+
+
+def advisory_publication_state(run_root: Path | str, stage: str) -> str | None:
+    """The recorded failure state for a stage, or None when no failure is recorded."""
+    return (_read_advisory_status(Path(run_root)).get(stage) or {}).get("state")
+
+
+def may_publish_descriptive_packet(run_root: Path | str) -> bool:
+    """False once the pre-option freeze has failed: the description is never published late."""
+    return advisory_publication_state(run_root, C5_STAGE) is None
+
+
 def load_descriptive_packet(run_root: Path | str) -> dict[str, Any]:
     root = Path(run_root)
     folder = _packet_dir(root)
@@ -58,6 +126,10 @@ def load_or_publish_descriptive_packet(run_root: Path | str) -> dict[str, Any]:
     target = _packet_dir(root)
     if target.exists():
         return load_descriptive_packet(root)
+    if not may_publish_descriptive_packet(root):
+        # The Evening recorded that the pre-option freeze failed. Files on disk
+        # now may already carry option-stage changes, so nothing is published.
+        raise DescriptivePacketError("descriptive packet was not frozen before options; it is not published late")
     discovery = root / "discovery" / f"discovery_candidates_ultimate_{root.name}.csv"
     vanguard_dir = root / "vanguard"
     vanguard_csv = vanguard_dir / "vanguard_signals.csv"

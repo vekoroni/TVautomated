@@ -770,3 +770,42 @@ Still open with ACK: the delayed-feed rule TR-005 and the versioned agent packet
 ### 14.4 Baseline
 
 Code baseline for the build: `9e7849b` on `laneb/lab-first-handoff` (production sources unchanged since `f3e199e`). The commit that adds this section is documentation only. One test file is known to fail on its fixture (`tests/test_macro_completion.py`, 1 of 6), to be repaired by BF-00. Nothing is pushed.
+
+## 15. ACK decisions and first build — 21 November (later the same day)
+
+### 15.1 Decisions
+
+| # | Decision (ACK, 21 Nov) | Effect |
+|---|---|---|
+| K5 | **BF-01 worklist approved:** the pinned Discovery candidates file `runs/<run>/discovery/discovery_candidates_ultimate_<run>.csv`. | Closes V1. The forecast population equals the Options Intelligence population by construction. BF-01 itself is still to be designed in detail and built. |
+| K6 | **The pipeline must not stop on an advisory packet; build the fix.** | Closes V2 and TEV-001 P0(a). Built the same day; see 15.2. |
+| K7 | **Direction: pick a primary side and carry an alternative.** | Settles the fork in K1. BF-02 becomes: choose the primary side from evidence, label how it was chosen, and carry the other side as the alternative so Lane B can challenge it. Design still to be written and approved; rule 5 applies. |
+| K8 | **Legacy Interpreter: wiring off today, acceptance on Monday 23 Nov's session.** | Settles V5. Codex builds it (ACK, 21 Nov); Claude Code reviews each stage and stays out of those files. Codex starts from the commit that adds this section. |
+
+### 15.2 First build: advisory packets never stop the Evening (TEV-001 P0(a), V2)
+
+**Root cause.** The pre-option ticker description (C5) and the option candidate set with its valuation disposition (C6, C8) were published inline in `evening_workflow`, and any exception returned False, which ended the run. All three are advisory with no trading authority.
+
+**Change.**
+
+- `intelligent_orchestrator.py`: two publishers, `_publish_pre_option_forecast_packet` and `_publish_option_expression_packets`, replace the inline blocks. A failure is logged, recorded and the Evening continues. C8 is not attempted without its C6 input.
+- `contracts/descriptive_forecast_packet.py`: a failure record at `runs/<run>/forecast/advisory_publication_status.json` (stage, state, reason, authority ADVISORY_ONLY, time). Only failures are written, so a healthy run produces no new file. Once the pre-option freeze is recorded as failed, the description is refused for late publication.
+- `contracts/lab_control.py`: the Lab asks before publishing the description. After a recorded pre-option failure it shows the description as unavailable; it does not publish one from files that options may already have changed.
+
+**Why the guard on late publication.** Before this change the Lab could publish the "pre-option" description itself when none existed. With the Evening no longer stopping, that path would have published it after options ran and labelled it as the pre-option view.
+
+**What does not change.** A healthy run: same packets, same bytes, no extra file. Direction, contract selection, ranking and permissions are untouched. Later readers already treat a missing packet as unavailable (`intelligence_lab.py` returns `FORECAST_PACKET_UNAVAILABLE`; the Lab book labels the fields `descriptive_packet_unavailable`; Morning logs that the revision is unavailable).
+
+| Item | Built | Committed | Wired | Tested | Validated | Authorised |
+|---|---|---|---|---|---|---|
+| TEV-001 P0(a) / V2 advisory publishers never stop the Evening | YES | see the commit that adds this section | YES (called from `evening_workflow`) | `tests/test_advisory_publishers_never_stop_evening.py` 8 passed; failed 8 of 8 before the change. `test_descriptive_forecast_handoff` 7 passed, `test_research_only_option_ev` 6 passed. Regression: `test_ev3_orchestrator_order` 5, `test_ot10_station_inspection` 12, `test_station_quarantine` 27, `test_msi_orchestrator_run_meta` 7, `test_lab_review_sources_v1` 17, `test_lab_timing_publication_paths` 2, `test_tests_do_not_write_interpreter_inputs` 2, all passed. `test_g9_no_new_option_pricer` fails as before on the untracked `strategy_layer.py`, unrelated to this change | NOT YET: no real Evening has run on it. Acceptance is the next Evening completing with the three packets published and no status file written | ACK 21 Nov ("the build and fix should be implemented") |
+
+Not exercised by a test: the whole `evening_workflow` end to end. The wiring is checked by reading the function's source for the two calls and the absence of the two abort messages.
+
+### 15.3 Order now
+
+1. BF-00 test-fixture repair (hold not yet lifted).
+2. ACK decision on `eb50549`.
+3. BF-03 legacy Interpreter wiring off today, built by Codex and reviewed by Claude Code; acceptance Monday.
+4. BF-01 volatility evidence before Options Intelligence, worklist per K5.
+5. BF-02 direction pick per K7.

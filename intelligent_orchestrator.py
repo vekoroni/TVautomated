@@ -5836,6 +5836,105 @@ def inject_actuarial_into_superbrain_pre_eil(run_id: str) -> dict:
     return result
 
 
+def _record_advisory_failure(run_id: str, stage: str, state: str, error: object) -> None:
+    """Write why an advisory packet is missing. Recording must never end the Evening either."""
+    try:
+        from contracts import descriptive_forecast_packet as _c5
+        _c5.record_advisory_publication(
+            cfg.RUNS_DIR / run_id, stage, state, reason=str(error),
+            recorded_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception as _record_error:
+        logger.error("Advisory status for %s could not be recorded: %s", stage, _record_error)
+
+
+def _clear_advisory_failure(run_id: str, stage: str) -> None:
+    try:
+        from contracts import descriptive_forecast_packet as _c5
+        _c5.clear_advisory_publication(cfg.RUNS_DIR / run_id, stage)
+    except Exception as _clear_error:
+        logger.warning("Advisory status for %s could not be cleared: %s", stage, _clear_error)
+
+
+def _publish_pre_option_forecast_packet(run_id: str) -> str:
+    """Freeze the option-neutral ticker description (C5) before any chain is read.
+
+    Descriptive evidence only: no C4 probability, no C8 value, no authority. When it
+    cannot be published the reason is recorded and the Evening continues without it
+    (ACK 21 Nov 2026; TEV-001 P0(a)). Returns PUBLISHED or UNAVAILABLE.
+    """
+    stage = "C5_DESCRIPTIVE_FORECAST"
+    # This is the governed pre-option point, so an earlier failure record for the
+    # same run does not block a fresh attempt here.
+    _clear_advisory_failure(run_id, stage)
+    try:
+        from contracts import descriptive_forecast_packet as _c5
+        _forecast_root = cfg.RUNS_DIR / run_id
+        if not (_forecast_root / "vanguard" / "vanguard_run_summary.json").is_file():
+            raise RuntimeError("Vanguard terminal summary missing before forecast publication")
+        _forecast_packet = _c5.load_or_publish_descriptive_packet(_forecast_root)
+        logger.info(
+            "Frozen pre-option ticker description: rows=%d Vanguard present=%d rejected=%d",
+            _forecast_packet["row_count"],
+            _forecast_packet["vanguard_present_count"],
+            _forecast_packet["vanguard_rejected_count"],
+        )
+        return "PUBLISHED"
+    except Exception as _forecast_error:
+        logger.error(
+            "Pre-option ticker description UNAVAILABLE for run %s (advisory; Evening continues): %s",
+            run_id, _forecast_error,
+        )
+        _record_advisory_failure(run_id, stage, "UNAVAILABLE", _forecast_error)
+        return "UNAVAILABLE"
+
+
+def _publish_option_expression_packets(run_id: str) -> dict[str, str]:
+    """Publish the option candidate set (C6) and its valuation disposition (C8).
+
+    Both are advisory with no capital authority. A failure is recorded and the Evening
+    continues; C8 is not attempted without its C6 input (ACK 21 Nov 2026; TEV-001 P0(a)).
+    """
+    c6_stage, c8_stage = "C6_EXPRESSION_CANDIDATES", "C8_EXPRESSION_VALUATION"
+    states = {c6_stage: "UNAVAILABLE", c8_stage: "NOT_ATTEMPTED"}
+    _clear_advisory_failure(run_id, c6_stage)
+    _clear_advisory_failure(run_id, c8_stage)
+    try:
+        from contracts import expression_candidate_packet as _c6
+        _c6_packet = _c6.publish_expression_candidates(
+            cfg.RUNS_DIR / run_id,
+            registry_path=cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite",
+        )
+        logger.info("C6 advisory candidate set: %d ticker rows; no C8 valuation authority", _c6_packet["row_count"])
+        states[c6_stage] = "PUBLISHED"
+    except Exception as _c6_error:
+        logger.error(
+            "C6 candidate set UNAVAILABLE for run %s (advisory; Evening continues): %s", run_id, _c6_error,
+        )
+        _record_advisory_failure(run_id, c6_stage, "UNAVAILABLE", _c6_error)
+        _record_advisory_failure(run_id, c8_stage, "NOT_ATTEMPTED", "C6 candidate set unavailable")
+        return states
+    try:
+        from contracts import expression_valuation_packet as _c8
+        _c8_packet = _c8.publish_expression_valuations(
+            cfg.RUNS_DIR / run_id,
+            price_database_path=cfg.BASE_DIR / "data" / "canonical" / "historical_prices.sqlite",
+        )
+        logger.info(
+            "C8 disposition: rows=%d qualified_EV=%d research_EV=%d (no capital authority)",
+            _c8_packet["row_count"], _c8_packet["numeric_valuation_count"],
+            _c8_packet["research_ev_count"],
+        )
+        states[c8_stage] = "PUBLISHED"
+    except Exception as _c8_error:
+        logger.error(
+            "C8 valuation disposition UNAVAILABLE for run %s (advisory; Evening continues): %s", run_id, _c8_error,
+        )
+        _record_advisory_failure(run_id, c8_stage, "UNAVAILABLE", _c8_error)
+        states[c8_stage] = "UNAVAILABLE"
+    return states
+
+
 def evening_workflow(
     run_id: Optional[str] = None,
     min_universe: int = 1000,
@@ -6420,21 +6519,9 @@ def evening_workflow(
     # Freeze the option-neutral ticker assessment before any chain, selected
     # contract or option-derived target can influence its source population.
     # This is descriptive evidence only; it publishes no C4 probability or C8 EV.
-    try:
-        from contracts.descriptive_forecast_packet import load_or_publish_descriptive_packet
-        _forecast_root = cfg.RUNS_DIR / canonical_run_id
-        if not (_forecast_root / "vanguard" / "vanguard_run_summary.json").is_file():
-            raise RuntimeError("Vanguard terminal summary missing before forecast publication")
-        _forecast_packet = load_or_publish_descriptive_packet(_forecast_root)
-        logger.info(
-            "Frozen pre-option ticker description: rows=%d Vanguard present=%d rejected=%d",
-            _forecast_packet["row_count"],
-            _forecast_packet["vanguard_present_count"],
-            _forecast_packet["vanguard_rejected_count"],
-        )
-    except Exception as _forecast_error:
-        logger.error("Evening workflow aborted: pre-option forecast publication failed: %s", _forecast_error)
-        return False
+    # ACK 21 Nov 2026 (TEV-001 P0(a)): advisory only, so a failure is recorded
+    # and the Evening continues. It is never published late from option-stage files.
+    _publish_pre_option_forecast_packet(canonical_run_id)
 
     # BEH-001 phase 2A: behavioural candidate packet beside the C5 ticker packet.
     # Display and measurement only; a failure is recorded, never an abort.
@@ -6469,26 +6556,9 @@ def evening_workflow(
                                    _discovery_output_csv(canonical_run_id)):
         return False
 
-    try:
-        from contracts.expression_candidate_packet import publish_expression_candidates
-        _c6_packet = publish_expression_candidates(
-            cfg.RUNS_DIR / canonical_run_id,
-            registry_path=cfg.BASE_DIR / "data" / "canonical" / "control_plane.sqlite",
-        )
-        logger.info("C6 advisory candidate set: %d ticker rows; no C8 valuation authority", _c6_packet["row_count"])
-        from contracts.expression_valuation_packet import publish_expression_valuations
-        _c8_packet = publish_expression_valuations(
-            cfg.RUNS_DIR / canonical_run_id,
-            price_database_path=cfg.BASE_DIR / "data" / "canonical" / "historical_prices.sqlite",
-        )
-        logger.info(
-            "C8 disposition: rows=%d qualified_EV=%d research_EV=%d (no capital authority)",
-            _c8_packet["row_count"], _c8_packet["numeric_valuation_count"],
-            _c8_packet["research_ev_count"],
-        )
-    except Exception as _c6_error:
-        logger.error("Evening workflow aborted: C6 candidate publication failed: %s", _c6_error)
-        return False
+    # ACK 21 Nov 2026 (TEV-001 P0(a)): C6 and C8 are advisory with no capital
+    # authority. A failure is recorded and the Evening continues.
+    _publish_option_expression_packets(canonical_run_id)
 
     # Every canonical chain acquired for the candidate population becomes
     # durable Phantom history. Projection is retryable and owns no thesis,
