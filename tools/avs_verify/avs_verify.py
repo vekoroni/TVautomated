@@ -356,6 +356,11 @@ def r_rows(rows, trade_idx, cm, cfg, phase, run_ts, f: F):
             rep = num(g(r, "quote_age_s"))
             rep_m = rep / 60 if rep is not None else None
             lim = cfg["timing"]["quote_max_age_minutes"]
+            # ACK 21 Nov 2026: quote age is flagged, never gated. FLAG reports the measured age as a
+            # caveat; GATE (the behaviour until 21 Nov) is reachable only through the rules file.
+            age_policy = cfg["timing"].get("quote_age_policy")
+            if age_policy not in ("FLAG", "GATE"):
+                raise ValueError("timing.quote_age_policy must be FLAG or GATE")
             agg["quote_n"] += 1
             if own is None and rep_m is None:
                 agg["quote_unknown"] += 1
@@ -368,7 +373,7 @@ def r_rows(rows, trade_idx, cm, cfg, phase, run_ts, f: F):
                     agg["quote_stale"] += 1
                     if stale_rep:
                         agg["quote_stale_both"] += 1
-                    f.r(i, "R19_QUOTE_FRESH", "P0" if stale_rep else "P1",
+                    f.r(i, "R19_QUOTE_FRESH", "P0" if stale_rep and age_policy == "GATE" else "P1",
                         f"quote {own:.0f} min old at verdict time" + (f" (pipeline reports {rep_m:.0f} min)" if rep_m is not None else "")
                         if own is not None else f"pipeline reports quote {rep_m:.0f} min old")
 
@@ -418,7 +423,7 @@ def r_rows(rows, trade_idx, cm, cfg, phase, run_ts, f: F):
         rate_both = agg["quote_stale_both"] / agg["quote_n"]
         own = sorted(agg.get("_own", []))
         rng = f" Independent age at verdict time: {own[0]:.0f}–{own[-1]:.0f} min (median {own[len(own)//2]:.0f})." if own else ""
-        sev = "P0" if rate_both >= sys_rate else "P1"
+        sev = "P0" if rate_both >= sys_rate and cfg["timing"].get("quote_age_policy") == "GATE" else "P1"
         f.b("R19_QUOTE_FRESH", sev, "FAIL" if agg["quote_stale"] else "PASS",
             f"{agg['quote_stale']}/{agg['quote_n']} tradeable rows on quotes >{cfg['timing']['quote_max_age_minutes']} min old "
             f"({agg['quote_stale_both']} also stale by the pipeline's own quote_age_seconds); "

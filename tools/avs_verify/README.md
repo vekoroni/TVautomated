@@ -36,7 +36,6 @@ Book-level checks cover the whole book. Row-level checks cover only tradeable ro
 - R16: spread unit missing or implausible
 - R20: two authorities disagree on ≥50% of tradeable rows (e.g. `final_action` BUY vs `lab_verdict` BLOCKED)
 - R24: manifest row count ≠ book row count (Evening uses `morning_candidates`; Morning uses `morning_validation`)
-- R19: quotes stale by both the independent age and the pipeline's own age
 
 - R15_HOLD_DERIVED: the hold must be an analysis output per trade (intraday to 20+ sessions, no cap). One value on every row, or a config-constant source such as `THESIS_WINDOW_D2`, fails. It is registered as a known defect until the hold wiring is fixed
 
@@ -50,7 +49,7 @@ Book-level checks cover the whole book. Row-level checks cover only tradeable ro
 - R21: probability outside 0–1
 
 **P1 caveats**
-- R19: quotes >15 min old at the time the verdict was stamped
+- R19: quotes >15 min old at the time the verdict was stamped, or stale by the pipeline's own age. Quote age is a flag, never a gate (ACK 21 Nov 2026; `timing.quote_age_policy` = `FLAG`). The measured age is reported on each row and in the book check; re-quote before entry.
 - R18: target >3× the expected move over the hold
 - R16: spread ≥10% or ≥25% of mid
 - R01: Morning run outside 09:35–09:45 ET

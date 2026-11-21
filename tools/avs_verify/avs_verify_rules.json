@@ -48,7 +48,8 @@
       "09:35",
       "09:45"
     ],
-    "quote_max_age_minutes": 15
+    "quote_max_age_minutes": 15,
+    "quote_age_policy": "FLAG"
   },
   "columns": {
     "ticker": {
