@@ -209,3 +209,36 @@ def test_eod_review_waits_for_shared_macro_without_worker3():
     assert 'publish_review=False' in body
     assert body.index('materialize_lab_macro_evidence(')<body.index('republish_saved_review(')
     assert 'materialize_worker3_market_environment(' not in body
+
+
+def test_closing_metadata_requires_a_final_display_publication(tmp_path):
+    from contracts.lab_review_projection import read_review_rows, ReviewRevisionConflict
+    m = module()
+    root = tmp_path / 'RUN'
+    source = root / 'intelligence_lab/final_opportunity_book_RUN.json'
+    write(source, book())
+    original = source.read_bytes()
+    meta = {'dynamic_plan': {'evidence_cutoff_utc': '2026-11-13T21:00:00Z'}, 'status': 'RUNNING'}
+    write(root / 'run_meta.json', meta)
+    first = m.republish_saved_review('RUN', tmp_path)
+    write(root / 'run_meta.json', {**meta, 'status': 'COMPLETED'})
+    with pytest.raises(ReviewRevisionConflict):
+        read_review_rows(tmp_path, 'RUN')
+    final = m.republish_saved_review('RUN', tmp_path)
+    assert final['revision'] != first['revision']
+    assert read_review_rows(tmp_path, 'RUN')['total_rows'] == 2
+    assert source.read_bytes() == original
+
+
+def test_eod_final_review_follows_metadata_close_before_terminal_scoring():
+    import ast
+    root = Path(__file__).resolve().parents[1]
+    tree = ast.parse((root / 'intelligent_orchestrator.py').read_text(encoding='utf-8'))
+    evening = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                   and node.name == 'evening_workflow')
+    calls = [node for node in ast.walk(evening) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name)]
+    close = max(node.lineno for node in calls if node.func.id == '_update_run_meta_status')
+    final = max(node.lineno for node in calls if node.func.id == 'republish_saved_review')
+    scoring = max(node.lineno for node in calls if node.func.id == 'run_c12_outcome_scoring_stage')
+    assert close < final < scoring

@@ -143,9 +143,12 @@ Usage examples:
 import argparse
 import csv
 import hashlib
+import io
 import json
 import logging
 import os
+import stat
+import zipfile
 import re
 import shutil
 import subprocess
@@ -2368,7 +2371,12 @@ def _integrate_provider_completeness_into_run_meta(
 
     git_describe = str(payload.get("git_describe") or "UNAVAILABLE")
     baseline_commit = str(payload.get("baseline_commit_hash") or "UNAVAILABLE")
-    dirty = git_describe.lower().endswith("-dirty") or baseline_commit == "UNAVAILABLE"
+    code_receipt = payload.get("code_receipt") or {}
+    dirty = (
+        git_describe.lower().endswith("-dirty")
+        or baseline_commit == "UNAVAILABLE"
+        or bool(code_receipt and code_receipt.get("state") != "CLEAN_COMMIT")
+    )
     mode = str(operator_mode or "STANDARD").strip().upper()
     provider_eligible = bool(evidence.get("normal_completed_session_eligible"))
     from domain.run_planning import resolve_run_condition
@@ -2403,6 +2411,7 @@ def _integrate_provider_completeness_into_run_meta(
                 "commit_hash": baseline_commit,
                 "dirty": dirty,
                 "git_describe": git_describe,
+                **({"receipt": code_receipt} if code_receipt else {}),
             },
             "config_identity": {
                 "profile_hash": runtime_profile.get("sha256"),
@@ -2952,6 +2961,90 @@ def _git_baseline_identity() -> dict[str, str]:
     }
 
 
+def _capture_code_receipt(
+    run_dir: Path, commit: str, *, approved_untracked: tuple[str, ...] = (),
+) -> dict:
+    """Capture the tracked diff and explicitly approved untracked proving source."""
+    base = Path(cfg.BASE_DIR).resolve()
+
+    def source_bytes(paths: tuple[str, ...]) -> dict[str, bytes]:
+        snapshot = {}
+        total = 0
+        for name in paths:
+            relative = Path(name)
+            if relative.is_absolute() or relative.drive or ".." in relative.parts:
+                raise ValueError("Untracked source escapes the checkout")
+            path = base
+            for part in relative.parts:
+                path /= part
+                info = path.lstat()
+                if (stat.S_ISLNK(info.st_mode)
+                        or getattr(info, "st_file_attributes", 0)
+                        & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)):
+                    raise ValueError("Untracked source path contains a link")
+            if not relative.parts or not stat.S_ISREG(info.st_mode):
+                raise ValueError("Untracked source is not a regular file")
+            with path.open("rb") as stream:
+                data = stream.read(16 * 1024 * 1024 - total + 1)
+            total += len(data)
+            if total > 16 * 1024 * 1024:
+                raise ValueError("Untracked source snapshot exceeds 16 MiB")
+            snapshot[name] = data
+        return snapshot
+    def git(*args: str) -> bytes:
+        return subprocess.run(
+            ["git", "-C", str(cfg.BASE_DIR), *args],
+            check=True, capture_output=True, timeout=20,
+        ).stdout
+
+    try:
+        if commit == "UNAVAILABLE" or git("rev-parse", "HEAD").decode().strip() != commit:
+            return {"state": "UNVERIFIED_HEAD"}
+        tracked = git("status", "--porcelain=v1", "-z", "--untracked-files=no")
+        untracked = git("ls-files", "--others", "--exclude-standard", "-z")
+        diff = git("diff", "--binary", "--no-ext-diff", "--no-textconv", commit, "--")
+        names = tuple(os.fsdecode(name) for name in untracked.split(b"\0") if name)
+        approved = bool(names and set(names) == set(approved_untracked))
+        snapshot = source_bytes(names) if approved else {}
+        if (tracked != git("status", "--porcelain=v1", "-z", "--untracked-files=no")
+                or untracked != git("ls-files", "--others", "--exclude-standard", "-z")
+                or diff != git("diff", "--binary", "--no-ext-diff", "--no-textconv", commit, "--")
+                or git("rev-parse", "HEAD").decode().strip() != commit
+                or (approved and snapshot != source_bytes(names))):
+            return {"state": "UNSTABLE_CHECKOUT"}
+        if not tracked and not untracked:
+            return {"state": "CLEAN_COMMIT"}
+        state = "DIRTY_SNAPSHOT" if approved else "PARTIAL_UNTRACKED" if untracked else "TRACKED_PATCH"
+        receipt = {"state": state,
+                   "untracked_count": untracked.count(b"\0")}
+        if diff:
+            patch = run_dir / "run_code.patch"
+            temporary = patch.with_suffix(".tmp")
+            temporary.write_bytes(diff)
+            temporary.replace(patch)
+            receipt.update(patch_path=patch.name, patch_sha256=hashlib.sha256(diff).hexdigest())
+        if snapshot:
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                for name, data in snapshot.items():
+                    archive.writestr(name, data)
+            payload = buffer.getvalue()
+            archive_path = run_dir / "run_untracked_source.zip"
+            temporary = archive_path.with_suffix(".tmp")
+            temporary.write_bytes(payload)
+            temporary.replace(archive_path)
+            receipt.update(
+                untracked_archive=archive_path.name,
+                untracked_archive_sha256=hashlib.sha256(payload).hexdigest(),
+                untracked_source_sha256={
+                    name: hashlib.sha256(data).hexdigest() for name, data in snapshot.items()
+                },
+            )
+        return receipt
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return {"state": "CODE_CAPTURE_UNAVAILABLE"}
+
+
 def pin_run_directory(
     discovery_run_id: str,
     macro_path: Path,
@@ -3034,8 +3127,8 @@ def pin_run_directory(
         return False
 
     flat_csv = cfg.OUTPUT_DIR / f"discovery_candidates_ultimate_{discovery_run_id}.csv"
+    dest_csv = discovery_dir / flat_csv.name
     if flat_csv.exists():
-        dest_csv = discovery_dir / flat_csv.name
         try:
             shutil.copy2(flat_csv, dest_csv)
             logger.info(f"   Discovery CSV : {dest_csv.name}  ✔")
@@ -3089,6 +3182,14 @@ def pin_run_directory(
     git_identity = _git_baseline_identity()
     baseline_commit_hash = git_identity["baseline_commit_hash"]
     git_describe = git_identity["git_describe"]
+    approved_untracked = ()
+    if run_plan and run_plan.operator_mode == "LIVE_PROVING":
+        approved_untracked = tuple(filter(None, os.environ.get(
+            "AVSHUNTER_PROVING_SOURCE_PATHS", ""
+        ).split(os.pathsep)))
+    code_receipt = _capture_code_receipt(
+        run_dir, baseline_commit_hash, approved_untracked=approved_untracked,
+    )
     msi_flags = _active_msi_flags()
     meta = {
         "run_meta_schema_version": "run_meta_v2",
@@ -3101,6 +3202,12 @@ def pin_run_directory(
         "operator_accepted_at_utc": None,
         "baseline_commit_hash": baseline_commit_hash,
         "git_describe": git_describe,
+        "code_receipt": code_receipt,
+        "pinned_input_sha256": {
+            str(path.relative_to(run_dir)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in (snapshot_path, macro_quant_path, truth_packet_path, dest_csv)
+            if path.is_file()
+        },
         "msi_config_version": MSI_CONFIG_VERSION,
         "msi_config_hash": msi_flags.fingerprint,
         "msi_feature_flags": msi_flags.to_dict(),
@@ -7898,6 +8005,20 @@ def evening_workflow(
         _update_run_meta_status(canonical_run_id, "COMPLETED", pipeline_mode="EOD")
     except Exception as _run_meta_error:
         logger.warning("Could not close run_meta.json: %s", _run_meta_error)
+
+    # The compact review watches run_meta.json for its saved timing anchor.
+    # Closing metadata after the earlier publication invalidates that revision;
+    # explicitly publish again after the last EOD metadata write, never on GET.
+    try:
+        from contracts.lab_review_sources import republish_saved_review
+
+        _final_review = republish_saved_review(canonical_run_id, cfg.RUNS_DIR)
+        logger.info(
+            "EOD review finalized after run metadata closed: revision=%s rows=%s",
+            _final_review["revision"], _final_review["row_count"],
+        )
+    except Exception as _final_review_error:
+        logger.warning("EOD review final publication failed: %s", _final_review_error)
 
     # P0-4 (ACK 18 Sep 2026): open tickets keep an exact daily mark before outcomes are scored.
     run_open_record_capture_stage(canonical_run_id, date.fromisoformat(_evidence_session_date))

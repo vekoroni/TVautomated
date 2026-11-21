@@ -247,7 +247,7 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
         receipt["validation_unmatched_rows"] = len(output["rows"]) - receipt["validation_events_applied"]
         receipt["validation_event_state"] = "UPSTREAM_IDENTITY_VERIFIED_RECEIPT"
         receipt["issues"].extend(validation_receipt["lab_projection_issues"])
-        return output, context, receipt
+        return _finish_timing_publication(output, context, receipt, root, book)
     events = defaultdict(list)
     for path in sorted(event_dir.glob("*.json")):
         event = _load(path, issues, "VALIDATION_EVENT_INVALID")
@@ -273,6 +273,14 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
                 row["review_validation_state"] = "EVENT_REJECTED"; issues.append(f"VALIDATION_EVENT_REJECTED:{row.get('ticker')}:{error}")
         receipt["validation_event_state"] = "VERIFIED_IDENTITY_PROJECTED"
     receipt["validation_unmatched_rows"] = len(output["rows"]) - receipt["validation_events_applied"]
+    return _finish_timing_publication(output, context, receipt, root, book)
+
+
+def _finish_timing_publication(output, context, receipt, root, book):
+    """Shared final stage, including the trusted-event path without event rereads."""
+    run_id = _text(book.get('run_id'))
+    issues = receipt['issues']
+    watches = receipt['watch_inputs']
     # Saved-only timing assessment, separate from the immutable accepted book.
     # Never promote a row. A newly established runway defect can only send an
     # existing GO display back to manual review; its original label is retained.
@@ -292,13 +300,28 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
             with morning.open(encoding='utf-8-sig', newline='') as stream:
                 for r in csv.DictReader(stream):
                     key = (_text(r.get('ticker')).upper(), _text(r.get('selected_contract_symbol') or r.get('contract_symbol')).removeprefix('O:'))
-                    saved_reasons[key].append({k:r.get(k) for k in ('block_reason','flag_reason','execution_viability_reason','execution_viability_state','monetisability_reason','monetisability_state','verdict','thesis_id','ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc')})
+                    saved = {k:r.get(k) for k in ('block_reason','flag_reason','execution_viability_reason','execution_viability_state','monetisability_reason','monetisability_state','verdict','thesis_id','ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc')}
+                    saved['snapshot_reference_inputs'] = {k:v for k,v in r.items() if
+                        k.startswith('monetisability_timevalue_') or k in (
+                            'monetisability_state_timevalue','monetisability_evaluation_phase',
+                            'selected_quote_source','quote_provider','execution_viability_quote_age_minutes',
+                            'execution_viability_quote_age_seconds','execution_viability_quote_age_state')}
+                    saved_reasons[key].append(saved)
         finally:
             csv.field_size_limit(old_limit)
     for row in output['rows']:
         key = (_text(row.get('ticker')).upper(), _contract(row))
         matches = saved_reasons.get(key, [])
         matched = len(matches) == 1 and (not matches[0].get('thesis_id') or matches[0]['thesis_id'] == row.get('thesis_id'))
+        # Disclosure-only recovery: never merge prices, decisions or scenarios.
+        # A ticker match alone (or an unverified valuation instant) is insufficient.
+        if (matched and _text(matches[0].get('thesis_id')) == _text(row.get('thesis_id'))
+                and _text(row.get('thesis_id'))
+                and _text(row.get('anticipated_valued_at_utc'))
+                and _text(matches[0].get('anticipated_valued_at_utc')) == _text(row.get('anticipated_valued_at_utc'))):
+            row['snapshot_reference_inputs'] = {**matches[0]['snapshot_reference_inputs'],
+                'source': morning.relative_to(root).as_posix(),
+                'match_basis': 'EXACT_TICKER_CONTRACT_THESIS_VALUATION_INSTANT'}
         timing_input = dict(row)
         if matched:
             for field in ('ev3_planned_hold_sessions','scenario_exit_sessions','anticipated_valued_at_utc'):
