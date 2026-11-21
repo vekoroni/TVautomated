@@ -502,6 +502,7 @@ class VanguardEngine:
                 "raw_prob_down_10d":           getattr(outcomes, "raw_prob_down_10d", None),
                 "raw_prob_down_20d":           getattr(outcomes, "raw_prob_down_20d", None),
                 "raw_prob_target_hit":         getattr(outcomes, "raw_prob_target_hit", None),
+                "intraday_shadow_factor": outcomes.intraday_shadow_factor,
                 "raw_prob_stop_hit":           getattr(outcomes, "raw_prob_stop_hit", None),
                 "raw_expected_return":         getattr(outcomes, "raw_expected_return", None),
                 "raw_expected_drawdown":       getattr(outcomes, "raw_expected_drawdown", None),

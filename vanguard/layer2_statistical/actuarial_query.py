@@ -474,13 +474,8 @@ class ActuarialQueryEngine:
         if base_outcomes is None:
             return _empty_outcomes(_match_attrs)
 
-        try:
-            adjusted_outcomes = self._adjust_for_intraday_context(base_outcomes, state)
-        except Exception as e:
-            print(f"  Warning: _adjust_for_intraday_context failed: {e}")
-            adjusted_outcomes = base_outcomes
-
-        final_outcomes = adjusted_outcomes if adjusted_outcomes is not None else base_outcomes
+        final_outcomes = base_outcomes
+        final_outcomes.intraday_shadow_factor = self._intraday_shadow_factor(state)
 
         # =========================
         # SPRINT 2: ATTACH SIGNAL TYPE + FORWARD MOMENTUM CONFIDENCE
@@ -553,36 +548,6 @@ class ActuarialQueryEngine:
 
         # Also attach momentum_tier for position_sizing_v2_patch
         final_outcomes.momentum_tier = _calibration_attrs.get('momentum_tier', 'TIER_4_FLAT')
-
-        # Carry v6 forward-bucket fields from base_outcomes → final_outcomes.
-        # _adjust_for_intraday_context creates a new ActuarialOutcomes object that
-        # does not copy these fields. Copy them here so they survive intraday adjustment.
-        # Return-distribution percentiles (Actuarial Distribution sprint) are
-        # computed once in _calculate_outcomes() and are not intraday-adjusted
-        # (there is no defined way to rescale a full distribution by the same
-        # scalar adjustment_factor used for win_rate/EV) — carry them through
-        # via the same established pattern as the v6 fields below.
-        _pctl_fields = [
-            f"ret_pctl_{h}_{p}"
-            for h in ("5d", "10d", "20d")
-            for p in ("p01","p05","p10","p20","p30","p40","p50","p60","p70","p80","p90","p95","p99")
-        ] + ["n_obs_5d", "n_obs_10d", "n_obs_20d"]
-
-        for _v6_field in (
-            "future_momentum_bucket",
-            "future_momentum_bucket_distribution",
-            "future_momentum_bucket_confidence",
-            "future_momentum_bucket_sample_size",
-            "transition_flag_rate_v2",
-            "avg_momentum_delta",
-            "avg_atr_delta",
-            "avg_adx_delta",
-            "early_candidate_rate",
-            *_pctl_fields,
-        ):
-            _base_val = getattr(base_outcomes, _v6_field, None)
-            if _base_val is not None and getattr(final_outcomes, _v6_field, None) is None:
-                setattr(final_outcomes, _v6_field, _base_val)
 
         return final_outcomes
 
@@ -1388,140 +1353,42 @@ class ActuarialQueryEngine:
             **pctl_5d, **pctl_10d, **pctl_20d,
         )
 
-    def _adjust_for_intraday_context(self, base_outcomes: ActuarialOutcomes, state: StateVector) -> ActuarialOutcomes:
-        """
-        HYBRID APPROACH: Adjust daily database probabilities based on intraday context.
-        Adjustments applied uniformly across all horizons.
-
-        FIX 1 (CRITICAL): Fail-closed when intraday_rows=0.
-        Without real intraday data the fields intraday_position, volume_profile_context,
-        and control_dynamics carry sentinel defaults (UNKNOWN/BALANCED/NEUTRAL).
-        Although these produce adjustment_factor=1.0, the triple-barrier EV
-        recalculation substitutes prob_up_10pct_20d (target hit rate ~68%) as
-        prob_target instead of win_rate (~43%), inflating reported EV by ~50x.
-        Gate immediately with base_outcomes to preserve actuarial truth.
-        """
-        # FAIL-CLOSED: no intraday data - no adjustment, return base unchanged
-        intraday_rows = getattr(state, 'intraday_rows', None)
-        if intraday_rows is not None and intraday_rows == 0:
-            return base_outcomes
-
-        adj_prob_up       = base_outcomes.prob_up_10pct_20d
-        adj_prob_down     = base_outcomes.prob_down_5pct_before_up_10pct
-        adj_ev_20d        = base_outcomes.expected_value_20d
+    @staticmethod
+    def _intraday_shadow_factor(state: StateVector) -> Optional[float]:
+        """Expose the historical multiplier for audit without applying it."""
+        if not getattr(state, "intraday_rows", 0):
+            return None
 
         intraday_position = getattr(state, 'intraday_position', 'UNKNOWN')
         volume_context    = getattr(state, 'volume_profile_context', 'BALANCED')
         control_dynamics  = getattr(state, 'control_dynamics', 'NEUTRAL')
 
         adjustment_factor = 1.0
-        adjustment_notes  = []
 
         # ADJUSTMENT 1: Intraday Position
         if intraday_position == 'AT_SUPPORT':
             if state.trend_direction in ['DOWN', 'SIDEWAYS']:
                 adjustment_factor *= 1.6
-                adjustment_notes.append("AT_SUPPORT (+60%)")
             else:
                 adjustment_factor *= 1.3
-                adjustment_notes.append("AT_SUPPORT in uptrend (+30%)")
         elif intraday_position == 'AT_RESISTANCE':
             if state.trend_direction == 'UP':
                 adjustment_factor *= 1.2
-                adjustment_notes.append("AT_RESISTANCE in uptrend (+20%)")
             else:
                 adjustment_factor *= 0.7
-                adjustment_notes.append("AT_RESISTANCE (-30%)")
         elif intraday_position == 'NEAR_SUPPORT':
             adjustment_factor *= 1.2
-            adjustment_notes.append("NEAR_SUPPORT (+20%)")
 
         # ADJUSTMENT 2: Volume Profile Context
         if volume_context == 'ACCUMULATION':
             adjustment_factor *= 1.3
-            adjustment_notes.append("ACCUMULATION (+30%)")
         elif volume_context == 'DISTRIBUTION':
             adjustment_factor *= 0.75
-            adjustment_notes.append("DISTRIBUTION (-25%)")
 
         # ADJUSTMENT 3: Control Dynamics
         if control_dynamics == 'BUYERS_STRENGTHENING':
             adjustment_factor *= 1.2
-            adjustment_notes.append("BUYERS_STRENGTHENING (+20%)")
         elif control_dynamics == 'SELLERS_STRENGTHENING':
             adjustment_factor *= 0.8
-            adjustment_notes.append("SELLERS_STRENGTHENING (-20%)")
 
-        adjustment_factor = max(0.4, min(adjustment_factor, 2.5))
-
-        adj_prob_up = min(0.95, adj_prob_up * adjustment_factor)
-
-        if adjustment_factor > 1.0:
-            adj_prob_down = adj_prob_down * (1 / (1 + (adjustment_factor - 1) * 0.5))
-        else:
-            adj_prob_down = min(0.95, adj_prob_down * (2 - adjustment_factor))
-
-        # Triple-barrier EV recalculation (20d)
-        prob_target  = adj_prob_up
-        prob_stop    = adj_prob_down
-        prob_expiry  = max(0.0, 1.0 - prob_target - prob_stop)
-        total_prob   = prob_target + prob_stop + prob_expiry
-        if total_prob > 1.0:
-            prob_target /= total_prob
-            prob_stop   /= total_prob
-            prob_expiry /= total_prob
-
-        gain_target  = base_outcomes.median_gain_if_up * adjustment_factor
-        loss_stop    = base_outcomes.median_loss_if_down
-        adj_ev_20d   = (prob_target * gain_target) + (prob_stop * loss_stop)
-
-        # Apply same adjustment factor to shorter horizons
-        adj_ev_5d  = base_outcomes.expected_value_5d  * adjustment_factor if base_outcomes.expected_value_5d  != 0 else 0.0
-        adj_ev_10d = base_outcomes.expected_value_10d * adjustment_factor if base_outcomes.expected_value_10d != 0 else 0.0
-
-        adj_wr_5d  = min(0.95, base_outcomes.win_rate_5d  * adjustment_factor) if base_outcomes.win_rate_5d  > 0 else 0.0
-        adj_wr_10d = min(0.95, base_outcomes.win_rate_10d * adjustment_factor) if base_outcomes.win_rate_10d > 0 else 0.0
-
-        if adjustment_notes:
-            ev_change = ((adj_ev_20d / base_outcomes.expected_value_20d) - 1) * 100 if base_outcomes.expected_value_20d != 0 else 0
-            adjustment_notes.append(f"EV20d: {base_outcomes.expected_value_20d:.1%} -> {adj_ev_20d:.1%} ({ev_change:+.0f}%)")
-
-        adjustment_summary = f"{adjustment_factor:.2f}x: " + ", ".join(adjustment_notes) if adjustment_notes else None
-
-        return ActuarialOutcomes(
-            # ------ 20d ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            n_observations=base_outcomes.n_observations,
-            confidence_level=base_outcomes.confidence_level,
-            lookback_period=base_outcomes.lookback_period,
-            prob_up_10pct_20d=prob_target,
-            prob_down_5pct_before_up_10pct=prob_stop,
-            prob_trend_continues_20d=base_outcomes.prob_trend_continues_20d,
-            median_gain_if_up=gain_target,
-            median_loss_if_down=loss_stop,
-            median_max_drawdown=base_outcomes.median_max_drawdown,
-            median_days_to_target=base_outcomes.median_days_to_target,
-            expected_value_20d=adj_ev_20d,
-            sharpe_ratio=base_outcomes.sharpe_ratio * adjustment_factor,
-            win_rate=base_outcomes.win_rate,  # preserve P(return>0) -- do NOT overwrite with prob_target
-            avg_win_loss_ratio=base_outcomes.avg_win_loss_ratio,
-            kelly_fraction=min(0.25, base_outcomes.kelly_fraction * adjustment_factor),
-            recommended_hold_days=base_outcomes.recommended_hold_days,
-            outcome_distribution=base_outcomes.outcome_distribution,
-            # ------ 5d ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            win_rate_5d=adj_wr_5d,
-            expected_value_5d=adj_ev_5d,
-            prob_up_5pct_5d=min(0.95, base_outcomes.prob_up_5pct_5d * adjustment_factor) if base_outcomes.prob_up_5pct_5d > 0 else 0.0,
-            median_gain_if_up_5d=base_outcomes.median_gain_if_up_5d * adjustment_factor,
-            median_loss_if_down_5d=base_outcomes.median_loss_if_down_5d,
-            median_max_drawdown_5d=base_outcomes.median_max_drawdown_5d,
-            sharpe_ratio_5d=base_outcomes.sharpe_ratio_5d * adjustment_factor,
-            # ------ 10d ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            win_rate_10d=adj_wr_10d,
-            expected_value_10d=adj_ev_10d,
-            prob_up_7pct_10d=min(0.95, base_outcomes.prob_up_7pct_10d * adjustment_factor) if base_outcomes.prob_up_7pct_10d > 0 else 0.0,
-            median_gain_if_up_10d=base_outcomes.median_gain_if_up_10d * adjustment_factor,
-            median_loss_if_down_10d=base_outcomes.median_loss_if_down_10d,
-            median_max_drawdown_10d=base_outcomes.median_max_drawdown_10d,
-            sharpe_ratio_10d=base_outcomes.sharpe_ratio_10d * adjustment_factor,
-            insufficient_data_reason=adjustment_summary,
-        )
+        return max(0.4, min(adjustment_factor, 2.5))

@@ -292,6 +292,7 @@ class ActuarialOutcomes:
     raw_prob_down_20d: float = 0.0
     raw_prob_target_hit: float = 0.0
     raw_prob_stop_hit: float = 0.0
+    intraday_shadow_factor: Optional[float] = None
     raw_expected_return: float = 0.0
     raw_expected_drawdown: float = 0.0
     raw_expected_time_to_target: float = 0.0
