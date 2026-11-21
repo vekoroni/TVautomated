@@ -1,0 +1,53 @@
+<!-- card_template_v1: the one fixed card template (AVS-ARCH-LB-001 D1, ACK 21 Nov 2026).
+     Head, styles and script are taken unchanged from GILD_deep_dive_2026-11-20.html, the base card chosen on 21 Nov.
+     render_card.py fills the title and body placeholders. Do not edit a rendered card; change the record or this template. -->
+<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{TITLE}}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>:root{--bg:#f4f6f7;--surface:#fff;--ink:#151a1f;--muted:#4a5562;--rule:#d6dbe0;--band:#e9edf0;--accent:#8f2f2a;--ok:#1f7a4d;--warn:#8a5a00;--bad:#b3261e;--display:"Archivo","Arial Narrow",Arial,sans-serif;--body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;color-scheme:light}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;overflow-x:clip}
+.wrap{max-width:1680px;margin-inline:auto;padding-inline:clamp(16px,2.2vw,36px);padding-block:18px 56px}
+a{color:var(--accent);text-underline-offset:2px}
+.masthead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px}
+.masthead h1{font-family:var(--display);font-weight:700;font-size:clamp(1.35rem,1.1rem + 1vw,1.9rem);line-height:1.15;margin:0;color:#151a1f}
+.masthead .id{font-family:var(--mono);font-size:.82rem;color:#4a5562}
+.status{display:flex;flex-wrap:wrap;gap:8px 22px;margin:12px 0 0;padding:10px 14px;background:#fff;color:#151a1f;border:1px solid var(--rule);border-left:3px solid var(--accent)}
+.status dt{font-size:.72rem;color:#4a5562;margin:0;font-weight:600}
+.status dd{margin:0;font-family:var(--mono);font-size:.9rem;color:#151a1f;font-variant-numeric:tabular-nums}
+.banner{margin-top:10px;padding:8px 14px;font:500 .88rem/1.45 var(--body);color:#fff;background:#6b4a00}
+.notesw{margin-top:8px;font-size:.85rem;color:#151a1f}
+.tabs{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:2px 4px;margin-top:12px;padding-top:6px;background:var(--bg);border-bottom:1px solid var(--rule)}
+.tab{font:600 .95rem/1.2 var(--body);color:#3b4652;background:none;border:0;border-bottom:3px solid transparent;padding:9px 12px 8px;cursor:pointer;margin-bottom:-1px;min-height:44px}
+.tab[aria-selected="true"]{color:#151a1f;border-bottom-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-block:14px 4px}
+.chip{font-size:.8rem;text-decoration:none;color:#151a1f;background:var(--band);padding:3px 9px;border-radius:2px}
+.prose h2{font-family:var(--display);font-weight:700;font-size:1.3rem;line-height:1.2;margin:2.2rem 0 .7rem;padding-top:1rem;border-top:2px solid #151a1f;color:#151a1f;scroll-margin-top:64px}
+.prose h3{font-family:var(--display);font-weight:600;font-size:1.02rem;margin:1.5rem 0 .4rem;color:#151a1f}
+.prose p,.prose ul,.prose ol{max-width:124ch;margin:.55rem 0;color:#151a1f}
+.prose ol,.prose ul{padding-left:1.3rem}.prose li{margin:.3rem 0}
+.lead{font-size:clamp(1.05rem,1rem + .4vw,1.25rem);line-height:1.42;max-width:100ch;padding:14px 16px;background:#fff;color:#151a1f;border:1px solid var(--rule)}
+.hdr{font-family:var(--mono);font-size:.8rem;color:#4a5562!important}
+.ft{font-size:.9rem;color:#1d3b2c!important;background:#eef6f1;border-left:3px solid var(--ok);padding:6px 10px;margin:.4rem 0 1rem}
+.hide-ft .ft{display:none}
+.tbl{max-width:100%;overflow-x:auto;margin:.8rem 0 1.1rem}
+table{border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums;background:#fff;color:#151a1f;border:1px solid var(--rule);width:100%}
+th{text-align:left;font-size:.74rem;font-weight:600;color:#3b4652;background:var(--band);padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:bottom}
+td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:top;overflow-wrap:anywhere;color:#151a1f}
+table.num td{font-family:var(--mono);text-align:right}
+td:first-child{font-weight:500}
+.pill{display:inline-block;font:600 .7rem/1.5 var(--body);padding:0 6px;border:1px solid currentColor;border-radius:2px;margin-right:4px;white-space:nowrap}
+.pill.ok{color:var(--ok)}.pill.open{color:var(--warn)}.pill.bad{color:var(--bad)}.pill.wait{color:#4a5562}
+.five{font-family:var(--mono);font-size:.9rem;background:#fff;color:#151a1f;border:1px solid var(--rule);padding:10px 14px;white-space:pre-wrap}
+.verb{background:#fff;color:#151a1f;border:1px solid var(--rule);padding:10px 14px;font-style:italic}
+@media (max-width:900px){body{font-size:14.5px}th,td{padding:6px 7px}}
+</style></head><body><div class="wrap">
+{{BODY}}
+<script>
+{const tabs=[...document.querySelectorAll('.tab')],panels=[...document.querySelectorAll('.panel')];
+function show(k){tabs.forEach(t=>t.setAttribute('aria-selected',t.dataset.key===k));panels.forEach(p=>p.hidden=p.dataset.key!==k);try{history.replaceState(null,'','#'+k)}catch(e){}}
+tabs.forEach(t=>t.addEventListener('click',()=>{show(t.dataset.key);window.scrollTo(0,0)}));
+document.addEventListener('click',e=>{const a=e.target.closest('a.chip');if(!a)return;const el=document.getElementById(a.getAttribute('href').slice(1));if(el){const p=el.closest('.panel');if(p&&p.hidden)show(p.dataset.key);}});
+const sw=document.getElementById('ftsw');sw.addEventListener('change',()=>document.body.classList.toggle('hide-ft',!sw.checked));
+const h=(location.hash||'').slice(1);show(['card','evidence','news'].includes(h)?h:'card');}
+</script></div></body></html>
