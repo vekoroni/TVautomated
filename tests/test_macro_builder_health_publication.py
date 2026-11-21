@@ -23,7 +23,7 @@ def test_builder_publishes_degraded_health_and_three_feed_receipts(tmp_path,monk
     monkeypatch.setattr(builder,'call_macro_api',lambda *a,**kw:copy.deepcopy(base))
     monkeypatch.setattr(builder,'build_macro_input_manifest',lambda *a,**kw:payload['input_manifest'])
     monkeypatch.setattr(builder,'publish_macro_input_manifest',lambda *a,**kw:dict(payload['input_manifest']))
-    monkeypatch.setattr(builder,'build_macro_prompt_context',lambda *a,**kw:{'input_consumption_ledger':{}})
+    monkeypatch.setattr(builder,'build_macro_prompt_context',lambda *a,**kw:{'sources':{},'input_consumption_ledger':{}})
     monkeypatch.setattr(builder,'apply_market_data_overrides',lambda m,p:m)
     monkeypatch.setattr(builder,'apply_macro_input_governance',lambda m,p:m)
     monkeypatch.setattr(builder,'validate_macro_output_coherence',lambda *a:None)

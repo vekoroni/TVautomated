@@ -1,0 +1,15 @@
+{
+  "contract_version": "macro_postclose_exception_v1",
+  "day": "2026-11-18",
+  "issued_at_utc": "2026-11-18T23:02:21.265531+00:00",
+  "expires_at_utc": "2026-11-19T05:00:00+00:00",
+  "fingerprint": "2026-11-18-postclose-user-retry-63d5c2a4cd7b4895b6448da72024e90c",
+  "authority": "USER_REQUEST_REMOVE_BLOCK_FOR_ONE_POST_CLOSE",
+  "user_instruction": "remove the block so we can run the post close macro",
+  "max_extra_full_attempts": 1,
+  "additional_request_cap_usd": 1,
+  "prior_unknown_spend_remains_unknown": true,
+  "normal_daily_build_limit": 4,
+  "normal_daily_macro_usd_cap": 3,
+  "trading_pipeline_authorized": false
+}

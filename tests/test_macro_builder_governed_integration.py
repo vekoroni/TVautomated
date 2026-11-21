@@ -86,7 +86,7 @@ def _model_macro() -> dict:
 def test_current_market_data_builds_complete_governed_prompt() -> None:
     payload = builder.load_data_payload(ROOT / "dropbox" / "market_data")
     prompt = builder.format_data_for_prompt(payload)
-    context_text = prompt.split("=== GOVERNED MACRO INPUT CONTEXT ===", 1)[1]
+    context_text = json.dumps(json.loads(prompt.split("\n", 1)[1])["GOVERNED MACRO INPUT CONTEXT"])
 
     assert payload["input_manifest"]["gex_validation"]["status"] in {
         "VALIDATED", "SOURCE_UNAVAILABLE",

@@ -193,10 +193,10 @@ OVERNIGHT_SINCE_US_CLOSE = {             # measured from the price at the last U
            ('AUDUSD=X', 'AUD/USD'), ('CNH=X', 'USD/CNH'), ('DX-Y.NYB', 'US Dollar Index (ICE)')],
 }
 OVERNIGHT_SESSIONS = {                   # (symbol, name, exchange time zone, open, close) local time
+    # ASX 200 excluded: this transport returned no timestamped observation; no proxy substituted.
     'asia': [('^N225', 'Nikkei 225', 'Asia/Tokyo', '09:00', '15:30'),
              ('^HSI', 'Hang Seng', 'Asia/Hong_Kong', '09:30', '16:10'),
              ('000001.SS', 'Shanghai Composite', 'Asia/Shanghai', '09:30', '15:00'),
-             ('^AXJO', 'ASX 200', 'Australia/Sydney', '10:00', '16:10'),
              ('^KS11', 'KOSPI', 'Asia/Seoul', '09:00', '15:30')],
     'europe': [('^STOXX50E', 'Euro Stoxx 50', 'Europe/Berlin', '09:00', '17:30'),
                ('^GDAXI', 'DAX', 'Europe/Berlin', '09:00', '17:30'),
@@ -795,6 +795,53 @@ class GlobalIndicesExtractor:
         ok = sum(1 for r in rows if r['data_status'] == 'OK')
         print(f"  [Global_Indices  ] {ok}/{len(rows)} populated")
         return {'Global_Indices': pd.DataFrame(rows)}
+
+
+class USCashIndicesExtractor:
+    """Unadjusted cash indices, restricted to the last completed US session."""
+    SYMBOLS = {'^GSPC': 'S&P 500 cash index', '^NDX': 'Nasdaq 100 cash index',
+               '^RUT': 'Russell 2000 cash index', '^DJI': 'Dow Jones Industrial Average cash index'}
+
+    def __init__(self):
+        self.source_history = {}
+
+    def extract(self):
+        import yfinance as yf
+        from macro_board.market_prices import last_eligible_session
+        cutoff = session_cutoff()
+        completed = pd.Timestamp(last_eligible_session(datetime.now(timezone.utc), settle_minutes=20))
+        cutoff = min(cutoff, completed) if cutoff is not None else completed
+        rows = []
+        for symbol, name in self.SYMBOLS.items():
+            try:
+                hist = yf.Ticker(symbol).history(period='2y', auto_adjust=False, timeout=15)
+                df = hist[['Close', 'High', 'Low', 'Volume']].copy()
+                dates = pd.DatetimeIndex(df.index)
+                # Daily labels denote the exchange session, not a UTC instant.
+                if dates.tz is not None:
+                    dates = dates.tz_convert('America/New_York').tz_localize(None)
+                df.index = dates.normalize()
+                df = df.loc[(df.index <= cutoff) & (df.index <= pd.Timestamp(TODAY_ISO))]
+                df = df.sort_index().dropna(subset=['Close', 'High', 'Low'])
+                if df.index.has_duplicates or len(df) < 2:
+                    raise ValueError('Cash-index history missing or duplicate session labels')
+                if df.index[-1] != cutoff:
+                    raise ValueError('Cash-index history does not reach completed session ' + str(cutoff.date()))
+                if not np.isfinite(df[['Close', 'High', 'Low']].to_numpy()).all() or (df[['Close', 'High', 'Low']] <= 0).any().any():
+                    raise ValueError('Invalid cash-index prices')
+                self.source_history[symbol] = [
+                    {'session_date': str(day.date()), **{key: (float(value) if pd.notna(value) else None) for key, value in values.items()}}
+                    for day, values in df.iterrows()]
+                row = build_metrics(symbol.lstrip('^'), name,
+                    closes=df['Close'].tolist(), highs=df['High'].tolist(), lows=df['Low'].tolist(),
+                    volumes=df['Volume'].fillna(0).tolist(), dates=list(df.index), source='YFINANCE',
+                    note='Unadjusted cash index; completed US session, not ETF/futures proxy')
+            except Exception as error:
+                COLLECTION_ERRORS.append('Cash index ' + symbol + ': ' + safe_error(error))
+                row = build_metrics(symbol.lstrip('^'), name, [], source='YFINANCE',
+                                    status='EXCEPTION', note=safe_error(error))
+            rows.append(row)
+        return {'US_Indices_Cash': pd.DataFrame(rows)}
 
 
 # ============================================================================
@@ -2130,6 +2177,7 @@ def main():
     market_data.update(PolygonExtractor(POLYGON_API_KEY).extract())
     market_data.update(VolComplexExtractor().extract())
     market_data.update(GlobalIndicesExtractor().extract())
+    market_data.update(USCashIndicesExtractor().extract())
     write_overnight(market_data, ts)
     fred_data = FREDExtractor(FRED_API_KEY).extract()
 

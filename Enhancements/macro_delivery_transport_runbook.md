@@ -2,6 +2,14 @@
 
 Use the existing authenticated ChatGPT browser and documented CUA APIs. This workflow transfers existing files; it never constructs research from prose, messages producers, changes scores, or runs paid synthesis.
 
+## Pickup and producer bindings (16 November 2026)
+
+The existing pickup runs every ten minutes daily, 06:00-22:50 Europe/London, including weekends. Read `config/macro_delivery_v1.json` and check its `pickup_window` using `contracts/macro_pickup_window.py`; do not substitute US business hours. The 17 November user-approved exchange-clock schedule below supersedes the former Windows task timing. Preserve the PostClose `$waitsPastGuard` guard. Arbitrary forced builds outside this window need an explicit pickup preflight.
+
+Read the configured primary producer chats and explicit per-feed aliases. News now has Asia, Pre-London, Pre-US and US-Close chats; the old single briefing chat is historical. USMI has a new primary chat, with its original baseline chat retained as an allowed historical alias. Never infer freshness from an unchanged legacy chat or infer an unlisted source. Preserve original baseline lineage, source-message identity and observation times. A no-change reply can legitimately retain an older canonical export.
+
+USMI descriptive PARTIAL quality labels are compatible only inside the tested incomplete-history rebaseline contract. Preserve raw wording, null score/confidence and disabled execution; normalized quality stays PARTIAL_UNVERIFIED. This does not verify producer claims or recover revision 73 history. Pickup does not run paid analysis: with publication_mode FULL, deliver and stop. Verify consumption only after a separately authorized successful FULL build. Report funding failures rather than launching retries or substituting DATA_ONLY.
+
 1. Read the latest producer messages. A no-material-change message retains its referenced canonical packet. Read `data/macro/delivery/accepted.json` and the per-source transport receipts. Compare native USMI revision, News batch/as_of, and event IDs/source observation clocks. Do not mistake an export packaging reply for a new research revision.
 2. Defer source writes while a macro build, pipeline or backfill runs. Inspect actual Python process command lines; inability to inspect is a reason to defer, not proof of idleness.
 3. Open the exact attachment associated with that source message in the authenticated browser. Repeated filenames are not identity. Verify the loaded preview's packet revision, batch or event IDs. Once the original file viewer is loaded, use the bounded parallel download pattern below, once per changed export. Never arm an unawaited download listener in a separate REPL call: the runtime drains pending operations before returning, so the click would never run. Check both Downloads and OneDrive independently and require complete bytes, producer SHA/length and source identity. Never fetch hidden endpoints or use browser internals.
@@ -40,3 +48,68 @@ Read `config/macro_delivery_v1.json` on every pickup; never change `publication_
 - Under `FULL`, deliver and stop. Do not invoke the data-only publisher, recover an old AI base, or launch a full build from the monitor. The funded Windows runner's next scheduled PreOpen/PostClose build consumes the accepted files with fresh AI analysis. After that build, only verify its research-source manifest against the accepted files/hashes and board lineage. An accepted source awaiting the next scheduled FULL build is expected, not a reason to publish a DATA_ONLY replacement.
 
 `publish_macro_data_only.py` independently skips without creating a lock, recovering a seed, or writing when mode is FULL. Its direct seed/recovery/publication entry points also enforce explicit DATA_ONLY mode. A delivery writer lock is DEFERRED in the Windows runner: keep the accepted files and continue subsequent steps, rather than failing the run for this transient conflict. Do not alter the PostClose `$waitsPastGuard` timing fix.
+
+
+## Approved material-change schedule and board display (17 November 2026)
+
+The user authorized this schedule and a strict maximum of four FULL attempts per America/New_York day. The existing Windows runner owns future builds; the export monitor never starts a FULL build or trading pipeline.
+
+- PreOpen: 25 minutes before actual XNYS open (09:05 ET on a normal session).
+- Opening observation: evaluate the first 15 minutes of cash trading after the existing 15-minute quote delay (about 10:00 ET). A FULL requires material change; this is not an unconditional third daily build.
+- Intraday: at most two conditional builds in total, including an opening-check build. Trigger on validated research source hashes differing from the consumed manifest, or fresh matched observations showing at least 0.5 percentage-point own-price change in at least two of SPY/QQQ/IWM/DIA since the board snapshot. The threshold is a provisional display-refresh rule, not trading authority. Stale quotes cannot trigger a market-price change.
+- PostClose: 30 minutes after actual XNYS close (16:30 ET normally). Exchange holidays, early closes and DST use the existing XNYS calendar.
+- At least 60 minutes between attempts. Failed attempts count. Do not retry an unchanged failed build. Reserve one daily slot for PostClose; the transactional cap also guards paid synthesis and board narrative stages against duplicate execution.
+
+`config/macro_build_schedule_v1.json` holds policy. `scripts/scheduled_macro_builds.py --plan` is read-only. `Run-MacroSchedule.ps1` is the Windows entry point; `--execute` belongs to its scheduled task. `AVSHUNTER_MacroInputs_Controlled` checks every five minutes with IgnoreNew overlap behavior. The former PreOpen and PostClose tasks were backed up and disabled to prevent duplicate ownership. The first new scheduled opportunity was 21:30 London on 17 November; registration did not manually start a build. Four is a build-attempt cap, not a dollar-spend cap or a count of individual provider/model requests inside a FULL build.
+
+The board's primary sector and day-story views show each ETF's absolute 1/5/20-session returns, dated observation and share-volume activity. SPY-relative comparisons are secondary and explicitly labelled relative performance. Price or volume does not establish capital inflow/outflow. A prominent dynamic banner identifies stale/historical prices, preserves their session date and the actual AI analysis date, and suppresses an expired premarket quote from the current-market card. Cached AI prose is labelled archived.
+
+Actual net ETF flows remain UNAVAILABLE until a verified source is connected. The optional local `dropbox/market_data/etf_reported_net_flows.json` contract `etf_reported_net_flows_v1` accepts publisher-reported USD net creations/redemptions only, with ticker, net_flow_usd, period_start/end, publisher, HTTPS source_url, measure=PUBLISHER_REPORTED_NET_CREATIONS_REDEMPTIONS, currency=USD, and an exact raw_file/raw_sha256 inside its source directory. Missing is not zero; invalid/duplicate/provenance failures are INVALID_SOURCE. No new subscription or live feed was enabled.
+
+The display-only repair retained the 17 November 13:50 UTC AI packet and 16 November completed prices; it did not refresh them. The approved cash-index collector repair materialized genuine GSPC/NDX/RUT/DJI observations through 16 November. A later scheduled successful FULL build must supply subsequent completed-session prices and fresh analysis. Board completion requires all three present validated research sources, accepted-versus-consumed hashes, and board lineage agreement; a saved HTML file alone is insufficient.
+
+Eight targeted board/schedule tests passed, and the runner early-close guard was checked using the actual XNYS calendar in read-only PlanOnly mode (27 November 13:30 ET remains an evening record). JavaScript syntax passed, and a VM rendering check confirmed expired positive QQQ quotes are hidden while the dated absolute negative return is retained. Native browser visual QA was unavailable; do not claim it was performed. Backups, source hashes, the display receipt and disabled task XMLs are in `Enhancements/macro_board_flow_schedule_repair_20261117`.
+
+
+## Gate and paid-budget repair (17 November 2026, latest user policy)
+
+This section supersedes the previous rule that every reservation consumed a FULL slot. A preflight or market-gate stop remains in the immutable attempt history but consumes no paid FULL slot. The first attempted MACRO_SYNTHESIS or BOARD_NARRATIVE stage atomically charges one FULL. Failed paid stages still count. The maximum remains four per America/New_York day, and a post-close slot is preserved. Existing HISTORICAL_FULL evidence still counts; no historical rows or stage records are deleted or restamped.
+
+Unchanged fingerprints cannot repeat. A changed source observation or corrected code produces a different stable fingerprint; capture-time-only changes do not. A completed scheduled publication is not rebuilt by the same window. Budget/cooldown/unchanged-attempt refusals exit 7; the PowerShell runner also exits 7 rather than masquerading as success. The runner records preflight/paid outcomes and restores build identity environment variables in its caller.
+
+Missing last_bar_utc values bypass ISO parsing and are assessed by group health. Missing clocks in any group remain degraded, never neutral. The Asia collector excludes ^AXJO because its configured transport returned no timestamped session observation. It substitutes no price or proxy; older raw snapshots containing that missing row remain unchanged and can still fail group health cleanly.
+
+The normal 16:30 ET post-close schedule is retained. During the actual configured CME weekday maintenance break only, known ES/NQ/YM/RTY/ZN/CL/GC source bars from after the shared-calendar cash close and within the final stale_after_minutes before maintenance are accepted as POST_CLOSE_SESSION_BREAK_REFERENCE, not_live=true. Original timestamps, values and source SESSION_BREAK flags remain intact. Prior-day/pre-close/missing/future observations and provider failures remain unavailable; after reopening a fresh reopened-session observation is required. This exception never makes an old bar live.
+
+Credit evidence: ACK reported $5.58 available in the Anthropic organisation's API billing page. Browser access could not independently verify the balance; no paid balance probe, synthesis, provider refresh, FULL build or trading pipeline was launched by this repair. User-requested code fixes do not themselves authorize a paid rerun tonight.
+
+## Windows native attachment recovery (18 November 2026)
+
+The canonical materialized home remains `C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\dropbox\macro`. Original downloads use a temporary validation path; only existing intake may publish validated feeds into that home.
+
+The browser DOM/event tool is absent in this session. Native Chrome downloads were recovered with the documented Windows Computer Use skill and authenticated original Library attachments. This is an alternative native transport, not a claim that the older Promise.all browser tool was restored.
+
+1. Read Computer Use SKILL.md and its guidance, API and confirmations. Select a unique returned research Chrome window and explicitly activate it. Verify its actual screenshot and accessibility URL. A tiny restored Chrome window can be maximized through its observed Maximise control.
+2. Navigate only to the exact producer-message attachment reference. Wait for the fully loaded JSON file pane and verify batch/event identity and source observation. Do not use chat prose as file content.
+3. Click the observed viewer Download button once. Wait for its owned Save As modal. The modal was exposed as the second `get_window_state` screenshot, while `list_windows` and the owner's accessibility tree still showed only Chrome. Consequently an absent file before the modal is completed is not proof of native download failure.
+4. Inspect the modal and selected original filename. Use documented `sky.type_text` on the owner window to enter an absolute temporary validation path. Refresh and visually verify the complete path, then use `sky.press_key` Return. No scripts, browser internals, clipboard extraction or hidden endpoints are involved. Do not retry coordinate actions that target another window; follow skill recovery limits.
+5. Independently inspect the actual complete file within 30 seconds. Check JSON parse, file schema, batch/event identity, source chat/message, bytes and raw SHA256. Preserve producer checksum/length when supplied. A locally calculated hash is not a producer checksum.
+6. Check actual competing writers, then use `sync_macro_feeds.py --receive-file ... --source-chat ... --source-message ... --transport NATIVE_CHROME_DOWNLOAD_SAVE_AS`. Preserve archives, other feeds and event IDs. Verify COMPLETE receipt and accepted registry/materialized files. Under FULL, stop after delivery; scheduled Windows publication owns consumption.
+
+Successful original downloads and COMPLETE receipts: US-close News 190966 bytes / `09c83d3d8cf9dc9848b74a870512134af6fab1f8648fdb6d9f59b835d9eea7af` (receipt1792649817); Asia News 174951 bytes / `b482941b6c56b8ffa49a050bc193f1304d8f49f53bcbf9e7ff0ea6b801736da6` (receipt1792649818); Pre-London News 172883 bytes / `769a0c8b947eab6a3f27e7d8428c4f18a28b04b2c07a6951f15eb95c3079c65e` (receipt1792649819).
+
+Strict preview-line completeness/checksum or two-pass rules remain unchanged for the separate source-preview transport. No paid build, provider refresh or trading pipeline may be launched by this repair.
+
+
+
+### Macro API cost controls (18 November 2026)
+
+`config/macro_api_cost_v1.json` sets the local macro Anthropic cap to **USD 3 per America/New_York date**. The existing four-FULL-attempt maximum and scheduled build windows remain in force. Reaching either cap stops generation; it does not grant permission to run another build or the trading pipeline.
+
+Each FULL synthesis now makes one paid Sonnet request. Anthropic's free `messages.count_tokens` preflight determines the input reservation, with 25% plus framing headroom and the entire maximum output allowance reserved atomically in SQLite. SDK automatic retries and automatic paid JSON repairs are disabled. The board reuses published macro commentary with its original packet clock and labels; its additional Opus narrative is disabled. Measured ETF activity is still computed separately.
+
+Prompt compaction uses complete records, current USMI fields, lossless record tables and backward JSON-pointer references for exact duplicates. Every Events row, heterogeneous release clock, revised result, limitation and counter-case remains represented. Omitted source bibliographies, background definitions and News packaging/audit fields carry explicit projection provenance. Raw files, source hashes and full publication evidence are retained. Oversized requests fail closed instead of cutting off records.
+
+`data/macro/delivery/api_usage.sqlite` stores request/build identities, frozen token prices, provider token-count estimates, returned input/output/cache usage, request IDs and estimated USD. Missing usage and ambiguous network failures retain the reservation; definite rejected requests record zero generated usage. A bound breach blocks further requests that day. These are local macro estimates, not an organisation-wide provider invoice or credit-balance check.
+
+Read-only reporting: `venv/Scripts/python.exe -B scripts/report_macro_api_usage.py --day YYYY-MM-DD`. The initial deployment day is blocked if older paid attempts have no usage receipts: it must not be represented as an unspent day. Neither a new fingerprint nor a free token-count preflight resets spent dollars or the four-FULL budget. Do not delete or restamp ledger history.

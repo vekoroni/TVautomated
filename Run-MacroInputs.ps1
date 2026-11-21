@@ -5,7 +5,7 @@
 # Runs twice per US session:
 #   PostClose  after the close (default start 16:30 ET, latest start 23:30 ET) - the evening
 #              record, built after the evening pipeline has written the day's prices.
-#   PreOpen    before the open (default start 08:35 ET, latest start 09:00 ET) - picks up the
+#   PreOpen    before the open (default start 09:05 ET, latest start 09:15 ET) - picks up the
 #              overnight session (Asia, London/Europe, FX) and the 08:30 ET releases, and must
 #              finish before the open and the morning pipeline.
 # Task Scheduler runs in UK time while the targets are US times; the two clocks shift on
@@ -23,7 +23,7 @@
 #
 # Usage:
 #   .\Run-MacroInputs.ps1 -Session PostClose        # evening run (waits until 16:30 ET)
-#   .\Run-MacroInputs.ps1 -Session PreOpen          # morning run (waits until 08:35 ET)
+#   .\Run-MacroInputs.ps1 -Session PreOpen          # morning run (waits until 09:05 ET)
 #   .\Run-MacroInputs.ps1                           # -Session Auto: PreOpen before 09:30 ET, else PostClose
 #                                                     (with -Force, name the session: Auto after 09:30 ET picks PostClose)
 #   .\Run-MacroInputs.ps1 -PlanOnly                 # show the session decision and steps; runs nothing
@@ -32,7 +32,7 @@
 #   .\Run-MacroInputs.ps1 -Sequential               # producers one after another (v1 behaviour)
 #   .\Run-MacroInputs.ps1 -Now                      # manual run: readiness report, then start at once (asks Y/N)
 #   .\Run-MacroInputs.ps1 -Now -Yes                 # same without the question
-#   .\Run-MacroInputs.ps1 -SkipGex / -SkipBonds / -SkipRotationFlag   # leave out a default step
+#   .\Run-MacroInputs.ps1 -SkipGex / -SkipBonds / -SkipRotationFlag / -SkipCleanup   # leave out a default step
 #   (-WithGex / -WithBonds are still accepted; GEX and bonds run by default since 19 Oct 2026)
 #   .\Run-MacroInputs.ps1 -SkipMacroJson / -SkipBoard
 #   .\Run-MacroInputs.ps1 -AllowIntraday            # allow a run during US regular hours (bars partial)
@@ -75,7 +75,7 @@
 # hours the confirmation also allows the intraday run (today's bars are partial; it is never the scored record).
 # Exit codes: 0 done or skipped (not a session day), 1 a step failed, 2 venv missing,
 # 3 refused during regular hours, 4 past the latest start, 5 pipeline still running,
-# 6 PreOpen without a session cut-off (calendar check unavailable). With -Force, exit 4 never fires.
+# 6 PreOpen without a session cut-off; 7 budget/unchanged-attempt refusal. With -Force, exit 4 never fires.
 
 param(
     [ValidateSet("Auto", "PostClose", "PreOpen")]
@@ -90,6 +90,7 @@ param(
     [switch]$SkipGex,
     [switch]$SkipBonds,
     [switch]$SkipRotationFlag,
+    [switch]$SkipCleanup,        # leave out the 10-session clean-up (20 Nov 2026)
     [switch]$Now,                # manual run: readiness report, Y/N, then start at once (see header)
     [switch]$Yes,                # with -Now: do not ask
     [string]$MacroDeliveryManifest = "", # local/synced manifest or configured HTTPS manifest
@@ -111,7 +112,7 @@ $logDir     = Join-Path $repoRoot "logs\scheduled"
 $etZone = [TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
 $SessionDefaults = @{
     PostClose = @{ Start = "16:30"; Latest = "23:30" }
-    PreOpen   = @{ Start = "08:35"; Latest = "09:00" }
+    PreOpen   = @{ Start = "09:05"; Latest = "09:15" }
 }
 $RegularOpen  = [TimeSpan]::new(9, 30, 0)
 $RegularGuard = [TimeSpan]::new(16, 15, 0)     # after the close plus settlement of closing prints
@@ -139,6 +140,23 @@ function Test-XnysSession([DateTime]$Day) {
         $ErrorActionPreference = $prev
         if ($LASTEXITCODE -eq 0) { return $true }
         if ($LASTEXITCODE -eq 3) { return $false }
+        return $null
+    } finally { Pop-Location }
+}
+
+function Get-XnysSessionHours([DateTime]$Day) {
+    # The same exchange calendar owns actual close and the post-close safety guard.
+    if (-not (Test-Path $venvPython)) { return $null }
+    $code = "import sys; from datetime import date; from zoneinfo import ZoneInfo; from avshunter.shared.xnys_calendar import session_bounds; a,b=session_bounds(date.fromisoformat(sys.argv[1])); z=ZoneInfo('America/New_York'); print(a.astimezone(z).strftime('%H:%M'),b.astimezone(z).strftime('%H:%M'))"
+    Push-Location $repoRoot
+    try {
+        $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+        $out = & $venvPython -B -c $code ($Day.ToString("yyyy-MM-dd")) 2>$null
+        $ErrorActionPreference = $prev
+        if ($LASTEXITCODE -ne 0) { return $null }
+        if (("$out").Trim() -match '^(\d{2}:\d{2}) (\d{2}:\d{2})$') {
+            return @{ Open = [TimeSpan]::Parse($Matches[1]); Close = [TimeSpan]::Parse($Matches[2]) }
+        }
         return $null
     } finally { Pop-Location }
 }
@@ -201,6 +219,16 @@ $startAt  = Get-ETOnDate $etNow $StartAtET
 $latestAt = Get-ETOnDate $etNow $LatestStartET
 $startAtLocal = [TimeZoneInfo]::ConvertTime($startAt, $etZone, [TimeZoneInfo]::Local)
 $isSessionDay = Test-XnysSession $etNow
+if ($isSessionDay -eq $true) {
+    $hours = Get-XnysSessionHours $etNow
+    if ($null -ne $hours) {
+        $RegularOpen = $hours.Open
+        $RegularGuard = $hours.Close.Add([TimeSpan]::FromMinutes(15))
+    } elseif ($env:AVSH_FULL_BUILD_ID -and -not $PlanOnly) {
+        Write-Host "[STOP] Scheduled exchange hours unavailable; nothing was run."
+        exit 6
+    }
+}
 # Weekends (ACK 10 Oct 2026): no US session, so no window, no regular-hours guard and no skip. The run
 # measures from the last completed session and is labelled OffSession (producers print it; the board
 # files an off-session build, never the scored evening record). Weekday XNYS holidays still skip.
@@ -236,12 +264,20 @@ $publish = @()
 if (-not $SkipBonds) { $publish += New-Step "bonds" "Bond macro + calendar" (Join-Path $repoRoot "bond_macro_intelligence.py") @("--verbose") }
 $publish += New-Step "fred" "FRED monitor v2.6 (+ merge)" (Join-Path $colab "avshunter_fred_monitor_v2_6.py")
 $publish += New-Step "futures_refresh" "Market snapshot + reopening refresh" (Join-Path $repoRoot "scripts/refresh_futures_snapshot.py") @("--all-market-data") @(0, 2) "exit 2 = explicitly degraded futures evidence"
+if (-not $SkipMacroJson -and -not $dataOnlyPublication) { $publish += New-Step "market_guard" "Current-run market freshness gate" (Join-Path $repoRoot "scripts/verify_macro_market_refresh.py") @() @(0) "FULL requires a current-run refresh and available source observations; otherwise stop before paid analysis/board" }
 if (-not $SkipMacroJson -and $dataOnlyPublication) { $publish += New-Step "packet" "Macro packet (data-only; no model)" (Join-Path $repoRoot "scripts/publish_macro_data_only.py") }
 if (-not $SkipMacroJson -and -not $dataOnlyPublication) { $publish += New-Step "packet" "Macro packet (build_macro_json)" (Join-Path $repoRoot "build_macro_json.py") @("--force", "--health-exit-code") @(0, 2) "exit 2 = DEGRADED macro evidence; inspect macro_health" }
 if (-not $SkipRotationFlag) {
     $publish += New-Step "rrf" "Rapid rotation flag" (Join-Path $repoRoot "rapid_rotation_flag.py") @() @(0, 1, 2) "exit 1/2 = flag level, not a failure"
 }
 if (-not $SkipBoard)     { $publish += New-Step "board"  "ETF macro board"                  (Join-Path $repoRoot "Run-MacroBoard.ps1")  @("-NoOpen") }
+# 20 Nov 2026 (AVS-MACRO-TRIAGE-001 T3, ACK): the new build's per-ETF intelligence is joined to the next session's
+# Lane B hand-off when it exists (skipped with a note otherwise); intelligence for the human triage, never a rank.
+if (-not $SkipBoard)     { $publish += New-Step "triage_context" "Triage macro context refresh" (Join-Path $repoRoot "scripts\refresh_triage_macro_context.py") @() @(0, 2) "exit 2 = context not written, reason printed; the board is unaffected" }
+# 20 Nov 2026 (ACK: "yes add the 10-session clean-up"): raw macro JSON copies older than 10 completed sessions are
+# removed after the board is built; anything a recent build or the feed ledgers still use is kept, and the macro
+# packet archive is never touched (config/macro_retention_v1.json, scripts/macro_retention.py).
+if (-not $SkipCleanup)   { $publish += New-Step "retention" "Retention clean-up (10 sessions)" (Join-Path $repoRoot "scripts\macro_retention.py") @("--apply") }
 
 # -- Plan ---------------------------------------------------------------------------------------
 if ($ResearchDeliveryOnly) {
@@ -332,7 +368,7 @@ Start-Transcript -Path $logFile -Append | Out-Null
 # PowerShell process, so they are saved here and restored on exit (9 Oct 2026: a PostClose run left
 # AVSH_RUN_SESSION=PostClose behind and labelled the next morning's board build as the evening one).
 $script:CallerEnv = @{}
-foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "AVSH_SESSION_CUTOFF", "AVSH_US_CLOSE_UTC", "AVSH_RUN_FORCED") {
+foreach ($name in "PYTHONIOENCODING", "PYTHONUNBUFFERED", "AVSH_RUN_SESSION", "AVSH_SESSION_CUTOFF", "AVSH_US_CLOSE_UTC", "AVSH_RUN_FORCED", "AVSH_FULL_BUILD_ID", "AVSH_BUILD_REASON", "AVSH_BUILD_FINGERPRINT", "AVSH_BUILD_OWNER") {
     $script:CallerEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 $env:PYTHONIOENCODING = "utf-8"
@@ -346,6 +382,7 @@ $previousOutputEncoding = [Console]::OutputEncoding
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 
 $script:results = @()
+$script:BudgetAttemptToken = $null
 
 function Write-Header([string]$Name, [string]$Note = "") {
     Write-Host ""
@@ -408,6 +445,30 @@ function Invoke-StepInline($Step) {
         $code = 3
     }
     Add-Result $Step $code ((Get-Date) - $started) "in order"
+}
+
+function Invoke-PublishSteps($Steps, [bool]$FullPublication) {
+    $refreshStartedUtc = $null
+    foreach ($step in $Steps) {
+        if ($step.Key -eq 'futures_refresh') { $refreshStartedUtc = [DateTime]::UtcNow }
+        if ($FullPublication -and $step.Key -eq 'market_guard') {
+            $refreshResult = @($script:results | Where-Object Step -eq 'Market snapshot + reopening refresh') | Select-Object -Last 1
+            if ($null -eq $refreshStartedUtc -or $null -eq $refreshResult -or $refreshResult.Exit -notin @(0, 2)) {
+                Write-Host '[STOPPED] Current-run market refresh failed; FULL analysis and board were not started.'
+                Add-Result $step 1 ([TimeSpan]::Zero) 'in order'
+                return
+            }
+            $step.Args = @('--not-before-utc', $refreshStartedUtc.ToString('o'))
+        }
+        Invoke-StepInline $step
+        if ($FullPublication -and $step.Key -in @('market_guard', 'packet')) {
+            $result = $script:results | Select-Object -Last 1
+            if ($result.Status -notlike 'OK*') {
+                Write-Host '[STOPPED] FULL publication prerequisite failed; dependent analysis/board steps were not started.'
+                return
+            }
+        }
+    }
 }
 
 function Invoke-StepsParallel($Steps, [int]$TimeoutMinutes) {
@@ -540,6 +601,21 @@ try {
         Write-Host "[WARN] session cut-off unavailable; PostClose run continues uncut"
     }
 
+    # Reserve an auditable preflight identity. Only the first paid stage consumes a FULL slot.
+    if (-not $dataOnlyPublication -and -not $ResearchDeliveryOnly -and -not $SkipMacroJson) {
+        if (-not $env:AVSH_BUILD_REASON) { $env:AVSH_BUILD_REASON = if ($runLabel -eq "PreOpen") { "PRE_OPEN" } elseif ($runLabel -eq "PostClose") { "POST_CLOSE" } else { "MATERIAL_CHANGE" } }
+        # Only the controller passes a shared reservation. A stale token left in an
+        # interactive shell must not let a later manual run reuse an old attempt.
+        if ($env:AVSH_BUILD_OWNER -ne 'SCHEDULED_CONTROLLER') { Remove-Item Env:AVSH_FULL_BUILD_ID -ErrorAction SilentlyContinue }
+        $budgetCode = "import os; from pathlib import Path; from datetime import datetime; from zoneinfo import ZoneInfo; from contracts.macro_build_budget import reserve,build_fingerprint; root=Path.cwd(); day=datetime.now(ZoneInfo('America/New_York')).date().isoformat(); reason=os.environ['AVSH_BUILD_REASON']; print(reserve(root,reason=reason,key=os.environ.get('AVSH_BUILD_FINGERPRINT') or build_fingerprint(root,reason,day),inherited=os.environ.get('AVSH_FULL_BUILD_ID')))"
+        $ErrorActionPreference = 'Continue'
+        $budgetToken = & $venvPython -B -c $budgetCode
+        $budgetExit = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($budgetExit -ne 0) { Write-Host '[STOPPED] full-build budget unavailable, unchanged attempt, or daily paid cap reached'; $exitCode=7; break run }
+        $env:AVSH_FULL_BUILD_ID = ([string]$budgetToken).Trim()
+        $script:BudgetAttemptToken = $env:AVSH_FULL_BUILD_ID
+    }
     $runStarted = Get-Date
     Write-Host ("[START] {0} run at {1:yyyy-MM-dd HH:mm} ET  (per-step logs: {2})" -f $runLabel, (Get-NowET), $stepLogDir)
 
@@ -549,7 +625,7 @@ try {
     } else {
         Invoke-StepsParallel $producers $ProducerTimeoutMinutes
     }
-    foreach ($s in $publish) { Invoke-StepInline $s }
+    Invoke-PublishSteps $publish (-not $dataOnlyPublication)
 
     $finishedET = Get-NowET
     Write-Host ""
@@ -575,6 +651,13 @@ try {
     Write-Host ("[COMPLETE] {0}{1} run: all {2} steps succeeded - log: {3}" -f $runLabel, $(if ($forced) { " FORCED" } else { "" }), $script:results.Count, $logFile)
   } while ($false)
 } finally {
+    if ($script:BudgetAttemptToken) {
+        $ErrorActionPreference = 'Continue'
+        $finishCode = "import sys; from pathlib import Path; from contracts.macro_build_budget import finish_attempt; print('BUDGET_OUTCOME='+finish_attempt(Path.cwd(),sys.argv[1],int(sys.argv[2])))"
+        try { & $venvPython -B -c $finishCode $script:BudgetAttemptToken ([string]$exitCode) | Out-Host }
+        catch { Write-Host '[WARN] Build outcome could not be recorded; paid-stage charges remain preserved.' }
+        $ErrorActionPreference = 'Stop'
+    }
     Stop-Transcript | Out-Null
     try { [Console]::OutputEncoding = $previousOutputEncoding } catch { }
     foreach ($name in $script:CallerEnv.Keys) {

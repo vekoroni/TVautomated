@@ -46,7 +46,11 @@ def receive_export(path, *, root, config, source_chat, source_message, expected_
     packet=_decode(raw);feed=identify_feed(packet)
     if not source_chat or not source_message:raise ValueError('SOURCE_PROVENANCE_REQUIRED')
     expected_chat=config.get('producer_chat_ids',{}).get(feed)
-    if expected_chat and source_chat!=expected_chat:raise ValueError('SOURCE_CHAT_FEED_MISMATCH')
+    aliases=config.get('producer_chat_aliases',{}).get(feed,[])
+    if not isinstance(aliases,list) or any(not isinstance(v,str) or not v.strip() for v in aliases):
+        raise ValueError('INVALID_PRODUCER_ALIAS_CONFIG')
+    allowed_chats=set(aliases)|({expected_chat} if expected_chat else set())
+    if allowed_chats and source_chat not in allowed_chats:raise ValueError('SOURCE_CHAT_FEED_MISMATCH')
     registry_path=state/'accepted.json';registry=_decode(registry_path.read_bytes()) if registry_path.exists() else {}
     previous=registry.get(feed,{})
     now=now or datetime.now(timezone.utc);stamp=now.isoformat()

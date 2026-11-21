@@ -2,10 +2,10 @@
 """
 AVSHUNTER — Automated Macro JSON Builder
 =========================================
-Replaces the 3-prompt manual GPT copy-paste workflow.
+Single-request macro synthesis with local token and USD accounting.
 
 Reads Colab output CSVs from dropbox/market_data/ and calls the
-Anthropic API with the exact 3-prompt sequence from the April sessions.
+Anthropic API once with current evidence and the required output contract.
 Writes macro_intelligence_latest.json directly to dropbox/macro/.
 
 USAGE
@@ -23,10 +23,7 @@ WHAT IT DOES
 ------------
 1. Scans dropbox/market_data/ for the latest Colab CSVs
 2. Builds a structured data payload from those files
-3. Calls Claude claude-sonnet-4-6 with the 3-prompt sequence:
-   - Message 1: system identity + data contract rules
-   - Message 2: full analysis pass (Blocks 0-8)
-   - Message 3: MACRO COMPLETE → strict JSON finalisation
+3. Calls Claude claude-sonnet-4-6 once: evidence, analysis rules and strict JSON contract
 4. Validates the JSON against macro_contract_v1_0 required fields
 5. Writes macro_intelligence_latest.json to dropbox/macro/
 6. Publishes byte-identical compatibility views to data/macro/ and the
@@ -56,6 +53,7 @@ from contracts.us_money_index_contract import (
     attach_us_money_index,
     load_us_money_index_sidecar,
 )
+from contracts.macro_prompt_projection import compact_context
 from contracts.macro_file_contract import (
     GEX_BY_STRIKE_FILENAME,
     GEX_MANIFEST_FILENAME,
@@ -86,13 +84,10 @@ PIPELINE_MACRO_DIR = BASE_DIR / "data" / "macro"
 OUTPUT_FILENAME = "macro_intelligence_latest.json"
 MODEL           = "claude-sonnet-4-6"
 
-MSG1_TOKENS = 2000
-MSG2_TOKENS = 4000
 # The complete packet is ~20.6k chars (~8k tokens). At 8,000 every run on 8 Oct 2026 stopped at
 # max_tokens mid-object and depended on the syntax repair regenerating it; 16,000 keeps 2x room.
-# A syntax repair rewrites the whole packet, so it needs the same room.
+# Invalid JSON fails closed; no automatic paid rewrite.
 MSG3_TOKENS = 16000
-MSG3_REPAIR_TOKENS = 16000
 
 FRESH_HOURS = 6  # skip rebuild if JSON is less than N hours old
 USSLIND_MAX_AGE_DAYS = 180  # monthly leading index; older observations are unusable
@@ -371,125 +366,26 @@ def current_usmi_prompt_view(packet: dict) -> dict:
     return view
 
 def format_data_for_prompt(payload: dict) -> str:
-    parts = []
-    data  = payload["data"]
-
+    from contracts.macro_prompt_projection import compact_context, deduplicate, encode, columnar_records
+    data = payload["data"]
+    document = {"authority": "ADVISORY_ONLY",
+                "instructions": "must not replace canonical market-data values; missing remains missing. "
+                "Exact duplicate subtrees use backward JSON-pointer $ref references within this document. Record tables use lossless columns_and_rows arrays, or indexed_records with string column indices as row keys; absent cells remain absent, null stays null.",
+                "projection": "Full original evidence remains archived; omitted fields are explicitly named."}
     if "prior_macro_json" in data:
-        parts.append("=== PRIOR MACRO JSON (baseline for partial update) ===")
-        parts.append(json.dumps(data["prior_macro_json"], indent=2)[:6000])
-        parts.append(
-            "PARTIAL UPDATE INSTRUCTION: Preserve prior macro fields unless the newly loaded update files "
-            "provide fresher contradictory evidence. Recompute affected fields and keep contract completeness."
-        )
-
+        document["PRIOR MACRO JSON"] = data["prior_macro_json"]
     if "us_money_index_advisory" in data:
-        parts.append("=== US MONEY INDEX CONSOLIDATED ADVISORY ===")
-        parts.append(
-            "AUTHORITY: ADVISORY_ONLY. Use this packet to augment the macro picture, "
-            "sector rotation, cross-asset context, event guards and uncertainty disclosures. "
-            "It must not replace canonical market-data values, determine ticker direction, "
-            "select a contract, grant capital permission or produce an execution verdict. "
-            "Where it conflicts with confirmed CSV/JSON market data, retain the canonical "
-            "value and disclose the conflict."
-        )
         advisory = current_usmi_prompt_view(data["us_money_index_advisory"])
-        # The normalised view already retains every validated v2 domain block.
-        # Do not duplicate the verbatim source payload in the model context.
-        advisory.pop("source_payload", None)
-        parts.append(json.dumps(advisory, indent=2, default=str))
-
-    # Governed inputs are represented by complete records and semantic
-    # summaries.  This replaces the legacy character slicing that could omit
-    # sectors/flags or cut a CSV row in half.
+        document["US MONEY INDEX CONSOLIDATED ADVISORY"] = advisory
     if payload.get("input_manifest"):
-        context = build_macro_prompt_context(payload)
-        parts.append("=== GOVERNED MACRO INPUT CONTEXT ===")
-        parts.append(
-            "AUTHORITY: ADVISORY_ONLY. Missing domains remain explicit and do "
-            "not become neutral observations. All records below are complete."
-        )
-        parts.append(json.dumps(context, indent=2, ensure_ascii=False, default=str))
-        return "\n".join(parts)
-
-    if "report_json" in data:
-        report = data["report_json"]
-        parts.append("=== MARKET INTELLIGENCE REPORT (v5.3) ===")
-        for field in ["timestamp","risk_assessment","macro_regime","inflation",
-                      "momentum","liquidity","yield_curve","vix_term_structure",
-                      "risk_signals"]:
-            if field in report:
-                parts.append(f"[{field.upper()}]")
-                parts.append(json.dumps(report[field], indent=2)[:2000])
-        if "forward_bias" in report:
-            parts.append("[FORWARD_BIAS]")
-            parts.append(json.dumps(report["forward_bias"], indent=2))
-        if "fred_indicators" in report:
-            parts.append("[FRED_INDICATORS — key series]")
-            key_fred = {k: v for k, v in report["fred_indicators"].items()
-                        if k in ("UNRATE","CPIAUCSL","FEDFUNDS","DGS10","DGS2",
-                                 "T10Y2Y","WALCL","SOFR","BAMLH0A0HYM2",
-                                 "USSLIND","UMCSENT","ICSA","M2SL","INDPRO")}
-            parts.append(json.dumps(key_fred, indent=2))
-
-    if "macro_csv" in data:
-        parts.append("\n=== MACRO CSV (FRED indicators) ===")
-        lines = data["macro_csv"].split("\n")
-        parts.append("\n".join(lines[:50]))
-
-    if "forward_bias_csv" in data:
-        parts.append("\n=== FORWARD BIAS CSV ===")
-        parts.append(data["forward_bias_csv"][:1000])
-
-    if "liquidity_csv" in data:
-        parts.append("\n=== LIQUIDITY MONITOR (Repo + WALCL) ===")
-        parts.append(data["liquidity_csv"][:1500])
-
-    if "vix_engine_csv" in data:
-        parts.append("\n=== VIX ENGINE V2 (VIX9D / VIX3M / VVIX PRIMARY) ===")
-        parts.append(data["vix_engine_csv"][:1500])
-
-    if "macro_master_csv" in data:
-        parts.append("\n=== MACRO MASTER (RATES / CREDIT / LEI / XLC PRIMARY) ===")
-        parts.append(data["macro_master_csv"][:1500])
-
-    if "fred_master_csv" in data:
-        parts.append("\n=== FRED MASTER WIDE TABLE (RAW MACRO SERIES) ===")
-        lines = data["fred_master_csv"].split("\n")
-        parts.append("\n".join(lines[-8:])[:2500])
-
-    if "gex_proxy_csv" in data:
-        parts.append("\n=== DEALER GAMMA PROXY (GEX PRIMARY) ===")
-        parts.append(data["gex_proxy_csv"][:1500])
-
-    if "gex_by_strike_csv" in data:
-        parts.append("\n=== GEX BY STRIKE (KEY LEVELS) ===")
-        parts.append(data["gex_by_strike_csv"][:1500])
-
-    if "threshold_flags_csv" in data:
-        parts.append("\n=== MACRO SERIES THRESHOLD FLAGS ===")
-        parts.append(data["threshold_flags_csv"][:1500])
-
-    if "regime_json" in data:
-        parts.append("\n=== AVSHUNTER REGIME JSON ===")
-        parts.append(json.dumps(data["regime_json"], indent=2)[:1500])
-
-    if "fung_hsieh_csv" in data:
-        parts.append("\n=== FUNG-HSIEH FACTOR DASHBOARD (size modifier only) ===")
-        parts.append(data["fung_hsieh_csv"][:500])
-
-    if "sectors_csv" in data:
-        parts.append("\n=== SECTOR ETF PERFORMANCE ===")
-        parts.append(data["sectors_csv"][:1000])
-
-    if "vol_dollar_csv" in data:
-        parts.append("\n=== VIX / VOLATILITY / DOLLAR ===")
-        parts.append(data["vol_dollar_csv"][:500])
-
-    return "\n".join(parts)
+        document["GOVERNED MACRO INPUT CONTEXT"] = compact_context(build_macro_prompt_context(payload))
+    else:
+        document["inputs"] = {k: v for k, v in data.items() if k not in ("us_money_index_advisory", "prior_macro_json")}
+    return "AUTHORITY: ADVISORY_ONLY\n" + encode(deduplicate(columnar_records(document)))
 
 
 # ============================================================
-# PROMPTS — exact 3-prompt sequence from April 2026 sessions
+# PROMPT RULES — consolidated into one request
 # ============================================================
 
 PROMPT_1_SYSTEM = """AVSHUNTER MACRO MODULE — SESSION INITIALISATION
@@ -671,7 +567,7 @@ Output the JSON now. Raw object only."""
 
 
 # ============================================================
-# API CALLER — 3-prompt sequence
+# API CALLER — single synthesis request
 # ============================================================
 
 def _anthropic_client() -> anthropic.Anthropic:
@@ -686,7 +582,7 @@ def _anthropic_client() -> anthropic.Anthropic:
 
     log.info("Anthropic workspace scope: configured")
     return anthropic.Anthropic(
-        default_headers={"anthropic-workspace-id": workspace_id}
+        default_headers={"anthropic-workspace-id": workspace_id}, max_retries=0
     )
 
 
@@ -731,92 +627,32 @@ def _json_error_context(raw: str, error: json.JSONDecodeError, radius: int = 180
     excerpt = cleaned[start:end].replace("\r", "\\r").replace("\n", "\\n")
     return f"chars[{start}:{end}]={excerpt}"
 
+def build_synthesis_request(data_str: str) -> dict:
+    system = PROMPT_1_SYSTEM.split("Acknowledge receipt")[0]
+    analysis = build_prompt_2("").split("Perform the full macro analysis", 1)[1]
+    analysis = analysis.split("After completing all 9 blocks", 1)[0]
+    request = {"model": MODEL, "max_tokens": MSG3_TOKENS,
+               "system": system + "\nPerform the analysis internally. Return only the final JSON.",
+               "messages": [{"role": "user", "content": data_str +
+                   "\nAnalyse all blocks internally:" + analysis + "\n" + PROMPT_3}]}
+    return request
+
+
 def call_macro_api(data_str: str, dry_run: bool = False) -> dict:
+    from contracts.macro_api_cost import budgeted_message
+    request = build_synthesis_request(data_str)
     if dry_run:
-        log.info("[DRY RUN] 3-prompt sequence would be called")
-        log.info("[DRY RUN] Prompt 1: %d chars", len(PROMPT_1_SYSTEM))
-        log.info("[DRY RUN] Prompt 2: %d chars", len(build_prompt_2(data_str)))
-        log.info("[DRY RUN] Prompt 3: %d chars", len(PROMPT_3))
+        log.info("[DRY RUN] One synthesis request, %d UTF-8 bytes; no API or budget reservation",
+                 len(json.dumps(request, ensure_ascii=False).encode()))
         return {}
-
-    client       = _anthropic_client()
-    conversation = []
-
-    # Message 1
-    log.info("Message 1: system identity...")
-    conversation.append({"role": "user", "content": PROMPT_1_SYSTEM})
-    r1 = client.messages.create(model=MODEL, max_tokens=MSG1_TOKENS, messages=conversation)
-    reply1 = _response_text(r1)
-    log.info("  Response: %d chars", len(reply1))
-    conversation.append({"role": "assistant", "content": reply1})
-
-    # Message 2
-    log.info("Message 2: full analysis (Blocks 0-8)...")
-    conversation.append({"role": "user", "content": build_prompt_2(data_str)})
-    r2 = client.messages.create(model=MODEL, max_tokens=MSG2_TOKENS, messages=conversation)
-    reply2 = _response_text(r2)
-    log.info("  Response: %d chars", len(reply2))
-    conversation.append({"role": "assistant", "content": reply2})
-
-    # Message 3
-    log.info("Message 3: JSON finalisation...")
-    conversation.append({"role": "user", "content": PROMPT_3})
-    r3 = client.messages.create(model=MODEL, max_tokens=MSG3_TOKENS, messages=conversation)
-    raw_json = _response_text(r3)
-    stop_reason = str(getattr(r3, "stop_reason", "") or "UNKNOWN")
-    log.info("  Response: %d chars | stop_reason=%s", len(raw_json), stop_reason)
-    if stop_reason == "max_tokens":
-        # A cut-off object is not a syntax error; a "syntax only" repair would have to
-        # regenerate the packet from memory, so it is never attempted.
-        raise RuntimeError(
-            f"macro packet truncated at the output limit ({MSG3_TOKENS} tokens, "
-            f"{len(raw_json)} chars received); raise MSG3_TOKENS"
-        )
-
+    response = budgeted_message(BASE_DIR, 'MACRO_SYNTHESIS', request, _anthropic_client)
+    raw = _response_text(response)
+    if getattr(response, "stop_reason", None) == "max_tokens":
+        raise RuntimeError("macro packet truncated at the output limit; no automatic paid repair")
     try:
-        return _parse_macro_response(raw_json)
-    except json.JSONDecodeError as e:
-        log.error("JSON parse failed: %s", e)
-        log.error("JSON failure context: %s", _json_error_context(raw_json, e))
-        log.warning("Requesting one syntax-only JSON repair from Anthropic")
-        conversation.append({"role": "assistant", "content": raw_json})
-        conversation.append({
-            "role": "user",
-            "content": (
-                "Your previous response was not valid JSON. It failed at "
-                f"line {e.lineno}, column {e.colno}: {e.msg}. Return the same "
-                "complete macro object with JSON syntax corrected only. Do not "
-                "change, omit, add, reinterpret, or recalculate any field. Use "
-                "double-quoted keys and strings, JSON true/false/null, escaped "
-                "newlines, and no comments, markdown fences, or trailing prose."
-            ),
-        })
-        repair = client.messages.create(
-            model=MODEL,
-            max_tokens=MSG3_REPAIR_TOKENS,
-            messages=conversation,
-        )
-        repaired_json = _response_text(repair)
-        repair_stop = str(getattr(repair, "stop_reason", "") or "UNKNOWN")
-        log.info(
-            "  Repair response: %d chars | stop_reason=%s",
-            len(repaired_json), repair_stop,
-        )
-        try:
-            return _parse_macro_response(repaired_json)
-        except (json.JSONDecodeError, ValueError) as repair_error:
-            if isinstance(repair_error, json.JSONDecodeError):
-                log.error(
-                    "JSON repair failure context: %s",
-                    _json_error_context(repaired_json, repair_error),
-                )
-            raise RuntimeError(
-                "API returned invalid JSON after one bounded repair attempt: "
-                f"initial_stop={stop_reason}; repair_stop={repair_stop}; "
-                f"initial_error={e}; repair_error={repair_error}"
-            ) from repair_error
-    except ValueError as e:
-        raise RuntimeError(f"API returned invalid macro object: {e}") from e
+        return _parse_macro_response(raw)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise RuntimeError("Invalid macro JSON; no automatic paid repair: " + str(exc)) from exc
 
 
 # ============================================================
@@ -1536,7 +1372,8 @@ def apply_macro_input_governance(macro_json: dict, payload: dict) -> dict:
     if not lineage["valid"]:
         raise RuntimeError("macro input lineage changed during build: " + "|".join(lineage["errors"]))
 
-    context = build_macro_prompt_context(payload)
+    from contracts.macro_prompt_projection import compact_context
+    context = compact_context(build_macro_prompt_context(payload))
     overrides = extract_market_data_overrides(payload)
     extras = macro_json.setdefault("extras", {})
     macro_json["macro_authority"] = MACRO_AUTHORITY
@@ -1963,7 +1800,7 @@ def main():
     print(f"""
     ==========================================================
        AVSHUNTER - AUTOMATED MACRO JSON BUILDER
-       Replaces 3-prompt manual GPT copy-paste workflow
+       One synthesis request; daily USD and four-FULL limits
     ==========================================================
     market_data : {market_path}
     output      : {output_path}
@@ -2051,13 +1888,14 @@ def main():
             manifest_receipt.get("evidence_bytes", "0"),
         )
 
-    # API call
-    log.info("Calling Anthropic API (3-prompt sequence)...")
+    # The API wrapper reserves dollars before authorising the existing FULL slot.
+    log.info("Calling Anthropic API (single consolidated synthesis request)...")
     try:
         macro_json = call_macro_api(data_str, dry_run=args.dry_run)
-    except RuntimeError as e:
+    except (RuntimeError, ValueError) as e:
         log.error("%s", e)
-        sys.exit(1)
+        from contracts.macro_api_cost import ApiCostLimit
+        sys.exit(7 if isinstance(e, (ApiCostLimit, ValueError)) else 1)
 
     if args.dry_run:
         log.info("[DRY RUN] Done. No files written.")
@@ -2295,7 +2133,7 @@ def main():
         "input_manifest_sha256": payload["input_manifest"]["manifest_sha256"],
         "input_manifest": payload["input_manifest"],
         "input_consumption_status": "COMPLETE",
-        "input_consumption_ledger": build_macro_prompt_context(payload)["input_consumption_ledger"],
+        "input_consumption_ledger": compact_context(build_macro_prompt_context(payload))["input_consumption_ledger"],
         "validation":    "PASS" if all_pass else f"FAIL - missing: {missing}",
     }
 

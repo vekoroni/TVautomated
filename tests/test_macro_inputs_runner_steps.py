@@ -60,3 +60,20 @@ def test_now_starts_a_manual_run_at_once_and_shows_the_readiness_report_first():
     text = _plan("-Now")
     assert "start window   : NOW (manual run)" in text
     assert "READINESS" in text
+
+
+def test_the_10_session_clean_up_runs_last_and_can_be_skipped():
+    # ACK 20 Nov 2026: "yes add the 10-session clean-up"
+    text = _plan("-Session", "PostClose", now_et="2026-10-20 17:00")
+    board, cleanup = _order(text, ["ETF macro board", "Retention clean-up (10 sessions)"])
+    assert board < cleanup and "macro_retention.py --apply" in text
+    assert "Retention clean-up" not in _plan("-Session", "PostClose", "-SkipCleanup", now_et="2026-10-20 17:00")
+
+
+def test_the_triage_macro_context_is_refreshed_after_the_board_and_before_the_clean_up():
+    # AVS-MACRO-TRIAGE-001 T3 (ACK 20 Nov 2026): each board build refreshes the board macro context for the next
+    # session's hand-off when it exists; without a board step there is nothing new to join.
+    text = _plan("-Session", "PreOpen")
+    board, context, cleanup = _order(text, ["ETF macro board", "Triage macro context refresh", "Retention clean-up (10 sessions)"])
+    assert board < context < cleanup and "refresh_triage_macro_context.py" in text
+    assert "Triage macro context refresh" not in _plan("-Session", "PreOpen", "-SkipBoard")

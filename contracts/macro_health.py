@@ -52,7 +52,7 @@ def assess_macro_health(macro, *, report=None, now=None):
                             state, stale = 'STALE_SESSION', True
                 except (ValueError, TypeError):
                     state, stale = 'INVALID_TIMESTAMP', True
-            elif group in ('us_futures', 'rates_commodities', 'fx', 'volatility'):
+            else:
                 state, stale = 'TIMESTAMP_MISSING', True
             from zoneinfo import ZoneInfo
             et=now.astimezone(ZoneInfo('America/New_York'))
@@ -68,9 +68,15 @@ def assess_macro_health(macro, *, report=None, now=None):
                     if quote.date()==expected and quote>=cutoff and quote<=et:
                         state,stale,not_live='MARKET_CLOSED_LAST_SESSION',False,True
                 except (ValueError,TypeError): pass
+            from contracts.macro_source_sessions import classify_source_session
+            session_assessment = classify_source_session(group, row, now, CONFIG['stale_after_minutes'])
+            if session_assessment is not None:
+                state, stale, not_live = (session_assessment[k] for k in ('state', 'stale', 'not_live'))
             missing = row.get('last') is None or state.startswith('MISSING')
             details.append({'symbol':row.get('symbol'), 'state':state, 'stale':stale,
-                            'missing':missing, 'last_bar_utc':stamp_value,'not_live':not_live})
+                            'missing':missing, 'last_bar_utc':stamp_value,'not_live':not_live,
+                            'source_state':row.get('state'), 'source_stale':row.get('stale'),
+                            'session_assessment':session_assessment})
         expected = {'us_futures':4, 'rates_commodities':3}.get(group, 1)
         symbols={x.get('symbol') for x in rows}
         required={'us_futures':{'ES=F','NQ=F','YM=F','RTY=F'},'rates_commodities':{'ZN=F','CL=F','GC=F'}}.get(group,set())
@@ -82,6 +88,17 @@ def assess_macro_health(macro, *, report=None, now=None):
         if incomplete: issues.append(prefix+'_MISSING')
         if any(x['stale'] for x in details): issues.append(prefix+'_STALE')
         if any(x['state']=='REOPEN_PENDING' for x in details): issues.append(prefix+'_REOPEN_PENDING')
+    from contracts.macro_collection_health import assess_collection
+    collection = assess_collection(overnight, now)
+    source_health['collection'] = collection
+    if collection['warnings']:
+        source_health['volatility']['warnings'] = collection['warnings']
+        issues.extend(warning['code'] for warning in collection['warnings'])
+    if collection['fatal_errors']:
+        issues.append('MARKET_REFRESH_COLLECTION_ERRORS')
+    if collection['vix_fallback']['status'] == 'INVALID':
+        source_health['volatility']['status'] = 'DEGRADED'
+        issues.append('VIX_FALLBACK_INVALID')
     module_source = extras.get('macro_module_source_health') or {}
     dxy = module_source.get('dxy_source')
     source_health['dollar_index'] = {'source':dxy, 'as_of':module_source.get('as_of'),
