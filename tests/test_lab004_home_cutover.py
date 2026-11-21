@@ -12,4 +12,6 @@ def test_home_is_review_and_legacy_remains_explicit():
     html=(root/'intelligence-lab/static/review.html').read_text(encoding='utf-8')
     js=(root/'intelligence-lab/static/review-app.js').read_text(encoding='utf-8')
     assert 'href="/legacy"' in html and '/legacy#interpreter-panel' in js
-    assert 'latest_review_run' in js
+    assert 'LabReviewLive' in js
+    live=(root/'intelligence-lab/static/review-live.js').read_text(encoding='utf-8')
+    assert 'latest_review_run' in live
