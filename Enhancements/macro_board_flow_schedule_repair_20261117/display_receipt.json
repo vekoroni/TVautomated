@@ -1,0 +1,9 @@
+{
+  "authority": "DISPLAY_CORRECTION_ONLY_NO_NEW_ANALYSIS_OR_SOURCE_CONSUMPTION",
+  "original_html_sha256": "25c3159c900d751890b4cfcca3ce63481166e75a644f03b5af757bd41f109f3f",
+  "analysis_built_at_utc": "2026-11-17T13:50:15+00:00",
+  "price_session": "2026-11-16",
+  "corrected_html_sha256": "d0e7116ff688a92637a21bab9d9d7287c8862c52b7a0bb1c91218d660794884f",
+  "macro_packet_sha256": "7ea63444e6e82906d716e759df9a80f83851a52f5b902880304b4dece59d28ae",
+  "fund_flow_status": "UNAVAILABLE"
+}

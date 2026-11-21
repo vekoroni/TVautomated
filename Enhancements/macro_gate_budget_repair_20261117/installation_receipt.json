@@ -1,0 +1,72 @@
+{
+  "installed_at_utc": "2026-11-17T23:32:21.761275+00:00",
+  "files": [
+    {
+      "path": "contracts/macro_market_refresh_gate.py",
+      "before_sha256": "7691390e9f4b8c4b4a96f4bc045109773baa380560c3349a51adb24ec59edd02",
+      "after_sha256": "5ec0f16833eb676b1fa0d7c96850d8050406d1d2613f63f22b96abe10ee93d0b"
+    },
+    {
+      "path": "contracts/macro_health.py",
+      "before_sha256": "1485f2143152fb1556d2018cd35049440ea209aee2c2ed3d5000402748fe47a5",
+      "after_sha256": "95c5d804370db44dd6466e4a45c8322e34a48b05889489b46875fac45ed27144"
+    },
+    {
+      "path": "contracts/macro_source_sessions.py",
+      "before_sha256": "8381ee0918fd0549c717e8ee856b6cf5bd3c4c2bad87a4b8856a8a41d2226430",
+      "after_sha256": "f82d062014b392bcf8520d375439997023d72f3305c87ce6ecbbf705b1df093c"
+    },
+    {
+      "path": "contracts/macro_build_budget.py",
+      "before_sha256": "31562bc380da9e9d66518b5bc0ffe89ebab6e2fb441c9a599124d7c595f29e7a",
+      "after_sha256": "b2f95fae4573c193e6840db3082d8687f6ee0757d4ae0baa2f8e20a4817dc79a"
+    },
+    {
+      "path": "scripts/scheduled_macro_builds.py",
+      "before_sha256": "584db9d84baa9daeee6476b5dac48281f98ec4f66f93e928359f4a8cf6199eb0",
+      "after_sha256": "ab74a187d38a79a034ced44bbb77c22f768995fbbce5b49c19b9d75d8a8461b9"
+    },
+    {
+      "path": "Run-MacroInputs.ps1",
+      "before_sha256": "ed26624f86e06569a1b4b454344979dbf4d06a806002f35c7f1aaf8efb326b8d",
+      "after_sha256": "fe007d04ab5f766523df107aea05e51bbadbef81be0f560c8b053fd2f144cd4e"
+    },
+    {
+      "path": "Enhancements/colab/avshunter_market_intelligence_v5_4_3.py",
+      "before_sha256": "06107d8df033a3b2ab87cc7fd31ad1e79adf7c61da0c1a460f75512572309b60",
+      "after_sha256": "6c67cabf9d7cd7932125fe32183c112bfd1899978f76d48018c7f91ab13c1ac2"
+    },
+    {
+      "path": "config/macro_build_schedule_v1.json",
+      "before_sha256": "a51b1bb512bb82823dfea04f1dc13c10153f1b2b8d013d29a270b793abe2114b",
+      "after_sha256": "4b53fba46e058c3267659a27f0401527c067c3d313d20076affdf2ab43b1ade6"
+    },
+    {
+      "path": "tests/test_macro_market_refresh_gate.py",
+      "before_sha256": "9a5b31c377041f4b2110455ba38bf9a0cca9a76762300e35823dc03c02a6c7b5",
+      "after_sha256": "1f598cda20af9b67de9519aef90b43390aa5b7d0c3218e026885020c70ce941d"
+    },
+    {
+      "path": "tests\\test_macro_gate_budget_failure_repair.py",
+      "before_sha256": null,
+      "after_sha256": "83a7fb7a5e9019d323a7051eb40984afb3ffc83dcb90c1d95ba262b7adf0606e"
+    },
+    {
+      "path": "macro_board/day_story.py",
+      "before_sha256": "28974afd05fd566e3a91acc1be7f8677a9e6e5cd6e0020ccf87d6b686d439615",
+      "after_sha256": "b60eab7e8a2d153ac93f27068263231fa9092778756c5b41fe2085d8fc28d9a6"
+    },
+    {
+      "path": "build_macro_json.py",
+      "before_sha256": "aee517fe82b89f29ec9a5114d99892a354221e43801dc385e26c365454ed84db",
+      "after_sha256": "86359caf140d2a6eb9f785664780c540307bb1870c386c09facca3695b4cc35a"
+    }
+  ],
+  "staged_regressions": "16 passed",
+  "credit_balance_usd": 5.58,
+  "credit_evidence": "USER_CONFIRMED_NOT_INDEPENDENTLY_VERIFIED",
+  "paid_build_or_pipeline_launched": false,
+  "publication_mode_changed": false,
+  "validated_at_utc": "2026-11-17T23:39:49.511021+00:00",
+  "validation": "80 tests passed; unchanged recorded snapshot reports Asia group degradation, not an ISO crash. All paid entry points refuse budget failures with nonzero exit before a paid request."
+}

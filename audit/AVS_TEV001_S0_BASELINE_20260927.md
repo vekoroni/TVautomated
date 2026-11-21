@@ -1,0 +1,35 @@
+# AVS-TEV-001 S0 baseline — 27 September 2026
+
+Status: **partial S0 evidence, not estimator-feasibility certification or production release**. Read-only inventory command: `venv\Scripts\python.exe audit\avs_tev001_s0_support_audit.py`. It writes JSON to stdout; it did not run Evening/Morning, change either database, or make broker calls.
+
+## Frozen defect to beat
+
+The stored `20260926_173730` EV-3 status reports 1,554 rows received, 1,349 selected/applicable, **zero evaluated**, 1,349 rejected, and 205 with no selected contract. Row-level reasons: 432 horizon, 851 no evaluable contract, 66 thesis price. Contract-attempt reasons: 3,848 horizon and 604 thesis price. These are different denominators; they must not be summed into a row total. `DEGRADED_NO_EVALUATIONS` is the legacy baseline, not C8 progress. Source: `data/output/runs/20260926_173730/ev3_shadow/ev3_shadow_phase_status_20260926_173730.json`.
+
+### Where target geometry actually arises
+
+The run's Discovery CSV has 1,532 `structural_target_source=PENDING_OI` rows and 134 `WYCKOFF` rows. Vanguard's exported CSV has directional/strength fields but no governed structural target/stop columns of its own. The final Options Intelligence CSV has 1,108 `TARGET_3R`, 63 `DISCOVERY_TARGET`, 349 `NO_TARGET_SOURCE`, and 34 `TARGET_3R_NON_POSITIVE` rows. `parse_structural_context()` computes those fallbacks **before its chain fetch** in Options Intelligence, using Discovery target, Layer-1 far trigger, then entry ± 3× stop distance. Thus the target is not generally an option-chain inference, but a 3R fallback is a *test hurdle*, not empirical proof of the stock's likely move. The new C5 owner must explicitly distinguish predicted move distribution from structural target/hurdle and move this pre-chain geometry assembly before C6 search; it must not treat 3R as a calibrated forecast.
+
+## Historical support inventory
+
+Actuarial v7 has 3,817,003 rows for 3,594 tickers over 1,193 dates. Its `mature_20d` flag is true on 3,745,210 rows, spanning 1,173 dates / 59 consecutive non-overlapping 20-session date blocks. A diagnostic Wyckoff × BB-percentile × volatility grid has 21 observed combinations; all 21 exceed *raw* 40-row and 12-date-block counts. This does **not** satisfy the signed-off C4 floors: rows overlap heavily; they are not independent candidate starts, fixed-horizon labels are not candidate-specific target-first/stop-first paths, and the file lacks a governed sector/macro point-in-time join. The BB percentile bucket is a proxy, not an approved compression state.
+
+Phantom opened read-only. `chain_snapshots` and `options_greeks_history` include exact symbols, dated bids/asks and Greeks; `phantom_outcomes` is run/ticker outcome data, not the needed C4 first-passage label. Stored quotes are not demonstrated fills. No table or WAL was changed.
+
+The v7 Parquet schema has daily `price` plus fixed-horizon gain/drawdown labels but no dated OHLC path columns. Phantom has no underlying daily-bar table. Consequently, neither of those two databases alone can certify ordered target-versus-stop touches. **Additional source found:** `data/canonical/historical_prices.sqlite` contains 2,405,393 completed daily OHLCV rows across 3,618 tickers from 2021-08-23 through 2026-09-25, with 47,188 recorded revisions. It is a plausible C4 path source, not yet a certified join. The current-row/revision as-of reconstruction, actuarial adjustment convention, decision cut-off, exact ticker/date join, missing sessions and 20-session independence still require testing before numeric forecasts.
+
+## Decision and next acceptance evidence
+
+The broad history and canonical OHLCV make a **prototype** possible; numeric C5/C8 authority is **not yet supported**. S0 remains open until a point-in-time geometry-labelled, censored first-passage panel is built and audited for independent starts, blocks, tickers, sectors, complete paths and precision against the pre-registered floors. Do not lower those floors merely to force coverage. Keep `DESCRIPTIVE_ONLY` / `NOT_ESTIMABLE` explicit until then. The new S1/S2 contracts are additive and have no production consumer yet.
+
+## Offline build check, same date
+
+`domain/forecast_path_label.py` now supplies a pure BULL/BEAR first-passage label from explicitly numbered completed OHLC sessions. The tests cover target-first at sessions 3/7/13/20, opposing stop, gap open, adverse-first ambiguous double touch, missing sessions, still-open censoring and nonzero survivor return. One offline fixture joins the legacy-to-C5 projection, bounded C6 search and separate underlying label without calling providers or the orchestrator. It is a **vertical fixture, not the complete C4→C8→Lab end-to-end test**. The combined nearby suite passed **148 tests** using a permitted pytest temporary directory. No production file was wired, run, or committed.
+
+## Next S3 slice: canonical path and point-in-time label cut-off
+
+`canonical_data/forecast_path_reader.py` now reads the OHLCV store in SQLite `mode=ro` and `query_only` mode, assigns XNYS session numbers, requires the exact adjustment convention and completed bars, and rewinds a corrected bar through recorded revisions and ingest-batch completion times if the correction happened *after* the requested label cut-off. A bar first acquired after that cut-off remains missing. `canonical_data/forecast_outcome_panel.py` binds those bars to one frozen option-neutral forecast; it refuses an outcome cut-off before publication and refuses a forecast whose evidence session was already stale when published. Missing target/stop remains `MISSING_GEOMETRY`; no target or option return is invented.
+
+In a real read-only smoke check, VST from completed session 2026-09-18 had all five subsequent completed sessions dated 2026-09-21 through 2026-09-25 in the canonical store, with no missing bars or revision rewind at a 2026-09-26 cut-off. Actuarial v7's recorded source adjustment policy is `polygon_adjusted_true` on all 3,817,003 rows; the canonical OHLCV key is `POLYGON_SPLIT_ADJUSTED`. This is a compatible *declared* convention, not yet a ticker/date price-parity proof. Historical feature-as-of provenance, cross-database identity/parity, run-frozen geometry sourcing and cohort-level complete-path/independence counts remain unverified. In particular, the 3R option-stage target must not be promoted to a calibrated predicted move.
+
+The boundary now also rejects a historical forecast published during or after the first future market session: that session's completed daily high/low cannot retrospectively become a post-decision path. A matured horizon with missing tail bars is `CENSORED_MISSING_DATA`, not `PENDING_OUTCOME`, and a previously revised bar is read from its pre-cut-off version only when the prior ingest batch is provably complete. The combined adjacent regression suite passed **158 tests**. These are offline component/vertical tests, **not** a full production-scope end-to-end acceptance test, calibrated C4 estimator, or C8 valuation.

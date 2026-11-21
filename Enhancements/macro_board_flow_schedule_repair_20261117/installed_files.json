@@ -1,0 +1,52 @@
+[
+  {
+    "path": "macro_board/fund_flows.py",
+    "before": null,
+    "after": "3c1cabb5dea07f43cccb19bac5aa75655ee92fcdac3cc238d3aa97106f9aec44"
+  },
+  {
+    "path": "macro_board/board_template.html",
+    "before": "de388eafa25ccb11368844fd81ff154685f19ee27af2b7fd2b683a1ed5ffe654",
+    "after": "603a2ce1c2a52d7629f757a5db2d43cd7292049e6fe1d633a5ef47d5556c48a2"
+  },
+  {
+    "path": "macro_board/day_story.py",
+    "before": "8032c7da47043330d2eebff5741193388557ec62dd0e70f703c893b478ce6516",
+    "after": "28974afd05fd566e3a91acc1be7f8677a9e6e5cd6e0020ccf87d6b686d439615"
+  },
+  {
+    "path": "macro_board/build_board.py",
+    "before": "8a21540cc7e7de18203b287e339afca897f775c2254d82b69b6e7887f788612d",
+    "after": "47d36c2314fd4040ae2bedd5bdba0d83bab2b82325d0350e433b84bd477f933a"
+  },
+  {
+    "path": "contracts/macro_build_budget.py",
+    "before": null,
+    "after": "31562bc380da9e9d66518b5bc0ffe89ebab6e2fb441c9a599124d7c595f29e7a"
+  },
+  {
+    "path": "scripts/scheduled_macro_builds.py",
+    "before": null,
+    "after": "584db9d84baa9daeee6476b5dac48281f98ec4f66f93e928359f4a8cf6199eb0"
+  },
+  {
+    "path": "config/macro_build_schedule_v1.json",
+    "before": null,
+    "after": "a51b1bb512bb82823dfea04f1dc13c10153f1b2b8d013d29a270b793abe2114b"
+  },
+  {
+    "path": "Run-MacroInputs.ps1",
+    "before": "739905cc1afe19d6892f1d4c27bd3cc5b646675a683305e20bc4b011daa69218",
+    "after": "ed26624f86e06569a1b4b454344979dbf4d06a806002f35c7f1aaf8efb326b8d"
+  },
+  {
+    "path": "Run-MacroSchedule.ps1",
+    "before": null,
+    "after": "a045b2bce57d31e32b3a822f7ccb4219b7faf98a7e0ac9ea0b11442414665f98"
+  },
+  {
+    "path": "build_macro_json.py",
+    "before": "14f6084c8d5d5f2a8a2523dfe79d59533c169533a43101df546ece028bdb863e",
+    "after": "aee517fe82b89f29ec9a5114d99892a354221e43801dc385e26c365454ed84db"
+  }
+]

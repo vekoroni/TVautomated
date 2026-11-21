@@ -1,0 +1,167 @@
+[
+  {
+    "path": "macro_board\\board_template.html",
+    "before": "de388eafa25ccb11368844fd81ff154685f19ee27af2b7fd2b683a1ed5ffe654",
+    "after": "603a2ce1c2a52d7629f757a5db2d43cd7292049e6fe1d633a5ef47d5556c48a2"
+  },
+  {
+    "path": "macro_board\\build_board.py",
+    "before": "8a21540cc7e7de18203b287e339afca897f775c2254d82b69b6e7887f788612d",
+    "after": "47d36c2314fd4040ae2bedd5bdba0d83bab2b82325d0350e433b84bd477f933a"
+  },
+  {
+    "path": "macro_board\\conditions.py",
+    "before": null,
+    "after": "7f649ce93911f24a75f9e70a110686efb996826355aca19a6aa4e8cc5b4f5085"
+  },
+  {
+    "path": "macro_board\\day_story.py",
+    "before": "8032c7da47043330d2eebff5741193388557ec62dd0e70f703c893b478ce6516",
+    "after": "28974afd05fd566e3a91acc1be7f8677a9e6e5cd6e0020ccf87d6b686d439615"
+  },
+  {
+    "path": "macro_board\\decision.py",
+    "before": null,
+    "after": "e4fd72c614f3f4fb3dc11e7e1bf8d7b396047f44fa9fc158eee9c07c413c8b70"
+  },
+  {
+    "path": "macro_board\\decision_points.py",
+    "before": null,
+    "after": "0f6847f68119aeccd96ea1938420ea644115225b0b43fa811aef6161b04ffca1"
+  },
+  {
+    "path": "macro_board\\desk_card.py",
+    "before": null,
+    "after": "8c2d997f8b8274e734f9a2d2fcbdca31e0867d1f591c9176a26620bef0bfb564"
+  },
+  {
+    "path": "macro_board\\evidence.py",
+    "before": null,
+    "after": "1054fc9d94a78d52937d737a3d44e40aa8d4f6e707c3f44eaa07210772fba8fb"
+  },
+  {
+    "path": "macro_board\\fund_flows.py",
+    "before": null,
+    "after": "3c1cabb5dea07f43cccb19bac5aa75655ee92fcdac3cc238d3aa97106f9aec44"
+  },
+  {
+    "path": "macro_board\\holdings.py",
+    "before": null,
+    "after": "4883fa972ca5294599770e2ca232df147a84abbd5db3f3562a6e3f77f1b9e276"
+  },
+  {
+    "path": "macro_board\\market_prices.py",
+    "before": null,
+    "after": "ae4df69b4aa67bfe72d0f2e37fa26497ebe6a0275357acdd0ebb0e2206c68d2e"
+  },
+  {
+    "path": "macro_board\\measured_sheet.py",
+    "before": null,
+    "after": "38df88b519eed0e6d640efa6b39bd6965f2e27c41c64981a094f9fcc5050d868"
+  },
+  {
+    "path": "macro_board\\momentum.py",
+    "before": null,
+    "after": "53347b77da434541e525ea183f82f4105114a73a2c4153e15d820a87d7d89e1c"
+  },
+  {
+    "path": "macro_board\\money_index.py",
+    "before": null,
+    "after": "7e8e698bd94eecdceb4599a2c3864a5a215a9f3e1d1ffef090e06a7bd31d9ba1"
+  },
+  {
+    "path": "macro_board\\opportunity.py",
+    "before": null,
+    "after": "97699128af80ce81fe435e71366d4d0deaf44c9010f0cc5034a4a79cb22d0724"
+  },
+  {
+    "path": "macro_board\\options.py",
+    "before": null,
+    "after": "3dd05976693810012e5251f44425f81f4b3bf4f09dcce2bd26f3cc5e03d4ebe2"
+  },
+  {
+    "path": "macro_board\\readiness.py",
+    "before": null,
+    "after": "72e732a82af4d66e2cbab66388a43bcd19682971abfd287e9518ffc6e7efeaab"
+  },
+  {
+    "path": "macro_board\\review.py",
+    "before": null,
+    "after": "6ddf4c96462e7c5f4a2a93ed25ae4d0bb60d93afaf5d228b6f812b5add0b9ba2"
+  },
+  {
+    "path": "macro_board\\rotation.py",
+    "before": null,
+    "after": "45641256bf7fe8994a250c33a6a541ec5ab26229c8a9cd8f499ef292a1ffd588"
+  },
+  {
+    "path": "macro_board\\scenarios.py",
+    "before": null,
+    "after": "66d2a85e1b8a615e76ea37b795765b5baeb9ac90a321ff44031e6b8541f28423"
+  },
+  {
+    "path": "macro_board\\scheduled_events.py",
+    "before": null,
+    "after": "e2ce42d6304f7749c4468f885617988b5f96d6bbae8eea8efb45291298484ccd"
+  },
+  {
+    "path": "macro_board\\scorecard.py",
+    "before": null,
+    "after": "6cb990554f97868dabda3c48b63645658806d0287f68d5c1c9eeec4e15cbe9bd"
+  },
+  {
+    "path": "macro_board\\session_plan.py",
+    "before": null,
+    "after": "b45bb33261e00ae710382006a4a778222685cba1112bc4e781321f1f9f413db4"
+  },
+  {
+    "path": "macro_board\\sources.py",
+    "before": null,
+    "after": "da5f65815dc5d0017d292a0553e221123b77cc051f2c553244a6577d0858886c"
+  },
+  {
+    "path": "macro_board\\tastytrade_metrics.py",
+    "before": null,
+    "after": "99de1d70cd824eb2ffd3b6cabd5ea124d17ed3d7f35380e092ebeebbba547c07"
+  },
+  {
+    "path": "macro_board\\__init__.py",
+    "before": null,
+    "after": "b51af4b928ea4d17291b5f5c948abf280e2ab9283e0ec41c148d621b296169ab"
+  },
+  {
+    "path": "macro_board\\__main__.py",
+    "before": null,
+    "after": "cd52edd14dab1f2fab76b35c03004d1799b0a3bd556c0b4ebf5e52f5d62e4e2c"
+  },
+  {
+    "path": "build_macro_json.py",
+    "before": "14f6084c8d5d5f2a8a2523dfe79d59533c169533a43101df546ece028bdb863e",
+    "after": "aee517fe82b89f29ec9a5114d99892a354221e43801dc385e26c365454ed84db"
+  },
+  {
+    "path": "Run-MacroInputs.ps1",
+    "before": "739905cc1afe19d6892f1d4c27bd3cc5b646675a683305e20bc4b011daa69218",
+    "after": "7afc9f92e194d0380c45eb704fa9c01b9cad42e8b50e7c5efa511a73dd35d09c"
+  },
+  {
+    "path": "Run-MacroSchedule.ps1",
+    "before": null,
+    "after": "a045b2bce57d31e32b3a822f7ccb4219b7faf98a7e0ac9ea0b11442414665f98"
+  },
+  {
+    "path": "config\\macro_build_schedule_v1.json",
+    "before": null,
+    "after": "a51b1bb512bb82823dfea04f1dc13c10153f1b2b8d013d29a270b793abe2114b"
+  },
+  {
+    "path": "contracts\\macro_build_budget.py",
+    "before": null,
+    "after": "31562bc380da9e9d66518b5bc0ffe89ebab6e2fb441c9a599124d7c595f29e7a"
+  },
+  {
+    "path": "scripts\\scheduled_macro_builds.py",
+    "before": null,
+    "after": "584db9d84baa9daeee6476b5dac48281f98ec4f66f93e928359f4a8cf6199eb0"
+  }
+]

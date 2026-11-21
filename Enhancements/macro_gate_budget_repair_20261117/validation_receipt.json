@@ -1,0 +1,38 @@
+{
+  "verified_at_utc": "2026-11-17T23:39:49.511021+00:00",
+  "tests": {
+    "new_failure_regressions": 18,
+    "existing_market_refresh_gate": 24,
+    "existing_session_freshness": 38,
+    "total_passed": 80
+  },
+  "recorded_snapshot_replay": {
+    "status": "CLEAN_GROUP_HEALTH_FAILURE",
+    "error": "MARKET_SOURCE_NOT_READY:asia"
+  },
+  "recorded_missing_clocks": [
+    {
+      "group": "asia",
+      "symbol": "^AXJO",
+      "last_bar_utc": null
+    }
+  ],
+  "raw_snapshot_sha256": "f36327767d51e59542fa416e736dbf039b84ce0c7c638dbf4c18ee7c3a6832fe",
+  "raw_snapshot_unchanged": true,
+  "requires_new_market_snapshot": true,
+  "expected_new_collection_change": "Unsupported ^AXJO omitted; original failed snapshot is retained and not modified to pass.",
+  "budget_day": "2026-11-17",
+  "budget": {
+    "paid_attempts": 2,
+    "preflight_only_reservations": 2,
+    "last_paid_started": "2026-11-17T22:20:51.387399+00:00",
+    "completed_reasons": []
+  },
+  "failed_paid_attempts_still_count": true,
+  "credit_balance_usd": 5.58,
+  "credit_evidence": "USER_CONFIRMED; NOT_INDEPENDENTLY_VERIFIED",
+  "manual_paid_build_started": false,
+  "pipeline_started": false,
+  "publication_mode": "FULL",
+  "monitor_instructions_updated": true
+}
