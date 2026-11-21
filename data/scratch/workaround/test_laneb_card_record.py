@@ -23,6 +23,7 @@ import copy
 import json
 import sys
 from pathlib import Path
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_record as cr  # noqa: E402
@@ -178,3 +179,124 @@ def test_the_checker_reads_a_folder_and_writes_one_report(tmp_path):
     out = cr.write_report(report, tmp_path / "out", "2026-11-20")
     assert out.name == "card_check_2026-11-20.md" and "SE" in out.read_text(encoding="utf-8")
     assert json.loads((folder / "GRAB.json").read_text(encoding="utf-8")) == record()   # the card files are never changed
+
+
+# ---------------------------------------------------------------- the board row comes from the record (D5 of the fix list)
+# Board row shape read from the 36 hand-written rows of 16, 18 and 20 Nov and from board_page_v19.html:
+# t, side, group, url, occ, con, rungs[{lo, hi, max{fixed | ladder}, label}], stop{dir, v}, targetStock, gtcSteps,
+# exit, exitWhy, from, until, cardDay, at1550, manual, gates, review, built, stockDvM, supersedes.
+def board_record(**over):
+    base = record(artifact_url="https://claude.ai/artifact/abc", window_start="2026-11-20", window_end="2026-12-04",
+                  liquidity={"tier": "A", "spread_pct_mid": 6.1, "oi": 2350, "stock_dv_m": 259.7},
+                  extra_conditions=["Never hold both legs", "Put spread no wider than 0.03 at entry"])
+    base["branches"] = [
+        {"side": "CALL", "trigger": "15:50 ET price 2.75-2.85, session low >=2.71", "targets": [3.06, 3.18],
+         "contract": "GRAB270115C00003000", "max_pay": 0.16, "stop": 2.7, "zone_low": 2.75, "zone_high": 2.85,
+         "gtc": [["2026-11-20", 0.25], ["2026-11-25", 0.24]], "time_stop": "2026-12-08 15:50 ET", "from": "2026-11-20", "until": "2026-11-25"},
+        {"side": "PUT", "trigger": "session high >=3.07, then 15:50 ET price 3.00-3.20", "targets": [2.86, 2.75],
+         "contract": "GRAB270115P00003000", "max_pay": 0.19, "gtc": [["entry", 0.33], ["2026-11-30", 0.32]],
+         "gates": [{"s": "KWEB", "op": "<=", "v": 21.31, "label": "KWEB at or under 21.31"}]}]
+    base.update(over)
+    return base
+
+
+def rows_by_side(rec):
+    return {row["data"]["side"]: row for row in cr.to_board_rows(rec)}
+
+
+def test_every_branch_becomes_one_board_row_named_by_its_side():
+    rows = cr.to_board_rows(board_record())
+    assert [row["doc_id"] for row in rows] == ["2026-11-20_GRAB_CALL", "2026-11-20_GRAB_PUT"]
+    assert all(row["collection"] == "cards" and row["derived_from"] == "card_record_v1" for row in rows)
+    call = rows[0]["data"]
+    assert (call["t"], call["side"], call["group"], call["occ"], call["con"]) == ("GRAB", "CALL", "today", "GRAB270115C00003000", "Jan 15 3C")
+    assert call["url"] == "https://claude.ai/artifact/abc" and call["cardDay"] == "2026-11-20"
+
+
+def test_the_entry_rung_stop_target_and_exit_ladder_are_numbers_from_the_branch():
+    call = rows_by_side(board_record())["CALL"]["data"]
+    assert call["rungs"] == [{"lo": 2.75, "hi": 2.85, "max": {"fixed": 0.16}, "label": "15:50 ET price 2.75-2.85, session low >=2.71",
+                              "from": "2026-11-20", "until": "2026-11-25"}]
+    assert call["stop"] == {"dir": "below", "v": 2.7} and call["targetStock"] == 3.06
+    assert call["gtcSteps"] == [["2026-11-20", 0.25], ["2026-11-25", 0.24]]
+    assert call["exit"] == "2026-12-08" and call["at1550"] is True
+    assert call["from"] == "2026-11-20" and call["until"] == "2026-11-25" and call["stockDvM"] == 259.7
+    assert call["manual"] == ["Never hold both legs", "Put spread no wider than 0.03 at entry"]
+
+
+def test_the_primary_branch_takes_the_cards_own_zone_stop_and_exit():
+    put = rows_by_side(board_record())["PUT"]
+    data = put["data"]
+    assert data["rungs"][0]["lo"] == 3.0 and data["rungs"][0]["hi"] == 3.2 and data["rungs"][0]["max"] == {"fixed": 0.19}
+    assert data["stop"] == {"dir": "above", "v": 3.26} and data["exit"] == "2026-12-18"
+    assert data["gates"] == [{"s": "KWEB", "op": "<=", "v": 21.31, "label": "KWEB at or under 21.31"}]
+    assert data["from"] == "2026-11-20" and data["until"] == "2026-12-04"          # the card's own window
+
+
+def test_a_step_dated_entry_is_not_given_a_date_it_does_not_have():
+    put = rows_by_side(board_record())["PUT"]
+    assert put["data"]["gtcSteps"] == [["2026-11-30", 0.32]]
+    assert any("gtcSteps" in gap and "entry" in gap for gap in put["missing"])
+
+
+def test_what_the_record_does_not_hold_is_listed_never_invented():
+    thin = board_record()
+    thin["branches"][0] = {"side": "CALL", "trigger": "15:50 ET price 2.75-2.85", "contract": "GRAB270115C00003000",
+                           "max_pay": "live mid", "stop": "15:50 ET price < 2.70"}
+    thin.pop("artifact_url")
+    call = rows_by_side(thin)["CALL"]
+    for field in ("rungs", "stop", "targetStock", "url", "gtcSteps"):
+        assert field not in call["data"]
+        assert any(gap.startswith(field) for gap in call["missing"]), field
+    assert call["data"]["exit"] == "2026-12-18"                                    # falls back to the card's own time stop
+
+
+def test_supersedes_and_the_build_snapshot_travel_when_the_record_has_them():
+    rec = board_record(supersedes="2026-11-18_GRAB_CALL", built={"px": 2.9, "bid": 0.14, "ask": 0.16, "mid": 0.15, "spr": 13.3},
+                       review={"date": "2026-11-25", "text": "day-3 review"})
+    call = rows_by_side(rec)["CALL"]["data"]
+    assert call["supersedes"] == "2026-11-18_GRAB_CALL" and call["built"]["mid"] == 0.15 and call["review"]["date"] == "2026-11-25"
+    assert "supersedes" not in rows_by_side(board_record())["CALL"]["data"]
+
+
+def test_a_record_with_no_branches_gives_one_row_from_the_card_itself():
+    rec = board_record()
+    rec["branches"] = []
+    rows = cr.to_board_rows(rec)
+    assert len(rows) == 1 and rows[0]["data"]["occ"] == "GRAB270115P00003000" and rows[0]["data"]["side"] == "PUT"
+
+
+def test_two_branches_on_one_side_are_two_rungs_of_one_row_each_with_its_own_contract():
+    rec = board_record()
+    rec["branches"].insert(1, {"side": "CALL", "trigger": "15:50 ET price 2.85-2.95", "contract": "GRAB270115C00003500",
+                               "max_pay": 0.09, "zone_low": 2.85, "zone_high": 2.95, "limit": 0.08})
+    rows = cr.to_board_rows(rec)
+    assert [row["doc_id"] for row in rows] == ["2026-11-20_GRAB_CALL", "2026-11-20_GRAB_PUT"]      # no second CALL row
+    rungs = rows[0]["data"]["rungs"]
+    assert [(r["lo"], r["hi"], r["occ"], r["con"]) for r in rungs] == [
+        (2.75, 2.85, "GRAB270115C00003000", "Jan 15 3C"), (2.85, 2.95, "GRAB270115C00003500", "Jan 15 3.5C")]
+    assert rungs[1]["limit"] == 0.08 and rows[0]["data"]["occ"] == "GRAB270115C00003000"
+    assert "occ" not in rows[1]["data"]["rungs"][0]                                                 # one contract: said once
+
+
+def test_a_ladder_written_as_a_sentence_or_one_price_is_named_not_guessed():
+    rec = board_record()
+    rec["branches"][0]["gtc"] = "0.25 to 25 Nov, 0.24 after"
+    rec["branches"][1]["gtc"] = 0.33
+    for row in cr.to_board_rows(rec):
+        assert "gtcSteps" not in row["data"] and any(gap.startswith("gtcSteps") for gap in row["missing"])
+
+
+def test_a_stop_already_in_the_boards_shape_is_kept():
+    rec = board_record()
+    rec["branches"][0]["stop"] = {"dir": "below", "v": 2.7}
+    assert rows_by_side(rec)["CALL"]["data"]["stop"] == {"dir": "below", "v": 2.7}
+
+
+def test_board_row_files_are_named_by_doc_id_and_never_written_over(tmp_path):
+    paths = cr.write_board_rows(board_record(), tmp_path)
+    assert [p.name for p in paths] == ["board_row_2026-11-20_GRAB_CALL.json", "board_row_2026-11-20_GRAB_PUT.json"]
+    saved = json.loads(paths[0].read_text(encoding="utf-8"))
+    assert saved["doc_id"] == "2026-11-20_GRAB_CALL" and saved["collection"] == "cards" and saved["data"]["t"] == "GRAB"
+    with pytest.raises(FileExistsError):
+        cr.write_board_rows(board_record(), tmp_path)

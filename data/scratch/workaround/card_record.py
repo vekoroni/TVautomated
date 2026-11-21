@@ -203,6 +203,185 @@ def check_record(record: dict, *, strict: bool = False) -> dict:
     return {"verdict": verdict, "errors": errors, "standard_gaps": gaps}
 
 
+# ---------------------------------------------------------------- the board row comes from the record (D5)
+BOARD_COLLECTION = "cards"
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+DAY = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def _number(value) -> float | int | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value
+
+
+def _day(value) -> str | None:
+    found = DAY.search(str(value or ""))
+    return found.group(1) if found else None
+
+
+def _contract_label(symbol: str) -> str:
+    """GRAB270115C00003000 -> "Jan 15 3C", the way the board shows a contract."""
+    found = OCC.match(symbol)
+    expiry = datetime.strptime(found.group(2), "%y%m%d").date()
+    strike = int(found.group(4)) / 1000
+    return f"{MONTHS[expiry.month - 1]} {expiry.day} {strike:g}{found.group(3)}"
+
+
+def to_board_rows(record: dict) -> list[dict]:
+    """One board row per branch, in the shape the Card Watch Board reads. Nothing is invented.
+
+    A value the record does not hold as the board needs it (a number, a date) is left off the row and named in
+    "missing". The branch whose contract is the card's own contract also takes the card's own zone, stop and target;
+    the card's time stop and window apply to every branch that states none of its own.
+    """
+    ticker = str(record.get("ticker") or "").upper().strip()
+    ledger = LEDGER.match(str(record.get("ledger_id") or ""))
+    card_day = ledger.group(1) if ledger else _day(record.get("created_utc"))
+    card_symbol = _contract(record.get("contract"), ticker)[0]
+    branches = [b for b in record.get("branches") or [] if isinstance(b, dict)]
+    if not branches and card_symbol:
+        branches = [{"side": "CALL" if OCC.match(card_symbol).group(3) == "C" else "PUT", "contract": card_symbol,
+                     "trigger": record.get("entry_type"), "max_pay": record.get("max_pay")}]
+    by_side: dict[str, list[dict]] = {}
+    for branch in branches:                      # the board has one row per side; a side's branches are its rungs
+        by_side.setdefault(str(branch.get("side") or "").upper(), []).append(branch)
+    return [_board_row(record, group, ticker, card_day, card_symbol) for group in by_side.values()]
+
+
+def _board_row(record: dict, side_branches: list[dict], ticker: str, card_day: str | None, card_symbol: str) -> dict:
+    # the row's own stop, target and exit come from the card's own contract when it is on this side, else the first branch
+    branch = next((b for b in side_branches if card_symbol and _contract(b.get("contract"), ticker)[0] == card_symbol),
+                  side_branches[0])
+    side = str(branch.get("side") or "").upper()
+    symbol = _contract(branch.get("contract"), ticker)[0]
+    primary = bool(symbol) and symbol == card_symbol
+    data: dict = {"t": ticker, "side": side}
+    missing: list[str] = []
+
+    def put(field: str, value, why: str):
+        if value in EMPTY:
+            missing.append(f"{field}: {why}")
+        else:
+            data[field] = value
+
+    def own(field: str, card_field: str | None = None, *, every_branch: bool = False):
+        """The branch's own value; the card's value for the card's own contract (or for every branch)."""
+        if branch.get(field) not in EMPTY:
+            return branch[field]
+        return record.get(card_field or field) if (primary or every_branch) else None
+
+    group = record.get("board_group") or ("today" if record.get("final_action") == "TRADE_ON_TRIGGER" else None)
+    put("group", group, f"final_action is {record.get('final_action')!r} and the record states no board_group")
+    put("url", record.get("artifact_url"), "the record has no artifact_url")
+    put("occ", symbol, "the branch contract is not an option symbol")
+    if symbol:
+        data["con"] = _contract_label(symbol)
+    put("cardDay", card_day, "no card day on the record")
+
+    rungs = []
+    for index, leg in enumerate(side_branches):
+        leg_symbol = _contract(leg.get("contract"), ticker)[0]
+        own_contract = bool(leg_symbol) and leg_symbol == card_symbol
+        low = _number(leg.get("zone_low") if leg.get("zone_low") not in EMPTY else (record.get("close_zone_low") if own_contract else None))
+        high = _number(leg.get("zone_high") if leg.get("zone_high") not in EMPTY else (record.get("close_zone_high") if own_contract else None))
+        if low is None or high is None:
+            missing.append(f"rungs[{index}]: the branch states no entry zone as two numbers (zone_low, zone_high)")
+            continue
+        rung: dict = {"lo": low, "hi": high}
+        pay = _number(leg.get("max_pay"))
+        if pay is None:
+            missing.append(f"rungs[{index}].max: max pay {leg.get('max_pay')!r} is not a number")
+        else:
+            rung["max"] = {"fixed": pay}
+        if leg.get("trigger") not in EMPTY:
+            rung["label"] = str(leg["trigger"])
+        for key in ("from", "until"):
+            if _day(leg.get(key)):
+                rung[key] = _day(leg[key])
+        if len(side_branches) > 1 and leg_symbol:            # two contracts on one side: each rung names its own
+            rung["occ"], rung["con"] = leg_symbol, _contract_label(leg_symbol)
+            if _number(leg.get("limit")) is not None:
+                rung["limit"] = leg["limit"]
+        rungs.append(rung)
+    if rungs:
+        data["rungs"] = rungs
+
+    stop = own("stop")
+    if isinstance(stop, dict) and stop.get("dir") in ("above", "below") and _number(stop.get("v")) is not None:
+        data["stop"] = {"dir": stop["dir"], "v": stop["v"]}          # already in the board's own shape
+    elif _number(stop) is None or side not in ("CALL", "PUT"):
+        missing.append(f"stop: {stop!r} is not one stock price")
+    else:
+        data["stop"] = {"dir": "below" if side == "CALL" else "above", "v": stop}
+
+    targets = own("targets")
+    target = _number(targets[0]) if isinstance(targets, list) and targets else None
+    put("targetStock", target, "the branch states no stock target as a number")
+
+    steps, undated = [], 0
+    ladder = branch.get("gtc")
+    if ladder not in EMPTY and not isinstance(ladder, list):      # one price or a sentence: a ladder the board cannot read
+        ladder, undated = [], 1
+    for step in ladder or []:
+        if isinstance(step, (list, tuple)) and len(step) == 2 and _day(step[0]) and _number(step[1]) is not None:
+            steps.append([_day(step[0]), step[1]])
+        else:
+            undated += 1
+    if undated:
+        missing.append(f"gtcSteps: {undated} step(s) not dated (for example \"entry\"); the board needs a date for each")
+    if steps:
+        data["gtcSteps"] = steps
+    elif not undated:
+        missing.append("gtcSteps: the branch states no dated exit ladder (gtc)")
+    if branch.get("gtc_text") not in EMPTY:
+        data["gtcText"] = str(branch["gtc_text"])
+
+    time_stop = own("time_stop", every_branch=True)
+    put("exit", _day(time_stop), "no time stop with a date")
+    if _day(time_stop) and "15:50" in str(time_stop):
+        data["at1550"] = True
+    if branch.get("exit_why") not in EMPTY:
+        data["exitWhy"] = str(branch["exit_why"])
+    put("from", _day(own("from", "window_start", every_branch=True)), "no first day of the entry window")
+    put("until", _day(own("until", "window_end", every_branch=True)), "no last day of the entry window")
+
+    if isinstance(record.get("extra_conditions"), list) and record["extra_conditions"]:
+        data["manual"] = [str(item) for item in record["extra_conditions"]]
+    dollar_volume = _number(_get(record, "liquidity.stock_dv_m"))
+    if dollar_volume is not None:
+        data["stockDvM"] = dollar_volume
+    if isinstance(branch.get("gates"), list) and branch["gates"]:
+        data["gates"] = copy.deepcopy(branch["gates"])
+    for key in ("review", "built"):
+        value = branch.get(key) if branch.get(key) not in EMPTY else record.get(key)
+        if isinstance(value, dict) and value and value.get("occ", symbol) == symbol:
+            data[key] = copy.deepcopy(value)
+    replaced = branch.get("supersedes") or record.get("supersedes")
+    if replaced not in EMPTY and (branch.get("supersedes") or not str(replaced).endswith(("_CALL", "_PUT"))
+                                  or str(replaced).endswith(f"_{side}")):
+        data["supersedes"] = str(replaced)
+
+    return {"doc_id": f"{card_day}_{ticker}_{side}", "collection": BOARD_COLLECTION, "derived_from": RECORD_VERSION,
+            "data": data, "missing": missing}
+
+
+def write_board_rows(record: dict, out_folder: Path) -> list[Path]:
+    """board_row_<day>_<TICKER>_<SIDE>.json per branch, the shape collect_board_rows.py reads. Never writes over a file."""
+    out_folder = Path(out_folder)
+    out_folder.mkdir(parents=True, exist_ok=True)
+    rows = to_board_rows(record)
+    for row in rows:
+        if (out_folder / f"board_row_{row['doc_id']}.json").exists():
+            raise FileExistsError(f"board_row_{row['doc_id']}.json exists; a board row is never written over")
+    paths = []
+    for row in rows:
+        path = out_folder / f"board_row_{row['doc_id']}.json"
+        path.write_text(json.dumps(row, indent=1), encoding="utf-8")
+        paths.append(path)
+    return paths
+
+
 def _flatten(record: dict) -> dict:
     """Top-level fields plus one nested level (one_contract_exit.stop). Lists and deeper objects are compared whole."""
     flat = {}

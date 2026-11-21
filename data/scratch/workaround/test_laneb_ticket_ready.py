@@ -414,3 +414,43 @@ def test_a_branch_with_no_contract_is_listed_with_the_gap_named(tmp_path):
 
     assert "CONTRACT_NOT_ON_CARD" in tickets[("NOC", "CALL")]["flags"]
     assert tickets[("NOC", "PUT")]["contract"] == "NOC261218P00020000"
+
+
+def test_three_more_shapes_found_on_16_18_and_20_nov_are_read_as_rows(tmp_path):
+    # Found 21 Nov when the hand-written rows were compared with the card records: 5 of 42 rows came out as
+    # {"doc_id", "data"} wrappers or as "cards/<id>" keys instead of the row itself.
+    folder = tmp_path / "lab_2026-11-18"
+    folder.mkdir()
+    row = {"t": "BAX", "side": "CALL", "rungs": [{"lo": 1, "hi": 2}]}
+    shapes = {
+        # a leg row that is itself wrapped as {doc_id, data}
+        "board_row_2026-11-18_BAX.json": {"doc_id": "2026-11-18_BAX_PUT", "collection": "cards", "data": dict(row, side="PUT"),
+                                         "call_leg_row": {"doc_id": "2026-11-18_BAX_CALL", "data": row}},
+        # the collection and id written as the key
+        "board_rows_PEP_2026-11-18.json": {"cards/2026-11-18_PEP_CALL": dict(row, t="PEP"),
+                                          "cards/2026-11-18_PEP_PUT": {"data": dict(row, t="PEP", side="PUT")}},
+        # a row inside rows[] that wraps its data twice
+        "board_row_2026-11-18_UPS.json": {"rows": [{"doc_id": "2026-11-18_UPS_CALL", "data": {"doc_id": "2026-11-18_UPS_CALL", "data": dict(row, t="UPS")}}]},
+    }
+    for name, payload in shapes.items():
+        (folder / name).write_text(json.dumps(payload), encoding="utf-8")
+
+    result = collect_board_rows.collect([folder], "2026-11-18")
+
+    by_id = {r["doc_id"]: r for r in result["rows"]}
+    assert sorted(by_id) == ["2026-11-18_BAX_CALL", "2026-11-18_BAX_PUT", "2026-11-18_PEP_CALL", "2026-11-18_PEP_PUT", "2026-11-18_UPS_CALL"]
+    assert all("t" in r["data"] and "data" not in r["data"] and "doc_id" not in r["data"] for r in result["rows"])
+    assert by_id["2026-11-18_PEP_PUT"]["collection"] == "cards" and by_id["2026-11-18_PEP_PUT"]["data"]["side"] == "PUT"
+    assert result["rejected"] == []
+
+
+def test_a_row_written_from_the_card_record_is_collected_as_it_is(tmp_path):
+    folder = tmp_path / "lab_2026-11-20"
+    folder.mkdir()
+    derived = {"doc_id": "2026-11-20_GRAB_CALL", "collection": "cards", "derived_from": "card_record_v1",
+               "data": {"t": "GRAB", "side": "CALL"}, "missing": ["url: the record has no artifact_url"]}
+    (folder / "board_row_2026-11-20_GRAB_CALL.json").write_text(json.dumps(derived), encoding="utf-8")
+
+    rows = collect_board_rows.collect([folder], "2026-11-20")["rows"]
+
+    assert len(rows) == 1 and rows[0]["doc_id"] == "2026-11-20_GRAB_CALL" and rows[0]["data"] == {"t": "GRAB", "side": "CALL"}

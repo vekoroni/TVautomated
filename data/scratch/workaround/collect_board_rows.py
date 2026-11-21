@@ -37,8 +37,27 @@ def _id_from_name(path: Path) -> str:
     return (found.group("id") if found else path.stem).upper()
 
 
+KEYED = re.compile(r"^(?:(?P<collection>[A-Za-z_]+)/)(?P<id>\d{4}-\d{2}-\d{2}_.+)$")
+
+
+def _unwrap(doc_id: str, value):
+    """A row saved inside its own {doc_id, data} wrapper (sometimes twice) is the inner row, under the inner id."""
+    for _ in range(3):
+        if not isinstance(value, dict) or "t" in value or "ticker" in value:
+            break
+        inner = value.get("data") if isinstance(value.get("data"), dict) else value.get("row") if isinstance(value.get("row"), dict) else None
+        if inner is None:
+            break
+        doc_id, value = str(value.get("doc_id") or doc_id), inner
+    return doc_id, value
+
+
 def _rows_in(payload, path: Path) -> list[tuple[str, dict]]:
     """Every (doc_id, row) in one file, whatever shape it was saved in."""
+    return [_unwrap(doc_id, data) for doc_id, data in _rows_as_saved(payload, path)]
+
+
+def _rows_as_saved(payload, path: Path) -> list[tuple[str, dict]]:
     if not isinstance(payload, dict):
         raise ValueError("the file is not a JSON object")
     fallback = str(payload.get("doc_id") or payload.get("id") or _id_from_name(path))
@@ -59,6 +78,9 @@ def _rows_in(payload, path: Path) -> list[tuple[str, dict]]:
     for key, value in payload.items():                        # extra leg rows: call_leg_row, put_leg_row_when_triggered ...
         if key not in ("row",) and "_row" in key and isinstance(value, dict):
             found.append((str(value.get("id") or value.get("doc_id") or f"{fallback}_{key}"), value))
+    keyed = [(KEYED.match(str(key)), value) for key, value in payload.items()]
+    if not found and keyed and all(match and isinstance(value, dict) for match, value in keyed):
+        return [(match.group("id"), value) for match, value in keyed]      # {"cards/<doc_id>": {row}, ...}
     if not found and not any(k in payload for k in ("rows", "data", "row")):
         found.append((fallback, {k: v for k, v in payload.items() if k not in ("collection", "board", "note", "status")}))
     return found
