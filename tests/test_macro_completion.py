@@ -2,8 +2,14 @@ from datetime import datetime,timezone
 import pytest
 
 def test_data_only_base_requires_exact_archived_ai_and_never_chains_data_only(tmp_path,monkeypatch):
- from scripts.publish_macro_data_only import resolve_analysis_base
+ from scripts.publish_macro_data_only import resolve_analysis_base,DataOnlyPublicationDisabled
  import json,hashlib
+ # BF-00 (ACK 21 Nov 2026): this is a data-only case, so the test states its own publication mode.
+ # The live config is FULL and is deliberately not copied; production policy is unchanged.
+ config=tmp_path/'config';config.mkdir();mode=config/'macro_delivery_v1.json'
+ mode.write_text(json.dumps({'publication_mode':'FULL'}))
+ with pytest.raises(DataOnlyPublicationDisabled):resolve_analysis_base({'_builder_metadata':{'build_mode':'DATA_ONLY'}},tmp_path)
+ mode.write_text(json.dumps({'publication_mode':'DATA_ONLY'}))
  monkeypatch.setattr("scripts.publish_macro_data_only.builder.validate_macro_json",lambda p:(True,[]))
  raw=json.dumps({'_builder_metadata':{'built_at':'2026-10-23T14:54:00Z'}}).encode();h=hashlib.sha256(raw).hexdigest(); d=tmp_path/'data/macro/publication_bases';d.mkdir(parents=True);(d/(h+'.json')).write_bytes(raw)
  current={'_builder_metadata':{'build_mode':'DATA_ONLY','prior_ai_packet_sha256':h}}
