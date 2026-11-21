@@ -104,7 +104,7 @@ Strict preview-line completeness/checksum or two-pass rules remain unchanged for
 
 ### Macro API cost controls (18 November 2026)
 
-`config/macro_api_cost_v1.json` sets the local macro Anthropic cap to **USD 3 per America/New_York date**. The existing four-FULL-attempt maximum and scheduled build windows remain in force. Reaching either cap stops generation; it does not grant permission to run another build or the trading pipeline.
+`config/macro_api_cost_v1.json` sets the local macro Anthropic cap to **USD 4 per America/New_York date** (confirmed by ACK on 21 November 2026; this note first said USD 3). The existing four-FULL-attempt maximum and scheduled build windows remain in force. Reaching either cap stops generation; it does not grant permission to run another build or the trading pipeline.
 
 Each FULL synthesis now makes one paid Sonnet request. Anthropic's free `messages.count_tokens` preflight determines the input reservation, with 25% plus framing headroom and the entire maximum output allowance reserved atomically in SQLite. SDK automatic retries and automatic paid JSON repairs are disabled. The board reuses published macro commentary with its original packet clock and labels; its additional Opus narrative is disabled. Measured ETF activity is still computed separately.
 

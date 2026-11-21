@@ -12,6 +12,8 @@ from contracts import macro_build_budget as builds
 from contracts.macro_prompt_projection import compact_context, columnar_records, deduplicate, research_view
 
 ROOT = Path(__file__).resolve().parents[1]
+# The governed daily cap is read from configuration, never repeated as a literal (ACK 21 Nov 2026: USD 4).
+CAP_USD = json.loads((ROOT/'config'/'macro_api_cost_v1.json').read_text(encoding='utf-8'))['daily_cap_usd']
 NOW = datetime(2026, 11, 19, 15, tzinfo=timezone.utc)
 REQUEST = {'model': 'claude-sonnet-4-6', 'max_tokens': 16000,
            'system': 'contract', 'messages': [{'role': 'user', 'content': 'evidence'}]}
@@ -50,7 +52,7 @@ def test_atomic_concurrent_reservations_cannot_overcommit(root):
         results = list(pool.map(reserve, range(18)))
     state = cost.usage_status(root, '2026-11-19')
     assert 0 < sum(v is not None for v in results) < 18
-    assert state['accounted_usd'] <= 3
+    assert state['accounted_usd'] <= CAP_USD
 
 
 def test_missing_usage_and_timeouts_keep_maximum_not_zero(root, monkeypatch):
@@ -129,7 +131,7 @@ def test_four_build_cap_survives_and_dollar_refusal_does_not_buy_slot(root, monk
         builds.reserve(root, reason='POST_CLOSE', key='fifth', now=NOW)
     called = []
     monkeypatch.setattr(cost, 'reserve_request', lambda *a, **kw: (_ for _ in ()).throw(cost.ApiCostLimit('cap')))
-    monkeypatch.setattr(cost, 'usage_status', lambda *a: {'legacy_usage_unknown': False, 'accounted_usd': 3})
+    monkeypatch.setattr(cost, 'usage_status', lambda *a: {'legacy_usage_unknown': False, 'accounted_usd': CAP_USD})
     monkeypatch.setattr(builds, 'authorize_stage', lambda *a: called.append(a))
     with pytest.raises(cost.ApiCostLimit):
         cost.budgeted_message(root, 'MACRO_SYNTHESIS', REQUEST, lambda: pytest.fail('No provider'))
@@ -191,7 +193,7 @@ def test_pricing_is_frozen_at_reservation_and_usage_bound_failure_blocks_more(ro
 
 
 def test_read_only_status_does_not_create_ledger(root):
-    assert cost.usage_status(root, '2026-11-19')['remaining_usd'] == 3
+    assert cost.usage_status(root, '2026-11-19')['remaining_usd'] == CAP_USD
     assert not (root/'data/macro/delivery/api_usage.sqlite').exists()
 
 

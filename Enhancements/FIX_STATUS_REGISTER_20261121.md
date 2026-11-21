@@ -179,7 +179,7 @@ These are the items where the paperwork says one thing and the code or the live 
 | STALE-A / B / C, STALE-BITO | Which fix for the 39 ETFs with no stored prices, and the BITO split (+98% shown on 19 Nov) |
 | TRIAGE-11-UNIVERSE | Add 11 ETFs to the board universe |
 | FUNDFLOW-SOURCE | A verified ETF net-flow source |
-| COST-CAP | Config says USD 4.0 a day; runbook says USD 3 |
+| COST-CAP | Decided by ACK on 21 Nov: USD 4 a day. Tests now read the cap from config; runbook corrected |
 | RECOV-FUNDING | API credit shortfall for FULL builds |
 | MDI-12 | MOVE, dispersion and correlation measures |
 | Dec 4, 5, 7, 8, 9 (AVS-TRADE-001) | Value selection SHADOW→ACTIVE; rank by return per premium dollar; tastytrade live quotes on cards; in-window names first; success tests as expectancy |
