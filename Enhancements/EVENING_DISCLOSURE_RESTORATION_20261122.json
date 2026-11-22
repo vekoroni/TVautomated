@@ -1,0 +1,69 @@
+{
+  "schema": "evening_disclosure_restoration_v1",
+  "date": "2026-11-22",
+  "status": "CODEX_N1_RESTORED_TESTED_LEGACY_TRADE_PREP_REMAINS_CLAUDE_OWNED",
+  "version": "lab_publication_disclosures_v1",
+  "fields": [
+    "required_monitoring",
+    "monitoring_reason",
+    "monitoring_execution_authority",
+    "thesis_reassessment_status",
+    "thesis_reassessment_reason",
+    "thesis_reassessment_event_time_utc",
+    "thesis_reassessment_source_url",
+    "ranking_score_source",
+    "ranking_score_100",
+    "ranking_score_eod_50"
+  ],
+  "semantics": {
+    "saved_values": "Preserve supplied false, zero, null and blank values exactly; no recomputation of archived rows",
+    "partial_packets": "Missing members remain null/unassessed; never mix saved packet with current defaults",
+    "new_materialization": "Derive completely absent groups at frozen run evidence cutoff/decision clock",
+    "current_notices": "Separate DISPLAY_ONLY_CURRENT_NOTICE overlay; no entry authority or overwrite",
+    "score_metadata": "Source and scale provenance only; canonical ranking and selection unchanged"
+  },
+  "replay_revision": "0136050a83ca44d38b3a4a4436807905",
+  "replay_runs_dir": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_N1_RESTORED_20261122\\runs",
+  "publication_manifest": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_N1_RESTORED_20261122\\runs\\20261121_222919\\intelligence_lab\\review_projection\\manifest.json",
+  "completion_receipt": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_N1_RESTORED_20261122\\COMPLETION_RECEIPT.json",
+  "receiver_receipt": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_N1_RESTORED_20261122\\receiver_check\\RECEIVER_RECEIPT.json",
+  "verification": {
+    "rows": 2716,
+    "field_values": 27160,
+    "receiver_rows": 2577,
+    "receiver_field_values": 25770,
+    "mismatches": 0,
+    "ready_lane_a": 346,
+    "whole_home_and_card_schema_lost_fields": [],
+    "preexisting_values_unchanged": true
+  },
+  "tests": "212 tests and 9 subtests passed in candidate; 51 focused tests passed in working checkout; zero failures/errors",
+  "normalized_inventory": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_M1_M4_20261122\\contract_comparison_inventory_20261120.jsonl.gz",
+  "remaining": [
+    "Claude: reject unavailable or nonpositive IV in legacy trade_prep rather than produce intrinsic-only pricing; test or explicitly retire that path",
+    "Claude: confirm final receiving integration against revision 0136050a83ca44d38b3a4a4436807905 before promotion",
+    "Use explicit normalized M1/M4 inventory path; automatic discovery is not established"
+  ],
+  "safety": {
+    "providers_called": false,
+    "pipeline_run": false,
+    "live_databases_written": false,
+    "historical_snapshots_changed": false,
+    "live_lab_republished": false,
+    "lane_b_changed": false,
+    "isolated_production_release_updated": false,
+    "commit_or_push": false
+  },
+  "isolated_branch_publication": {
+    "branch": "fix/lab-ten-field-restoration-20261122",
+    "base_commit": "c1d0a44",
+    "tests_passed": 114,
+    "failures": 0,
+    "errors": 0,
+    "tests_xml": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_N1_BRANCH_FINAL_20261122.xml",
+    "scope": "Twelve restoration, minimum helper/policy, tests and handoff files only; unrelated actuarial patch excluded",
+    "lane_b_changed": false,
+    "data_included": false,
+    "production_activated": false
+  }
+}

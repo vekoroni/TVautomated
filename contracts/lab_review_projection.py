@@ -25,6 +25,8 @@ import zlib
 from contracts.lab_review_display import display_sector, display_policy, valuation_disclosure
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from contracts.lab_publication_disclosures import FIELDS as PUBLICATION_DISCLOSURE_FIELDS, VERSION as PUBLICATION_DISCLOSURE_VERSION
+from contracts.required_research_monitor import coverage_records, disclosure as monitoring_disclosure
 from domain.evening_assessment import FIELDS as EVENING_ASSESSMENT_FIELDS, HOME_FIELDS as EVENING_HOME_FIELDS
 from canonical_data.instrument_identity import IDENTITY_FIELDS
 
@@ -44,6 +46,8 @@ from contracts.lab_control import CROSSING_BOOK_FIELDS
 CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *CROSSING_BOOK_FIELDS)))
 HOME_FIELDS = tuple(dict.fromkeys((*HOME_FIELDS, *EVENING_HOME_FIELDS)))
 CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *EVENING_ASSESSMENT_FIELDS)))
+HOME_FIELDS = tuple(dict.fromkeys((*HOME_FIELDS, *PUBLICATION_DISCLOSURE_FIELDS)))
+CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *PUBLICATION_DISCLOSURE_FIELDS)))
 
 
 class ReviewRevisionConflict(ValueError):
@@ -242,6 +246,7 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
             raise ReviewIntegrityError("Projection index integrity failed")
     manifest = {"schema": SCHEMA, "run_id": run_id, "revision": revision,
         "evening_assessment_version": "evening_opportunity_assessment_v1",
+        "publication_disclosure_version": PUBLICATION_DISCLOSURE_VERSION,
         "snapshot_disclosure_version": "lab_snapshot_disclosure_v1",
         "publication_state": "COMPLETE", "authority": "DISPLAY_ONLY", "row_count": len(rows),
         "card_fields": list(CARD_FIELDS), "display_policy_version": display_policy()["version"],
@@ -343,8 +348,16 @@ def _connect(path: Path) -> sqlite3.Connection:
 
 
 def read_review_summary(runs_dir: Path | str, run_id: str) -> dict:
-    manifest, _ = _read_manifest(runs_dir, run_id)
-    return manifest
+    manifest, path = _read_manifest(runs_dir, run_id)
+    # Current, dated notice is separate from the immutable saved fields.
+    required = coverage_records([], stage='SAVED_REVIEW')['rows']
+    records = []
+    with closing(_connect(path)) as conn:
+        for item in required:
+            records.extend(json.loads(r[0]) for r in conn.execute(
+                "SELECT home_json FROM rows WHERE UPPER(json_extract(home_json, '$.ticker'))=?",
+                (item['ticker'],)))
+    return {**manifest, 'current_required_monitoring':coverage_records(records, stage='SAVED_REVIEW')}
 
 
 def _published_rank(value):
@@ -399,6 +412,7 @@ def read_review_rows(runs_dir: Path | str, run_id: str, *, revision: str | None 
         for field in ("contract_ask", "selected_quote_timestamp_utc", "quote_provider_timestamp_utc",
                       "live_price", "live_price_as_of", "live_price_state", "signal_price", "bar_data_asof"):
             home[field] = values[published_fields.index(field)] if field in published_fields else None
+        home['current_monitoring'] = {**monitoring_disclosure(home), 'authority':'DISPLAY_ONLY_CURRENT_NOTICE'}
         rows.append(home)
     return {"run_id": run_id, "revision": manifest["revision"], "rows": rows,
             "total_rows": manifest["row_count"], "filtered_rows": count, "page": page,
@@ -436,6 +450,7 @@ def _record(runs_dir, run_id, row_key, revision, family=None):
         record["field_states"] = {published_fields[i]: "NOT_RECORDED" for i in missing}
         from contracts.lab_contract_display import saved_contract_details
         record["contract_details"] = saved_contract_details(record["fields"])
+        record['current_monitoring'] = {**monitoring_disclosure(record['fields']), 'authority':'DISPLAY_ONLY_CURRENT_NOTICE'}
     return {**record, "run_id": run_id, "revision": manifest["revision"],
             "row_key": row_key, "authority": "DISPLAY_ONLY"}
 

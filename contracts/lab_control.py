@@ -843,6 +843,8 @@ FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from contracts.lab_publication_disclosures import FIELDS as PUBLICATION_DISCLOSURE_FIELDS, publication_disclosures
+FINAL_BOOK_FIELDS += [f for f in (*PUBLICATION_DISCLOSURE_FIELDS, 'options_research_score') if f not in FINAL_BOOK_FIELDS]
 from domain.evening_assessment import FIELDS as EVENING_ASSESSMENT_FIELDS, assess_evening
 FINAL_BOOK_FIELDS += [f for f in EVENING_ASSESSMENT_FIELDS if f not in FINAL_BOOK_FIELDS]
 from canonical_data.instrument_identity import IDENTITY_FIELDS, attach_identities, load_registry
@@ -3398,6 +3400,7 @@ def opportunity_book_row(
     rank: int,
     *,
     contract_quote_lookup: Any = None,
+    disclosure_as_of: Any = None,
 ) -> Dict[str, Any]:
     canonical_direction = first(sig, "final_direction", "canonical_direction", "resolved_direction", "direction", "options_direction", "selected_contract_side", "option_direction")
     aligned_instrument = _instrument_for_direction(
@@ -4275,6 +4278,10 @@ def opportunity_book_row(
     row["field_provenance_json"] = _json_safe(provenance)
     # Normalization is pure: doing the complete row once per output field caused
     # quadratic work (982 complete passes for one captured Morning row).
+    # Metadata restoration only; no selector, rank or execution permission reads it.
+    if 'options_research_score' in sig:
+        row['options_research_score'] = sig['options_research_score']
+    row.update(publication_disclosures({**sig, **row}, as_of=disclosure_as_of))
     normalized = csv_safe_row(row)
     return {key: normalized.get(key, "") for key in FINAL_BOOK_FIELDS}
 
@@ -4304,7 +4311,8 @@ def build_final_opportunity_book(
     from domain.opportunity_rank import rank_key
     enriched.sort(key=rank_key)
     rows = [
-        opportunity_book_row(sig, run_id, rank, contract_quote_lookup=contract_quote_lookup)
+        opportunity_book_row(sig, run_id, rank, contract_quote_lookup=contract_quote_lookup,
+                             disclosure_as_of=manifest.get('evidence_cutoff_utc') or manifest.get('decision_clock') or utc_now())
         for rank, sig in enumerate(enriched, 1)
     ]
     # Live run 20261008_220129: the materializer can block a row after the sort (e.g. INVALIDATION_MISSING), so the

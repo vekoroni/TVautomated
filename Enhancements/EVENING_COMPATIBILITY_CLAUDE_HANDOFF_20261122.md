@@ -2,15 +2,46 @@
 
 22 November 2026. From Codex to Claude Code, for ACK.
 
-## Isolated branch publication
+## Isolated ten-field branch publication
 
-Branch `fix/evening-target-inventory-20261122` builds on the already-published Evening commit `9c76fc2be8863f2e06efb203af00741733f660fc`. Its patch contains only target naming, inventory normalization, the minimum additive display safeguards, tests and these handoff documents. Later Lane B commits are not included. Acceptance statuses below describe the saved handoff generation, not an audit of later receiving-side changes.
+The restoration is isolated on `fix/lab-ten-field-restoration-20261122`, based on the previously published target/inventory commit `c1d0a44`. Its commit contains only the ten-field publication wiring, required monitoring/score helper foundation and policy, regression tests, and these handoff documents. It does not include unrelated actuarial changes from the integrated production-baseline test tree, Lane B commits, data, receipts or replay databases. Existing prerequisites remain inherited, not newly deployed.
 
-The isolated branch passed 199 tests and 9 subtests, plus JavaScript target-label, display-noninterference and syntax checks. Its report is `C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_M1_M4_PUSH_TESTS_20261122.xml`. Replay paths below are references to local evidence; no replay files, receipts, databases or normalized quote data are included in the commit. Publication of this branch is not production activation.
+The exact isolated branch passed **114 tests**, zero failures/errors. Report: `C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_BRANCH_FINAL_20261122.xml`. The broader integrated-candidate and saved-replay results below retain their original scope; they are not a claim that this branch was activated or a nightly pipeline was rerun. Production remains unchanged.
+
+## Monitoring and score-provenance restoration (N1)
+
+N1 is resolved and tested. All ten monitoring, reassessment and score-provenance fields are restored in row summaries and indexed cards. On the new replay, all **27,160 values across 2,716 rows** match the archived publication; no prior home/card field is lost. All pre-existing values, verdicts, ranks, contracts and coverage are unchanged.
+
+The actual receiving handoff also passes: **25,770 restored-value comparisons across 2,577 eligible rows**, zero mismatches, and all **346 ready Lane-A candidates** retained. CAPR's saved `REASSESSMENT_REQUIRED` warning, source URL, `NONE` execution authority and legacy score provenance are intact. Saved false, zero, null and blank values are preserved. Partially populated saved packets are not completed using current defaults. New materialization uses the frozen run cutoff; current notices remain separate display-only overlays.
+
+The candidate passed **212 tests plus 9 subtests**; the working checkout passed **51 focused tests**, with zero failures/errors. Historical publications and Lane B source hashes remain unchanged.
+
+Primary revision: `0136050a83ca44d38b3a4a4436807905`.
+
+```text
+Completion and code fingerprints:
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\COMPLETION_RECEIPT.json
+
+Actual receiving handoff receipt:
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\receiver_check\RECEIVER_RECEIPT.json
+
+Actual receiving output:
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\receiver_check\handoff\lab_2026-11-23
+
+Disclosure contract:
+C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\Enhancements\EVENING_DISCLOSURE_RESTORATION_20261122.json
+
+Prior actual receiving audit:
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\CLAUDE_EVENING_RECEIVER_AUDIT_20261122_VERIFIED\RECEIVER_AUDIT_REPORT.json
+```
+
+That prior actual audit passed M2 shared-engine parity on 1,500 sampled scenario cells and M3 on 120 actual prefills. These are no longer wholly pending. The remaining separate Claude-owned defect is legacy `trade_prep.py` accepting nonpositive IV and producing intrinsic-only pricing. Claude must reject unavailable/nonpositive IV or explicitly retire that path, test the receiving fix, and confirm final integration against this pinned revision. Codex has not edited or executed trade-prep in this task.
+
+The normalized inventory remains at the explicit M1/M4 gzip path below; automatic discovery is not claimed. The six-entry manual basket stays frozen at its original revision. This is tested checkout/replay work only: no live Lab replacement, production activation, providers or pipeline run.
 
 ## Latest Codex target and inventory fixes
 
-M1 and M4 are resolved on the Codex side and tested with saved data. The final regression suite passed **199 tests and 9 subtests**; display labels and noninterference checks also pass. Claude still owns M2 pricing-basis adoption, M3 prefill propagation, and confirmation that his consumers use the new target and inventory contracts correctly. No Lane B code, data, historical replay, production activation or live Lab publication was changed.
+M1 and M4 are resolved on the Codex side and tested with saved data. The final regression suite passed **199 tests and 9 subtests**; display labels and noninterference checks also pass. The later actual receiving audit verified shared-engine M2 parity and M3 prefills; final integration and the separate legacy trade-prep fix remain Claude-owned. No Lane B code, data, historical replay, production activation or live Lab publication was changed.
 
 Target naming is now versioned as `evening_target_roles_v1`:
 
@@ -54,7 +85,7 @@ The normalized inventory is gzip-compressed JSONL: read it with `gzip.open(path,
 
 Codex's saved-data compatibility checks pass for the remaining Evening fixes applied over the isolated production baseline. Verdicts, ranking, contracts and candidate coverage are unchanged on the tested run. This note hands over the pinned replay and receiving-side checks; it does not approve a new Lane B population rule or activate the remaining pipeline changes.
 
-Claude's existing result, `C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\Enhancements\EVENING_FIX_LANEB_RECEIVER_RESULT_20261122.md`, already reports population, order, identity and manual-selection PASS on the earlier replay. It also reports M1 to M4 below. Those results remain valid for that earlier revision; they are not a completed receiving-side test of the new compatibility replay.
+Claude's existing result, `C:\Users\ACKVerissimo\AVSHUNTER-Intelligence\Enhancements\EVENING_FIX_LANEB_RECEIVER_RESULT_20261122.md`, already reports population, order, identity and manual-selection PASS on the earlier replay. Its historical findings remain valid for that earlier revision. The later actual receiving audit and N1 receipt above supersede the pending status, without rewriting Claude's historical result.
 
 The book retains opportunities. Supplementary assessment routes must not become automatic exclusions. In particular, the three `EVENING_QUALIFIED` labels in the earlier replay are not a count of viable trades, triage winners or the candidates Lane B may consider. All 346 ready Lane-A candidates remain present.
 
@@ -84,7 +115,7 @@ ec63ae55e79f7ad12c6a46f1f6977c6ce0fd6e3f39a7e8ed7a5ca0f69ae9b443
 
 Regression result: **174 tests and 9 subtests passed; zero failures or errors**. Selector, context-parser, value-selection and Lab-resolution function ASTs are unchanged. Contract value selection remains `SHADOW`; canonical ranking, orchestration and Morning source text are unchanged. The report distinguishes a checkout-only Morning line-ending difference and the absence of the Lane B trigger configuration in both isolated trees from actual policy changes.
 
-Historical source manifest, index, run metadata and governed-constants hashes remain unchanged. No providers, pipeline run, live database writes, Lane B execution or further production promotion occurred during these checks.
+Historical source manifest, index, run metadata and governed-constants hashes remain unchanged. This paragraph records the earlier compatibility checks. Later N1 verification executed the actual read-only receiving handoff into isolated output; it did not execute trade-prep or change Lane B.
 
 ## Exact replay paths
 
@@ -94,20 +125,20 @@ Use the new compatibility replay for confirmation against the integrated candida
 Run ID:
 20261121_222919
 
-Latest target naming revision:
-328d685fb8464ade9ddb530550183cb6
+Latest restored disclosure revision:
+0136050a83ca44d38b3a4a4436807905
 
 Runs directory:
-C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_M1_M4_20261122\runs
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\runs
 
 Run directory:
-C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_M1_M4_20261122\runs\20261121_222919
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\runs\20261121_222919
 
 Publication manifest:
-C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_M1_M4_20261122\runs\20261121_222919\intelligence_lab\review_projection\manifest.json
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\runs\20261121_222919\intelligence_lab\review_projection\manifest.json
 
 Publication index:
-C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_M1_M4_20261122\runs\20261121_222919\intelligence_lab\review_projection\review-328d685fb8464ade9ddb530550183cb6.sqlite
+C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_N1_RESTORED_20261122\runs\20261121_222919\intelligence_lab\review_projection\review-0136050a83ca44d38b3a4a4436807905.sqlite
 
 Earlier compatibility report and code fingerprints:
 C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\EVENING_COMPATIBILITY_20261122\COMPATIBILITY_REPORT.json
@@ -154,8 +185,8 @@ The frozen sample deliberately remains bound to the earlier revision. Do not rew
 | Finding from Claude | Required disposition before consuming the new fields |
 |---|---|
 | M1: two levels are called target | Codex resolved the naming with explicit first-target and full-target roles, source fields and scenario labels. Claude must map these fields into his own outputs, without calling the median target observed first option profit or repricing a different level under the same name. |
-| M2: pricing conventions differ | Saved preparation should consume the published scenarios. Any live repricing must use the shared pricer and the same clocks/cost basis, not a second approximation. |
-| M3: prefills omit the assessment | Claude owns propagation into triage and selection prefills. Carry the new fields without changing the existing population or ranking. |
+| M2: pricing conventions differ | Shared-engine parity passed on 1,500 sampled scenario cells in the actual receiver audit. Claude still owns the separate legacy trade-prep nonpositive-IV fix; unavailable IV must not produce intrinsic-only pricing. |
+| M3: prefills omit the assessment | The actual 120 prefills passed in the later receiver audit. Retain assessment and restored N1 disclosures through final integration without population or ranking changes. |
 | M4: inventory shape and zero IV differ from the contract | Codex resolved this with the versioned normalized inventory and a complete raw-observation round trip. Claude must use its canonical fields and state/reason fields, decode gzip JSONL, and keep the raw archive intact. IV zero is unavailable; bid zero remains an observed zero. Missing historical gates are unknown, not accepted. |
 
 The shared scalar pricing entry point is `domain.option_valuation.option_value`, in `C:\Users\ACKVerissimo\Documents\Codex\2026-07-24\a\evening-compatibility-candidate-20261122\domain\option_valuation.py`. It returns model value per share and the model name. American batch valuation uses `american_crr_values`; execution costs are applied separately through `entry_cost_usd_per_share` and `exit_proceeds_usd_per_share`. A model value alone is not net profit. Passing `style="AMERICAN"` explicitly avoids an implicit model choice. Source equality is recorded in the unchanged-source comparison; inspect the actual API before integrating it into Lane B.
@@ -168,7 +199,7 @@ Write receiving-test outputs to a new isolated directory. Keep both replay input
 
 1. **Population and order.** Run the actual receiving handoff against the new pinned replay with the existing verdict/rank rule. Expect the same 2,577 eligible records, with zero unexpected drops, additions, reorders or substitutions. Confirm all 346 ready Lane-A candidates remain. Do not filter on the supplementary route.
 2. **Identity and prefills.** Check run, revision, thesis/candidate IDs, exact OCC, reference session and quote timestamp through handoff, triage and selection prefill. Distinguish an absent Morning transition from a defect in the Evening opportunity.
-3. **Economics.** Consume the resolved M1 target roles and complete M2 pricing-basis adoption, then compare the same contract, underlying level, exit date, IV and costs against each published case before display rounding. Report every field or formula discrepancy; do not make unequal scenarios agree by relabeling them.
+3. **Economics.** Retain the verified M1 target roles and M2 shared-engine basis; fix or explicitly disable the legacy trade-prep invalid-IV path, then compare the same contract, underlying level, exit date, IV and costs against each published case before display rounding. Report every field or formula discrepancy; do not make unequal scenarios agree by relabeling them.
 4. **Profit clocks.** Keep empirical +20%/+30% quantiles separate from assumed-path crossings. Preserve evidence counts, failures, censored and unassessed cases. Missing n is not zero or an automatic veto. It is not a calibrated success probability or permission for Bayesian promotion.
 5. **Manual selection.** Receive the six-entry frozen sample without rebinding its revision. Preserve selection IDs, exact contracts, saved order, notes, evidence families and verdicts. Reconfirm same-ticker/different-contract/revision identity handling with the receiving-side tests.
 6. **Both-side inventory.** Validate the new M4 normalized schema and gzip transport before adoption. Preserve scope, missingness and truncation. The separate saved inventory is not the original tested ladder, an opposing thesis, a new selected contract or unrestricted-chain coverage.
