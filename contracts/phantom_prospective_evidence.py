@@ -55,6 +55,55 @@ def db_fingerprint(path):
         result[str(p)]={'bytes':stat.st_size,'mtime_ns':stat.st_mtime_ns,'header_sha256':head}
     return result
 
+SNAPSHOT_METHOD='SQLITE_READ_TRANSACTION_EXACT_KEYS_V1'
+
+def _row_key(row):
+    ticker=str(row.get('ticker') or '').strip()
+    symbol=next((row.get(k) for k in ('contract_symbol','contract_occ_symbol','option_symbol')
+        if isinstance(row.get(k),str) and row[k].strip()),None)
+    return ticker,symbol
+
+def _fetch_quote(conn,ticker,session,symbol):
+    values=conn.execute('SELECT '+','.join(QUOTE_FIELDS)+' FROM chain_snapshots '
+        'WHERE ticker=? AND quote_date=? AND option_symbol=?',(ticker,session,symbol)).fetchall() if symbol else []
+    if len(values)>1:raise ValueError('Ambiguous exact-session quote rows')
+    return dict(values[0]) if values else None
+
+def _quotes_hash(quotes):
+    return digest([{'ticker':t,'option_symbol':s,'quote':clean(quotes[(t,s)])}
+        for t,s in sorted(quotes,key=lambda k:(k[0],k[1] or ''))])
+
+def _verify_selected_snapshot(packet):
+    """Compare logical selected rows, including absences, not mutable WAL files.
+
+    Each comparison uses one SQLite read transaction. Checkpoints, read-only
+    WAL/SHM housekeeping and unrelated writes do not change these observations.
+    Relevant row changes still block publication; no historical hash is guessed.
+    """
+    proof=packet.get('source_snapshot')
+    if proof is None:
+        # Preserve the original contract for historical v1 receipts.
+        if db_fingerprint(packet['source_database'])!=packet['source_database_fingerprint']:
+            raise ValueError('Quote store changed between candidate capture and publication')
+        return
+    if proof.get('method')!=SNAPSHOT_METHOD:raise ValueError('Unknown quote snapshot method')
+    frozen={}
+    for row in packet['rows']:
+        key=(row['ticker'],row['contract_symbol']);quote=row['quote']
+        if row['quote_sha256']!=(digest(quote) if quote is not None else None):
+            raise ValueError('Captured quote hash mismatch')
+        if key in frozen and frozen[key]!=quote:raise ValueError('Conflicting duplicate quote identity')
+        frozen[key]=quote
+    if len(frozen)!=proof['unique_keys'] or _quotes_hash(frozen)!=proof['selected_rows_sha256']:
+        raise ValueError('Captured selected-quote snapshot mismatch')
+    with closing(sqlite3.connect(Path(packet['source_database']).resolve().as_uri()+'?mode=ro',uri=True,timeout=3)) as conn:
+        conn.execute('PRAGMA query_only=ON');conn.row_factory=sqlite3.Row
+        conn.execute('BEGIN')
+        current={key:_fetch_quote(conn,key[0],packet['evidence_session'],key[1]) for key in frozen}
+        conn.rollback()
+    if _quotes_hash(current)!=proof['selected_rows_sha256']:
+        raise ValueError('Selected quote rows changed between candidate capture and publication')
+
 def first_entry_session(recorded):
     """After-close publication cannot claim an entry at that closing quote."""
     day=recorded.astimezone(ZoneInfo('America/New_York')).date()
@@ -97,15 +146,14 @@ def capture_candidates(run_dir,source,rows,*,run_id,session,database,score_versi
     before=file_hash(source);db_before=db_fingerprint(database);started=_utc_now();records=[];quotes={}
     with closing(sqlite3.connect(database.as_uri()+'?mode=ro',uri=True,timeout=3)) as conn:
         conn.execute('PRAGMA query_only=ON');conn.row_factory=sqlite3.Row
+        # A real read transaction pins one logical database snapshot across ALL
+        # candidates. Autocommit SELECTs can otherwise observe different commits.
+        conn.execute('BEGIN')
         for ordinal,row in enumerate(rows):
-            ticker=str(row.get('ticker') or '').strip()
-            symbol=next((row.get(k) for k in ('contract_symbol','contract_occ_symbol','option_symbol')
-                if isinstance(row.get(k),str) and row[k].strip()),None)
+            ticker,symbol=_row_key(row)
             key=(ticker,symbol)
             if key not in quotes:
-                found=conn.execute('SELECT '+','.join(QUOTE_FIELDS)+' FROM chain_snapshots '
-                    'WHERE ticker=? AND quote_date=? AND option_symbol=?',(ticker,session,symbol)).fetchall() if symbol else []
-                quotes[key]=dict(found[0]) if len(found)==1 else None
+                quotes[key]=_fetch_quote(conn,ticker,session,symbol)
             q=quotes[key];reasons=[]
             if not symbol:reasons.append('NO_SELECTED_CONTRACT')
             elif q is None:reasons.append('NO_UNIQUE_EXACT_SESSION_QUOTE')
@@ -125,8 +173,9 @@ def capture_candidates(run_dir,source,rows,*,run_id,session,database,score_versi
                 'quote':clean(q),'quote_sha256':digest(q) if q is not None else None,
                 'quote_evidence_state':'CAPTURED_NOT_FILL_PROOF' if not reasons else 'UNASSESSED',
                 'limitations':reasons,'execution_authority':'NONE'})
+        conn.rollback()
     if file_hash(source)!=before:raise ValueError('Candidate input changed during capture')
-    if db_fingerprint(database)!=db_before:raise ValueError('Quote store changed during capture')
+    db_after=db_fingerprint(database)
     repo=Path(__file__).resolve().parents[1]
     code={str(p.relative_to(repo)):file_hash(p) for p in (Path(__file__),
         repo/'contracts/phantom_advisory_policy.py',repo/'scripts/phantom_engine.py')}
@@ -143,6 +192,11 @@ def capture_candidates(run_dir,source,rows,*,run_id,session,database,score_versi
         'capture_purpose':'OFFLINE_REPLAY_NOT_ACTUAL_PUBLICATION' if replay_only else 'RUNTIME_PROSPECTIVE',
         'source_path':str(source),'source_sha256':before,'source_database':str(database),
         'source_database_fingerprint':db_before,
+        'source_database_fingerprint_after':db_after,
+        'source_snapshot':{'method':SNAPSHOT_METHOD,'unique_keys':len(quotes),
+            'selected_rows_sha256':_quotes_hash(quotes),'physical_metadata_changed':db_before!=db_after,
+            'scope':'FROZEN_EXACT_SESSION_SELECTED_QUOTES_NOT_FULL_SCORING_HISTORY',
+            'physical_fingerprint_role':'DIAGNOSTIC_ONLY_NOT_QUOTE_VALUE_PROOF'},
         'run_context':context,'code_sha256':code,'actioned':False,
         'actioned_basis':'NO_EXECUTION_OR_FILL_AUTHORITY',
         'clock_basis':'ACTUAL_CAPTURE_UTC_NEVER_BACKDATED_TO_EVIDENCE_SESSION',
@@ -152,8 +206,7 @@ def capture_predictions(run_dir,candidates,payloads,*,run_id):
     packet=read_packet(candidates['path'],run_id=run_id,kind='CANDIDATES')
     if candidates['content_sha256']!=packet['content_sha256']:raise ValueError('Candidate reference mismatch')
     if file_hash(packet['source_path'])!=packet['source_sha256']:raise ValueError('Candidate source changed before publication')
-    if db_fingerprint(packet['source_database'])!=packet['source_database_fingerprint']:
-        raise ValueError('Quote store changed between candidate capture and publication')
+    _verify_selected_snapshot(packet)
     if len(payloads)!=len(packet['rows']):raise ValueError('Prospective population mismatch')
     rows=[]
     for candidate,payload in zip(packet['rows'],payloads):

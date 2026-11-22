@@ -294,8 +294,8 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
             prediction_capture = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:500]}
             logger.warning('PHANTOM prospective publication capture FAILED: %s', prediction_capture['error'])
 
-    profit_shadow = {"status": "BLOCKED_NO_CANDIDATE_CAPTURE"}
-    if candidate_capture['status'] == 'CAPTURED':
+    profit_shadow = {"status": "BLOCKED_NO_VERIFIED_PUBLICATION"}
+    if prediction_capture['status'] == 'CAPTURED':
         try:
             from contracts.phantom_profit_shadow import evening_cycle
             profit_shadow = evening_cycle(repo_root, run_id, candidate_capture, database=db_path)

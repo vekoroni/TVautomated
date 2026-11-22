@@ -161,3 +161,24 @@ def test_fixture_stage_wires_capture_before_preload_and_records_failures_without
     assert summary['prospective_capture_state']==('INCOMPLETE' if fail_capture else 'CAPTURED')
     assert events==['preload','scores'] and source.read_bytes()==before and cap.db_fingerprint(db)==fingerprint
     if fail_capture:assert summary['prospective_candidate_capture']['status']=='FAILED'
+
+def test_failed_publication_never_runs_the_profit_forecast_cycle(tmp_path,monkeypatch):
+    from contracts import phantom_profit_shadow as shadow
+    f=fixture(tmp_path,monkeypatch);root,run,source,db,rows=f
+    class FakeDB:
+        def __init__(self,**kw):pass
+        def initialise(self):pass
+        def ensure_scoring_index(self):return False
+        def preload_tickers(self,*a,**kw):pass
+        def batch_write_phantom_scores(self,*a):pass
+        def write_run_audit(self,*a):pass
+    monkeypatch.setattr(engine,'PhantomDatabase',FakeDB)
+    monkeypatch.setattr(engine,'score_row',lambda row,*a:dict(run_id=RUN,ticker=row['ticker'],phantom_score=1,
+        phantom_promoted_verdict='NONE',phantom_ois_adjustment=0,phantom_hard_veto_respected=False))
+    def rejected(*a,**kw):raise ValueError('Selected quote rows changed')
+    def forbidden(*a,**kw):raise AssertionError('Forecast must not bypass rejected publication')
+    monkeypatch.setattr(engine,'capture_predictions',rejected)
+    monkeypatch.setattr(shadow,'evening_cycle',forbidden)
+    summary=engine.run_phantom(source,source.with_name('fixture_output.csv'),RUN,db,root)
+    assert summary['prospective_prediction_capture']['status']=='FAILED'
+    assert summary['option_profit_shadow']['status']=='BLOCKED_NO_VERIFIED_PUBLICATION'

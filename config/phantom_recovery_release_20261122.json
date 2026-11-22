@@ -5,6 +5,8 @@
   "promotions_enabled": false,
   "score_calibrated": false,
   "ledger_scope": "RELEASE_PRIVATE_RUNTIME",
+  "quote_capture_method": "SQLITE_READ_TRANSACTION_EXACT_KEYS_V1",
+  "quote_publication_guard": "SELECTED_LOGICAL_ROWS_MUST_MATCH_FROZEN_SNAPSHOT",
   "training_basis": "RECOVERED_COMPLETE_OBSERVATIONS_AVAILABLE_AFTER_RECOVERY_ONLY",
   "existing_pipeline_policy": "NEVER_MODIFY_OR_SWITCH_AN_ACTIVE_RUN",
   "lane_b_policy": "UNCHANGED_PARENT_COMMIT",
