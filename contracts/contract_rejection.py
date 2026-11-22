@@ -23,6 +23,7 @@ way.
 from __future__ import annotations
 
 import math
+from contracts.contract_comparison_inventory import SCHEMA as INVENTORY_SCHEMA, normalize_quote
 from typing import Any, Iterable, Mapping, Sequence
 
 #: Reason codes. The first four extend the existing contract-rejection
@@ -264,10 +265,11 @@ def classify_chain(
     truncated = len(recorded) > max_recorded
     both_sides = {}
     for side in ('CALL','PUT'):
-        inventory = [classify_contract(r, direction=side, dte_min=dte_min, dte_max=dte_max,
-            delta_min=delta_min, delta_max=delta_max, spread_limit=spread_limit)
+        inventory = [normalize_quote(r, gate_failed=classify_contract(r, direction=side, dte_min=dte_min, dte_max=dte_max,
+            delta_min=delta_min, delta_max=delta_max, spread_limit=spread_limit)['gate_failed'])
             for r in rows if _side_of(r.get('right'))==side]
         both_sides[side] = {'state':'AVAILABLE' if inventory else 'NOT_PRESENT_IN_SAVED_CHAIN',
+            'schema':INVENTORY_SCHEMA,
             'total_contracts':len(inventory),'recorded_contracts':min(len(inventory),max_recorded),
             'truncated':len(inventory)>max_recorded,'contracts':inventory[:max_recorded],
             'basis':'OBSERVED_CHAIN_SAME_REQUEST_WINDOW_NOT_AN_OPPOSITE_SIDE_THESIS'}

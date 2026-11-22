@@ -17,6 +17,7 @@ from domain.option_valuation import (american_crr_values, european_bsm_value, ex
     exit_proceeds_usd_per_share, cost_basis)
 from domain.crossing_scenario import crossing_config
 from domain.long_option_execution import SPREAD_POLICY
+from domain.evening_target_roles import VERSION as TARGET_NAMING_VERSION, target_metadata, scenario_metadata
 
 VERSION = 'evening_opportunity_assessment_v1'
 FIELDS = ('evening_assessment_version', 'evening_assessment_route', 'evening_assessment_label',
@@ -56,7 +57,7 @@ def dump(value):
 
 def source_inputs(row, run_id):
     keys = ('ticker','thesis_id','trade_lane_candidate_id','direction','canonical_direction',
-        'pipeline_mode','signal_price','invalidation_price','anticipated_level_q50',
+        'pipeline_mode','signal_price','invalidation_price','anticipated_level_q50','anticipated_level',
         'anticipated_sessions_q50','anticipated_sessions_q80','planned_hold_sessions',
         'contract_symbol','anticipated_contract_symbol','contract_bid','contract_ask','contract_iv',
         'contract_oi','contract_volume','contract_delta','selected_quote_timestamp_utc',
@@ -68,7 +69,7 @@ def source_inputs(row, run_id):
         'valuation_dividend_basis','earnings_disclosure')
     keys += ('quote_tier','veto_flags','atm_iv','iv_rank','iv_percentile','iv_history_state','iv_vs_hv')
     # Invalid/nonfinite input must not become a valid zero in a source receipt.
-    return {'run_id':run_id, 'assessment_version':VERSION, 'valuation_policy':dict(valuation_policy()),
+    return {'run_id':run_id, 'assessment_version':VERSION, 'target_naming_version':TARGET_NAMING_VERSION, 'valuation_policy':dict(valuation_policy()),
         'scenario_policy':dict(crossing_config()),
         **{k: (None if isinstance(row.get(k),float) and
         not math.isfinite(row[k]) else row.get(k)) for k in keys}}
@@ -186,6 +187,7 @@ def assess_evening(row, *, run_id):
                 ('TARGET_IV_UP',target,1/cfg['iv_down_multiple'],1.),
                 ('TARGET_WIDE_EXIT',target,1.,cfg['exit_spread_stress_multiple'])):
                 record={'checkpoint_sessions':n,'exit_date':at.isoformat(),'scenario':name,
+                    **scenario_metadata(name),
                     'spot':level,'iv':iv*iv_mult,'exit_spread_multiple':spread_mult,
                     'state':'BEYOND_EXPIRY' if at>expiry else 'CONDITIONAL_NOT_FORECAST'}
                 scenarios.append(record)
@@ -249,6 +251,7 @@ def assess_evening(row, *, run_id):
         'earnings_disclosure':row.get('earnings_disclosure'),'legacy_verdict':row.get('lab_verdict'),
         'ranking_basis':'LEGACY_CONDITIONAL_PROXY_NOT_CALIBRATED_EXPECTED_PROFIT',
         'selection_owner':'CLAUDE_UNCHANGED'}
+    payload.update(target_metadata(row))
     reasons=list(dict.fromkeys(errors+unsuitable))
     return dict(zip(FIELDS,(VERSION,route,LABELS[route],'; '.join(reasons),'; '.join(warnings),
         assessment_id,digest,dump(payload))))
