@@ -1,0 +1,19 @@
+{
+  "release_id": "EVENING-REVIEWED-HANDOFF-20261122",
+  "parent_commit": "d1b3221373fc833d0ac1f33d3086f965ed98f02d",
+  "saved_replay_revision": "0136050a83ca44d38b3a4a4436807905",
+  "receiver_commit_reviewed": "b90142299b7d81305cc572c6b3c281db937ed127",
+  "scope": "Tested additive Evening assessment, target naming, inventory, clocks, valuer source/stop and ten-field disclosure fixes",
+  "candidate_population_policy": "PRESERVE_EXISTING_VERDICTS_RANKING_AND_CONTRACTS",
+  "contract_selection_mode": "SHADOW_UNCHANGED",
+  "phantom_promotions_enabled": false,
+  "phantom_authority": "EVIDENCE_ONLY",
+  "lane_b_policy": "NO_SOURCE_OR_RUNTIME_CHANGES; RECEIVING_VALIDATION_REMAINS_SEPARATE",
+  "provider_authority_change": false,
+  "pipeline_started_by_deployment": false,
+  "validation_limits": [
+    "Saved-data compatibility, not a profitability claim or a full nightly rerun",
+    "Actual subsequent Morning integration remains to be observed; saved frozen-carry tests pass",
+    "Comparison inventory transport verified using an explicit path; no unrestricted chain coverage claim"
+  ]
+}

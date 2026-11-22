@@ -845,6 +845,10 @@ FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from contracts.lab_publication_disclosures import FIELDS as PUBLICATION_DISCLOSURE_FIELDS, publication_disclosures
+FINAL_BOOK_FIELDS += [f for f in (*PUBLICATION_DISCLOSURE_FIELDS, 'options_research_score') if f not in FINAL_BOOK_FIELDS]
+from domain.evening_assessment import FIELDS as EVENING_ASSESSMENT_FIELDS, assess_evening
+FINAL_BOOK_FIELDS += [f for f in EVENING_ASSESSMENT_FIELDS if f not in FINAL_BOOK_FIELDS]
 from canonical_data.instrument_identity import IDENTITY_FIELDS, attach_identities, load_registry
 FINAL_BOOK_FIELDS += [f for f in IDENTITY_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in MONETISATION_FIELDS if f not in FINAL_BOOK_FIELDS]
@@ -3398,6 +3402,7 @@ def opportunity_book_row(
     rank: int,
     *,
     contract_quote_lookup: Any = None,
+    disclosure_as_of: Any = None,
 ) -> Dict[str, Any]:
     canonical_direction = first(sig, "final_direction", "canonical_direction", "resolved_direction", "direction", "options_direction", "selected_contract_side", "option_direction")
     aligned_instrument = _instrument_for_direction(
@@ -4262,6 +4267,12 @@ def opportunity_book_row(
     row.update(reliability_fields({**sig, **row}))
     row.update({f:sig.get(f) for f in MONETISATION_FIELDS} if sig.get('monetisation_clock_state') else clock_fields())
     row.update({f: sig.get(f, "") for f in CROSSING_BOOK_FIELDS})   # as recorded upstream; blank is not available
+    # A separate research assessment must never grant/relax execution authority.
+    # Morning carries the frozen Evening packet instead of re-estimating it.
+    for field in EVENING_ASSESSMENT_FIELDS:
+        if sig.get(field) not in (None, ''):
+            row[field] = sig[field]
+    row.update(assess_evening({**sig, **row}, run_id=run_id))
     for field in ('scenario_exit_date', 'valuation_time_basis', 'anticipated_reach_state',
                   'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis'):
         row[field] = first(sig, field)
@@ -4270,6 +4281,10 @@ def opportunity_book_row(
     row["field_provenance_json"] = _json_safe(provenance)
     # Normalization is pure: doing the complete row once per output field caused
     # quadratic work (982 complete passes for one captured Morning row).
+    # Metadata restoration only; no selector, rank or execution permission reads it.
+    if 'options_research_score' in sig:
+        row['options_research_score'] = sig['options_research_score']
+    row.update(publication_disclosures({**sig, **row}, as_of=disclosure_as_of))
     normalized = csv_safe_row(row)
     return {key: normalized.get(key, "") for key in FINAL_BOOK_FIELDS}
 
@@ -4299,7 +4314,8 @@ def build_final_opportunity_book(
     from domain.opportunity_rank import rank_key
     enriched.sort(key=rank_key)
     rows = [
-        opportunity_book_row(sig, run_id, rank, contract_quote_lookup=contract_quote_lookup)
+        opportunity_book_row(sig, run_id, rank, contract_quote_lookup=contract_quote_lookup,
+                             disclosure_as_of=manifest.get('evidence_cutoff_utc') or manifest.get('decision_clock') or utc_now())
         for rank, sig in enumerate(enriched, 1)
     ]
     # Live run 20261008_220129: the materializer can block a row after the sort (e.g. INVALIDATION_MISSING), so the
@@ -5119,6 +5135,20 @@ def write_final_opportunity_book(
             raise RuntimeError("C8 valuation packet does not reconcile with C5/C6")
     forecast_population_before = len(rows)
     rows[:] = project_lab_descriptive_rows(rows, packet, expression_packet, valuation_packet)
+    # All hydration is complete before source-bound Evening economics are made.
+    # This does not select a contract or promote an execution permission.
+    evening_clock_receipt = {'state': 'NOT_APPLICABLE_MORNING'}
+    from contracts.evening_assessment_handoff import freeze_assessments, carry_frozen_assessments
+    evening_mode = _u((run_manifest or {}).get('pipeline_mode')) in {'EOD','LIVE_EOD','INTRADAY_EOD'}
+    if evening_mode:
+        from contracts.monetisation_clock import complete_evening_history
+        rows[:], evening_clock_receipt = complete_evening_history(
+            rows, packet_root, Path(runs_dir).parent.parent / 'phantom' / 'phantom_history.db')
+    else:
+        rows[:], evening_clock_receipt = carry_frozen_assessments(rows, packet_root)
+    from domain.evening_assessment import attach_assessments
+    rows[:], evening_assessment_counts = attach_assessments(rows, run_id=run_id)
+    evening_freeze_receipt = freeze_assessments(rows, packet_root) if evening_mode else {'state':'READ_ONLY_MORNING'}
     for row in rows:
         provenance = json.loads(row.get("field_provenance_json") or "{}")
         for field in FINAL_BOOK_FIELDS:
@@ -5243,6 +5273,9 @@ def write_final_opportunity_book(
                 if row.get("doi_projection_state") not in {"CALIBRATED", "DETERMINISTIC_UNCALIBRATED"}
             ),
             "doi_population_preserved": len(rows) == doi_population_before,
+            "evening_assessment_counts": evening_assessment_counts,
+            "evening_monetisation_history": evening_clock_receipt,
+            "evening_assessment_freeze": evening_freeze_receipt,
             "economics_comparable_rows": sum(
                 1 for row in rows if row.get("economics_comparable") is True
             ),

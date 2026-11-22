@@ -1,0 +1,13 @@
+{
+  "scope": "DISPLAY_AND_DOCUMENTATION_ONLY",
+  "full_evening_patch_commit": "9c76fc2be8863f2e06efb203af00741733f660fc",
+  "baseline_production_commit": "794ec6855bd779f41f8e8ef013afb696fc0a4d13",
+  "promoted": ["Supplementary saved Evening assessment card display", "Versioned handoff schema", "Display noninterference tests"],
+  "unchanged": ["Pipeline Python code", "Candidate population and order", "lab_verdict", "lab_rank", "Selected contracts", "Lane B", "Historical snapshots", "Databases", "Phantom promotions remain blocked"],
+  "held": ["Valuer stop/forecast calculation changes", "Automatic Evening historical-clock reading and source freezing", "Materializer/projection wiring", "Both-side contract inventory writer"],
+  "held_reason": "Pipeline-affecting changes are not covered by impact-free promotion; require regression and receiver acceptance before runtime activation.",
+  "route_count_interpretation": "3 Evening-qualified among 346 ready Lane-A rows is a count of provisional additional labels in one replay, NOT a count of viable opportunities, triage winners or end-to-end performance. No eligible population is reduced to those three.",
+  "missing_packet_policy": "Explicit not-published message; no inferred classification or current recalculation",
+  "execution": "No providers, pipeline run, repricing, live quote calls or database writes",
+  "verification": "65 saved-data Lab regression tests passed; additive JavaScript noninterference, malformed-packet and syntax checks passed; no Python, launcher, configuration or Lane B diff from baseline"
+}

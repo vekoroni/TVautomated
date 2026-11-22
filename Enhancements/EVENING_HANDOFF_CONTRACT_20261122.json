@@ -1,0 +1,73 @@
+{
+  "schema": "evening_opportunity_assessment_v1",
+  "status": "IMPLEMENTATION_CONTRACT_FOR_CLAUDE_RECEIVER_TEST",
+  "owner": "Codex: evidence, calculations and publication. Claude: contract selection and Lane B.",
+  "compatibility": {
+    "lab_verdict": "UNCHANGED legacy execution/audit field; never silently replaced by an Evening research route",
+    "lab_rank": "UNCHANGED published rank",
+    "contract_symbol": "UNCHANGED selected contract; no shadow selector activated",
+    "contract_repair_current_state": "Retained legacy field; the new consolidated selected-contract assessment is evening_assessment_json.contract_state. Do not confuse a retained historical repair flag with the new assessment.",
+    "population": "All rows retained, including longer-horizon, incomplete and unsuitable candidates",
+    "automatic_lane_b_filter_change": false,
+    "receiving_side_acceptance": "Claude must test population/order explicitly before changing Lane B filters"
+  },
+  "top_level_fields": {
+    "evening_assessment_version": "evening_opportunity_assessment_v1",
+    "evening_assessment_route": ["EVENING_QUALIFIED", "WAITING_FOR_TRIGGER", "HUMAN_REVIEW_LONGER_HORIZON", "CONTRACT_UNSUITABLE", "ASSESSMENT_INCOMPLETE", "THESIS_INVALIDATED", "OPPORTUNITY_CLOSED"],
+    "evening_assessment_label": "Human-readable label; not an execution instruction",
+    "evening_assessment_reasons": "Semicolon-delimited specific missing-input, identity, safety or contract-limit reason codes",
+    "evening_assessment_warnings": "Non-authoritative descriptive warnings; old repair flags remain visible",
+    "evening_assessment_id": "SHA256 of run/ticker/thesis/candidate/contract identity",
+    "evening_assessment_source_sha256": "SHA256 of bound research input facts",
+    "evening_assessment_json": "Versioned full assessment JSON string; cards and full basket JSON preserve it"
+  },
+  "missing_publication": "Absent fields mean this immutable revision predates the assessment. Do not infer a new status from lab_verdict.",
+  "unmatched_morning_identity": "EVENING_NOT_ASSESSED with NO_UNIQUE_FROZEN_THESIS_MATCH; never ticker-only substitution",
+  "payload_fields": {
+    "execution_validation": ["ENTRY_VALIDATION_PENDING"],
+    "authority": "RESEARCH_ONLY_NO_ENTRY_PERMISSION",
+    "contract_state": ["SUITABLE_SAVED_REFERENCE", "UNSUITABLE", "UNASSESSED"],
+    "planned_trading_hold_sessions": "Original governed planned hold; not DTE or assumed first-profit crossing",
+    "routing_clock": "ORIGINAL_GOVERNED_PLANNED_HOLD_NOT_DTE_OR_ASSUMED_CROSSING",
+    "reference_session": "Saved XNYS session YYYY-MM-DD",
+    "quote_timestamp_utc": "Explicit timezone-aware quote timestamp, not a live quote-age guarantee",
+    "spot_target_invalidation": ["spot", "target", "invalidation", "move_from_bound_spot_pct"],
+    "scenarios": "Conditional checkpoint records, not probabilities or predicted paths",
+    "empirical_clock": "A12 +20/+30 observations and counts; historical descriptive evidence, not an entry forecast",
+    "iv_intelligence": "Saved selected-contract IV and available ATM/rank/percentile/history context; not proof of cheapness or profit"
+  },
+  "scenario_names": ["TARGET_IF_REACHED", "HALF_MOVE_IF_REACHED", "INVALIDATION_AT_CHECKPOINT", "STALL", "TARGET_IV_DOWN", "STALL_IV_DOWN", "TARGET_IV_UP", "TARGET_WIDE_EXIT"],
+  "scenario_state": ["CONDITIONAL_NOT_FORECAST", "BEYOND_EXPIRY", "UNASSESSED_NUMERIC_MODEL_RESULT"],
+  "scenario_numeric_fields": ["checkpoint_sessions", "spot", "iv", "model_value_per_share", "entry_cost_per_contract", "exit_proceeds_per_contract", "net_pnl_per_contract", "net_return_fraction"],
+  "economics": {
+    "contract_multiplier": 100,
+    "entry": "Ask plus governed opening fee/100",
+    "exit": "Model value less half quoted spread (or governed stressed multiple), less closing fee/100; no assumed sale below zero",
+    "costs": "Opening and closing fee once each, at the appropriate stage",
+    "option_life": "Actual remaining calendar days / 365 at each XNYS checkpoint, never 1.4 days per session",
+    "pricing": "Shared American CRR for US equity/ETF options; existing exercise-style policy for index exceptions",
+    "rate_dividend": "Published inputs with explicit supplied/fallback basis",
+    "iv_units": "Decimal annual volatility",
+    "iv_stress": "Existing governed 0.8x lower IV and reciprocal 1.25x higher IV; not ten percentage points",
+    "slippage": "Spread friction included; additional market impact/slippage unassessed, not silently claimed zero",
+    "interpretation": "Conditional outcomes, not expected returns or achieved fills. Invalidation timing, gaps and first-barrier order are not established."
+  },
+  "quote_inventory": {
+    "future_options_sidecar": "available_contracts_both_sides.CALL / PUT within contracts_tested_<run>.jsonl",
+    "per_side": ["state", "total_contracts", "recorded_contracts", "truncated", "contracts", "basis"],
+    "contract_fields": ["symbol", "right", "strike", "expiry", "dte", "bid", "ask", "iv", "delta", "mid", "spread_pct", "open_interest", "volume", "quote_timestamp_utc", "gate_failed"],
+    "authority": "Observed comparison inventory; no opposite-side thesis or contract choice is implied",
+    "saved_replay": "Separate exact-session Phantom inventory is supplied where original tested ladder lacks raw sides/IV. It is explicitly NOT reconstructed original selection evidence.",
+    "missing": "Null stays null. No midpoint-derived bid/ask or proxy IV. Truncation and scope must remain visible."
+  },
+  "claude_acceptance": [
+    "Use the isolated replay runs directory named in REPLAY_RECEIPT.json, not the live data/output/runs directory",
+    "Build handoff and verify no empty population or unintended ordering change",
+    "Run triage prefill and trade preparation against the same replay revision",
+    "Exercise manual-selection receive using the full frozen JSON, retaining exact identities",
+    "Compare card versus receiving-side contract, time basis, net dollars and returns for identical cases",
+    "Report receiving-side PASS or concrete field mismatches; do not modify the replay or live snapshots"
+  ],
+  "entry_validation": "Morning versus Lane B ownership remains undecided. Existing trigger_rules_v1.json is not modified; do not add a daily-close-only entry rule.",
+  "no_execution_authority": true
+}

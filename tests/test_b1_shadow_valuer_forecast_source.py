@@ -49,8 +49,13 @@ def _production_ctx() -> dict:
     row = pd.Series({"ticker": "TEST", "direction": "CALL", "horizon_bucket": "1_5d", "current_price": 100.0,
                      "target_price": 110.0, "invalidation_spot": 95.0, "invalidation_state": "AVAILABLE"})
     structural = oi.parse_structural_context(row)
+    # This suite explicitly supplies a 20-session evidence hold. Its cached
+    # runway fields must describe that hold, not the deliberately sparse row.
+    structural.update(oi.contract_runway_policy(None,evidence_hold=20,
+        evidence_basis='DURATION_EVIDENCE_Q80:1d:n=50'))
     return {"ticker": "TEST", "direction": "CALL", "spot": 100.0, "horizon_bucket": "1_5d",
-            "structural_target": 110.0, "invalidation_spot": 95.0, "hold_days": 5,
+            "structural_target": 110.0, "entry": 100.0, "stop": 95.0,
+            "stop_authoritative": True, "stop_source": "GOVERNED_TEST", "hold_days": 5,
             # Step 3 (ACK 4 Oct 2026): the valuer's hold is the evidence runway; a row without one is BAD_INPUT
             # by design (no fixed window). This test is about the forecast source, so the row carries evidence.
             "evidence_runway_sessions": 20,
@@ -113,6 +118,21 @@ def test_the_forecast_on_disk_for_the_active_run_is_used_at_age_zero(runs_dir):
     assert selected["contract_value_forecast_age_sessions"] == 0
     alternatives = json.loads(selected["contract_value_alternatives"])
     assert all(a["quality_flag"] == "OK" and a["r_central"] is not None for a in alternatives)
+
+
+def test_current_pre_options_freeze_wins_over_older_or_late_stage_forecast(runs_dir):
+    run_id='20260925_061649'
+    _write_forecast(runs_dir,'20260924_085940','TEST',.8)
+    _write_forecast(runs_dir,run_id,'TEST',.9)
+    path=runs_dir/run_id/'qomega/pre_options'/f'garch_forecasts_{run_id}.csv'
+    path.parent.mkdir(parents=True)
+    path.write_text('ticker,l3_forward_realised_vol_raw,l3_forecast_state\nTEST,0.35,FORECAST_OK\n',encoding='utf-8')
+    oi.set_active_run_context(run_id,str(runs_dir/run_id))
+    selected=_select(_production_ctx())
+    assert selected['contract_value_forecast_source']=='L3_PRE_OPTIONS_ON_DISK'
+    assert selected['contract_value_forecast_run_id']==run_id
+    assert selected['contract_value_quality_flag']=='OK'
+    assert selected['symbol']==selected['contract_value_score_choice_symbol']
 
 
 def test_the_previous_runs_forecast_is_used_and_its_age_is_recorded(runs_dir):

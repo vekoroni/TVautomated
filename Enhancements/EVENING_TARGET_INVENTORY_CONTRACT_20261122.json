@@ -1,0 +1,62 @@
+{
+  "schema": "evening_target_inventory_contract_v1",
+  "status": "CODEX_IMPLEMENTED_RECEIVER_ADOPTION_PENDING",
+  "scope": "Addendum overriding only target naming and comparison-inventory schema in the earlier Evening handoff contract",
+  "selection_verdict_rank_and_population": "UNCHANGED",
+  "target_naming_version": "evening_target_roles_v1",
+  "targets": {
+    "first_target": {
+      "label": "First target (median arrival)",
+      "source_field": "anticipated_level_q50",
+      "published_path": "evening_assessment_json.targets.first_target",
+      "meaning": "Conditional underlying level used by the existing target scenarios; not observed first option profit or a price percentile forecast",
+      "arrival_clock": "anticipated_sessions_q50, unchanged"
+    },
+    "full_target": {
+      "label": "Full target (original Lab)",
+      "source_field": "anticipated_level",
+      "published_path": "evening_assessment_json.targets.full_target",
+      "meaning": "Original Lab target reference, without assuming strict ordering relative to the first target",
+      "arrival_clock": null,
+      "valuation_state": "REFERENCE_ONLY_NOT_REPRICED"
+    },
+    "missing_policy": "Canonical price is null and state UNASSESSED_MISSING_OR_INVALID for absent, nonfinite, boolean or nonpositive values",
+    "legacy_target_alias": "Payload target remains the earlier raw-compatible anticipated_level_q50 value, including historical sentinels; use canonical targets.first_target.price and state for new consumption",
+    "scenario_codes": "Existing TARGET_IF_REACHED, TARGET_IV_DOWN, TARGET_IV_UP and TARGET_WIDE_EXIT remain unchanged; target_role and scenario_label explicitly bind them to FIRST_TARGET_MEDIAN_ARRIVAL",
+    "half_move": "HALF_MOVE_IF_REACHED is half the spot-to-first-target move, not half the full target and not observed first profit",
+    "full_target_payoff": "Not added or inferred by this naming fix",
+    "lineage": "New saved annotations retain target_naming_parent_source_sha256 and identify ADDITIVE_SAVED_ANNOTATION_NO_REPRICING; prior frozen packets are not edited"
+  },
+  "inventory": {
+    "schema": "contract_comparison_inventory_v1",
+    "encoding": "UTF-8 JSONL compressed with gzip for the saved comparison view",
+    "container": "One ticker/session record, available_contracts_both_sides.CALL and PUT",
+    "per_side_required": ["state", "total_contracts", "recorded_contracts", "truncated", "contracts"],
+    "scope": "The complete recorded artifact only; provider_chain_completeness is NOT_ESTABLISHED, not unrestricted chain coverage",
+    "contract_fields": ["symbol", "right", "strike", "expiry", "dte", "bid", "ask", "iv", "delta", "mid", "spread_pct", "open_interest", "volume", "quote_timestamp_utc", "gate_failed"],
+    "required_evidence": ["raw_observation", "field_reasons", "field_basis", "iv_state", "quote_state", "gate_evidence_state", "authority"],
+    "source_mapping": {
+      "option_symbol": "symbol; exact supplied OCC, with only a literal O: prefix removed",
+      "side": "right; explicit call/C and put/P spelling normalization only",
+      "updated_ts": "quote_timestamp_utc; recorded epoch seconds converted to timezone-aware UTC",
+      "missing_expiry": "Decoded from a valid exact OCC with field_basis EXACT_OCC_ENCODING; recorded invalid/conflicting expiry is flagged, not silently replaced",
+      "dte": "As recorded, not recomputed or asserted to be trading sessions"
+    },
+    "iv": "Finite positive IV is retained. Zero, negative, nonfinite or invalid IV becomes canonical null with a reason; the original value remains in raw_observation",
+    "bid": "Zero is preserved as a real no-observed-executable-bid observation, never replaced by a positive bid",
+    "missing_fields": "Absent delta, mid, spread and gate evidence remain null with reasons; no bid/ask reconstruction, proxy IV or invented historical gate results",
+    "gate_null": "gate_failed null means unknown when gate_evidence_state is NOT_RECORDED_IN_SAVED_SCOPE; it is not ACCEPTED. Future classified sidecars distinguish CLASSIFIED_PASS and CLASSIFIED_REJECTION",
+    "raw_preservation": "Every saved input quote is retained exactly under raw_observation; originals and vendor values are not rewritten",
+    "pricing": "A two-sided reference quote alone is not a priceable/entry-ready contract; consumers must also inspect IV availability, identity conflicts, dates and missing evidence",
+    "authority": "COMPARISON_ONLY_NO_SELECTION_OR_EXECUTION_PERMISSION",
+    "future_writer": "contracts.contract_rejection.classify_chain publishes this schema in available_contracts_both_sides; existing legacy contracts_tested and gate results are retained",
+    "saved_adapter": "scripts.publish_saved_contract_comparison.publish_saved_inventory; create-only output, source hash receipt, no providers or database writes"
+  },
+  "current_receiver_replay": {
+    "run_id": "20261121_222919",
+    "revision": "328d685fb8464ade9ddb530550183cb6",
+    "runs_dir": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_M1_M4_20261122\\runs",
+    "normalized_inventory": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_M1_M4_20261122\\contract_comparison_inventory_20261120.jsonl.gz"
+  },
+  "remaining_owner": "Claude: pricing-basis adoption, prefill propagation and receiving-side target/inventory mapping tests. No Lane B changes were made by Codex."
+}

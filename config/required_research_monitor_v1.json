@@ -1,0 +1,22 @@
+{
+  "schema": "required_research_monitor_v1",
+  "monitors": [
+    {
+      "ticker": "CAPR",
+      "start_session": "2026-11-23",
+      "end_session": "2026-11-27",
+      "reason": "USER_REQUIRED_POST_FDA_CRL_MONITORING",
+      "execution_authority": "NONE"
+    }
+  ],
+  "reassessments": [
+    {
+      "ticker": "CAPR",
+      "event_time_utc": "2026-11-21T00:55:00Z",
+      "event": "FDA_COMPLETE_RESPONSE_LETTER_DERAMIOCEL",
+      "source_url": "https://rss.globenewswire.com/news-release/2026/11/21/3407877/0/en/capricor-therapeutics-provides-regulatory-update-on-deramiocel-bla-for-duchenne-muscular-dystrophy.html",
+      "status": "REASSESSMENT_REQUIRED",
+      "reason": "Pre-event bullish thesis and research score require reassessment after FDA non-approval; do not treat the historical score as current clearance."
+    }
+  ]
+}
