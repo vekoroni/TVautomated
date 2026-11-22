@@ -59,7 +59,7 @@ def test_late_receipt_or_later_universe_never_enters_point_in_time_training():
     t=target();pool=training()
     for r in pool:r['quote_available_at']='2026-05-01T00:00:00+00:00'
     assert forecast(t,pool)['probability'] is None
-    for r in pool:r['quote_available_at']='2026-04-01T00:00:00+00:00';r['universe_known_at']=None
+    for r in pool:r['quote_available_at']='2026-04-01T00:00:00+00:00';r['universe_known_at']=None;r['training_available_at']=None
     assert forecast(t,pool)['probability'] is None
     assert forecast(t,pool,require_receipts=False)['probability']==.5
 
@@ -119,4 +119,8 @@ def test_prospective_after_close_publication_cannot_price_an_earlier_closing_ent
     pool=training()
     for r in pool:r['eligible_from_session']='2026-04-21'
     t=target()
+    # Old training observations need not have been traded/selected at origin.
+    # Their recovered data must instead have existed before this NEW forecast.
+    assert forecast(t,pool)['training']['n']==30
+    for r in pool:r['training_available_at']='2026-04-21T00:00:00+00:00'
     assert forecast(t,pool)['training']['n']==0

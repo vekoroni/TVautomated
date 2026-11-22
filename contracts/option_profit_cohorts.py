@@ -10,7 +10,7 @@ from functools import lru_cache
 import math
 from contracts.option_profit_evidence import contract,number,instant,digest,sessions_after
 
-VERSION='option_profit_matched_cohorts_v1'
+VERSION='option_profit_matched_cohorts_v2_availability_clocks'
 POLICY={'version':VERSION,'dte_upper':[14,30,60,120,365],
     'signed_moneyness_upper':[-.05,-.02,.02,.05],
     'spread_fraction_upper':[.10,.25,.50],
@@ -50,10 +50,13 @@ def entry_state(symbol,origin,q,open_fee,close_fee):
         'fee_bucket':bucket(fee_fraction,POLICY['fee_fraction_upper'])},reasons
 
 def event_key(row):
-    return digest({k:row[k] for k in ('event_id','horizon','clock','threshold','open_fee','close_fee','entry','exit','multiplier','side')})
+    return digest({**{k:row[k] for k in ('event_id','horizon','clock','threshold','open_fee','close_fee','entry','exit','multiplier','side')},
+        'entry_clock':row.get('entry_clock','CLOSE_BENCHMARK')})
 
-def decorate(row,ticker,quote,*,universe_known_at=None,eligible_from_session=None):
-    out=dict(row,ticker=ticker,universe_known_at=universe_known_at,eligible_from_session=eligible_from_session)
+def decorate(row,ticker,quote,*,universe_known_at=None,eligible_from_session=None,training_available_at=None,assessment_session=None):
+    out=dict(row,ticker=ticker,universe_known_at=universe_known_at,eligible_from_session=eligible_from_session,
+        training_available_at=training_available_at or universe_known_at)
+    if assessment_session:out['assessment_session']=assessment_session
     state,reasons=entry_state(row['contract_symbol'],row['origin'],quote,row['open_fee'],row['close_fee'])
     out.update(entry_state=state,feature_reasons=reasons,
         shared_event_key=event_key(row),outcome_id=digest([ticker,row['contract_symbol'],row['origin'],row['event_key']]))
@@ -88,10 +91,12 @@ def forecast(target,pool,*,require_receipts=True):
         if r['ticker']==target['ticker'] or r['shared_event_key']!=target['shared_event_key']:return False
         if purged_end(r['window_end'])>=target['origin']:return False
         if require_receipts:
-            if r.get('eligible_from_session') and r['origin']<r['eligible_from_session']:return False
             available=instant(r.get('quote_available_at'))
             if available is None or available>cutoff:return False
-            known=instant(r.get('universe_known_at'))
+            # Training observations may be recovered later than their origin.
+            # Their DATA must be known before this forecast; never pretend a
+            # historical decision or universe publication existed at origin.
+            known=instant(r.get('training_available_at') or r.get('universe_known_at'))
             if known is None or known>cutoff:return False
         return True
     base=[r for r in pool if eligible(r)]
@@ -110,6 +115,18 @@ def forecast(target,pool,*,require_receipts=True):
         'training_ids':[r['outcome_id'] for r in matched],
         'baseline_ids':[r['outcome_id'] for r in baseline],
         'mode':'POINT_IN_TIME' if require_receipts else 'RETROSPECTIVE_AVAILABILITY_UNPROVEN_NOT_DEPLOYABLE'}
+
+def maturity_coverage(rows):
+    eligible=[];pending=0;runway=0
+    for r in rows:
+        if r.get('expiry_truncated'):runway+=1
+        elif r.get('assessment_session') and r['window_end']>r['assessment_session']:pending+=1
+        elif r.get('state')=='RIGHT_CENSORED':pending+=1
+        else:eligible.append(r)
+    missing=sum(not r['fit_eligible'] for r in eligible)
+    return {'mature_runway_eligible_n':len(eligible),'mature_unassessed_n':missing,
+        'not_matured_n':pending,'expiry_truncated_n':runway,
+        'mature_unknown_fraction':missing/len(eligible) if eligible else 0.}
 
 def metrics(predictions):
     valid=[r for r in predictions if r['forecast']['probability'] is not None and r['target']['fit_eligible']]
@@ -167,7 +184,8 @@ def evaluate(rows):
         strict.append({'target':r,'forecast':forecast(r,pool)})
         retrospective.append({'target':r,'forecast':forecast(r,pool,require_receipts=False)})
     m=metrics(strict);diagnostic=metrics(retrospective)
-    unknown=sum(not r['fit_eligible'] for r in rows)/len(rows) if rows else 1
+    coverage=maturity_coverage(rows)
+    unknown=coverage['mature_unknown_fraction']
     gates=validation_gates(m,unknown)
     gates+=['SHADOW_RELEASE_REVIEW_REQUIRED','ENTRY_SPOT_TIME_ALIGNMENT_NOT_INDEPENDENTLY_VERIFIED',
             'NO_COMPARABLE_CALIBRATED_MARKET_EDGE_REFERENCE']
@@ -175,6 +193,7 @@ def evaluate(rows):
         'rows':len(rows),'matched_state_rows':len(feature_rows),
         'feature_exclusions':dict(Counter(x for r in rows for x in r['feature_reasons'])),
         'states':dict(Counter(r['state'] for r in rows)),
+        'maturity_coverage':coverage,
         'unknown_fraction':unknown,'point_in_time_oos':m,'retrospective_diagnostic_only':diagnostic,
         'forecast_blockers':dict(Counter(x['forecast']['reason'] for x in strict if x['forecast']['reason'])),
         'validation_passed':not validation_gates(m,unknown),'promotion_blockers':gates,

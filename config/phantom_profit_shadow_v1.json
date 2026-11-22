@@ -1,0 +1,23 @@
+{
+  "version": "phantom_profit_shadow_v1",
+  "enabled": true,
+  "promotions_enabled": false,
+  "horizons": [5, 10, 20],
+  "profit_levels": [0.2, 0.3],
+  "max_forecast_cells": 20000,
+  "max_maturation_cells": 5000,
+  "max_packet_files": 5000,
+  "max_pool_rows": 50000,
+  "max_local_seconds": 90,
+  "max_intraday_quote_age_seconds": 60,
+  "max_spot_quote_skew_seconds": 60,
+  "close_quote_tolerance_seconds": 1800,
+  "entry_rule": "OBSERVED_ASK_PLUS_CONFIGURED_OPEN_FEE_NO_FILL_CLAIM",
+  "exit_rule": "FIRST_SAVED_POST_ENTRY_CLOSE_BID_NET_OF_CLOSE_FEE_ELSE_HORIZON_BID",
+  "authority": "SHADOW_ONLY",
+  "training_clock": "COMPLETE_LABEL_AND_RECOVERED_DATA_AVAILABLE_BEFORE_FORECAST",
+  "validation_clock": "FORECAST_AND_ENTRY_OBSERVATION_RECORDED_BEFORE_OUTCOME",
+  "reference_close_policy": "BENCHMARK_ONLY_NEVER_EXECUTABLE_ENTRY_OR_PROMOTION_VALIDATION",
+  "same_day_intraday_exit_session": 0,
+  "provider_calls": 0
+}

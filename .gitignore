@@ -254,3 +254,6 @@ data/canonical/
 /data/phantom/staging/*.gz
 /data/governance/universe_security_master/universe_remediation_log_*.md
 /data/universe/universe_remediation_log_*.md
+
+# Release-private append-only forecast ledger and recovered training artifacts.
+/runtime/phantom_profit_shadow/

@@ -63,6 +63,7 @@ def outcome(symbol,origin,history,*,as_of,horizon,threshold,open_fee,close_fee):
          'threshold':threshold,'open_fee':open_fee,'close_fee':close_fee,
          'entry':'SAVED_ASK','exit':'SAVED_BID','multiplier':100}
     r={**key,'event_id':f'OPTION_NET_PROFIT_GE_{round(threshold*100)}_OBSERVED_CLOSE',
+       'assessment_session':as_of.isoformat(),'entry_clock':'CLOSE_BENCHMARK',
        'event_key':digest(key),'origin':origin.isoformat(),'window_end':days[-1].isoformat(),
        'state':'UNASSESSED','label':None,'fit_eligible':False,'known_hit':False,
        'first_hit_session':None,'first_hit_date':None,'net_return':None,'net_dollars':None,

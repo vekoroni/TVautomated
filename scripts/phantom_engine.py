@@ -294,6 +294,17 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
             prediction_capture = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:500]}
             logger.warning('PHANTOM prospective publication capture FAILED: %s', prediction_capture['error'])
 
+    profit_shadow = {"status": "BLOCKED_NO_CANDIDATE_CAPTURE"}
+    if candidate_capture['status'] == 'CAPTURED':
+        try:
+            from contracts.phantom_profit_shadow import evening_cycle
+            profit_shadow = evening_cycle(repo_root, run_id, candidate_capture, database=db_path)
+            if profit_shadow['status'] not in ('COMPLETE_SHADOW_CAPTURE', 'DISABLED'):
+                logger.warning('PHANTOM profit shadow capture incomplete: %s', profit_shadow['status'])
+        except Exception as exc:
+            profit_shadow = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:500]}
+            logger.warning('PHANTOM profit shadow FAILED: %s', profit_shadow['error'])
+
     db.batch_write_phantom_scores(run_id, score_payloads)
 
     out_df = pd.DataFrame(rows_out)
@@ -307,6 +318,7 @@ def run_phantom(input_csv: Path, output_csv: Path, run_id: str, db_path: Path, r
         "promotions_enabled": PROMOTIONS_ENABLED,
         "prospective_candidate_capture": candidate_capture,
         "prospective_prediction_capture": prediction_capture,
+        "option_profit_shadow": profit_shadow,
         "prospective_capture_state": "CAPTURED" if prediction_capture['status']=='CAPTURED' else "INCOMPLETE",
         "promoted_count": promoted,
         "hard_veto_respected_count": hard_vetoes,

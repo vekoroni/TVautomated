@@ -1,0 +1,13 @@
+{
+  "release_id": "PHANTOM-RECOVERY-MATURATION-20261122",
+  "parent_commit": "ab8c5926a89f1639daa07f532c57386a833977fc",
+  "authority": "EVIDENCE_ONLY",
+  "promotions_enabled": false,
+  "score_calibrated": false,
+  "ledger_scope": "RELEASE_PRIVATE_RUNTIME",
+  "training_basis": "RECOVERED_COMPLETE_OBSERVATIONS_AVAILABLE_AFTER_RECOVERY_ONLY",
+  "existing_pipeline_policy": "NEVER_MODIFY_OR_SWITCH_AN_ACTIVE_RUN",
+  "lane_b_policy": "UNCHANGED_PARENT_COMMIT",
+  "provider_authority_change": false,
+  "pipeline_started_by_deployment": false
+}

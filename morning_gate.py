@@ -3675,6 +3675,22 @@ def run_morning_gate(
     except Exception as _vix_exc:
         log.info("VIX regime check skipped: %s", _vix_exc)
 
+    # Shadow evidence uses only existing fetched quotes; never changes a gate,
+    # contract, expiry or Lane B. Mature local history before quote acquisition.
+    profit_shadow = None
+    if execution_mode == "POSTOPEN_CONTRACT_REFRESH":
+        try:
+            from contracts.phantom_profit_shadow import ShadowSession, mature_pending, quote_from_morning
+            profit_shadow = ShadowSession(ROOT, run_id)
+            if profit_shadow.cfg['enabled']:
+                local_profit = mature_pending(profit_shadow.store, profit_shadow.database, profit_shadow.cfg)
+                log.info("PHANTOM profit maturation: %s", local_profit)
+            else:
+                profit_shadow = None
+        except Exception as exc:
+            profit_shadow = None
+            log.warning("PHANTOM profit shadow preparation FAILED: %s", exc)
+
     # Fetch all live data
     # Preparation is not permission to begin pricing after the close.
     # Batch completion is governed by quote freshness, not a batch deadline.
@@ -3693,7 +3709,11 @@ def run_morning_gate(
 
     # Run gate
     results: List[Dict[str, Any]] = []
-    for row in candidates:
+    profit_refs = []
+    profit_errors = []
+    if profit_shadow is not None:
+        profit_shadow.begin_publication()
+    for profit_ordinal, row in enumerate(candidates):
         ticker    = _ticker(row.get("ticker", ""))
         live_data = live_map.get(ticker, {})
         result    = run_gate(
@@ -3736,7 +3756,26 @@ def run_morning_gate(
                     liquidity_persist_error,
                 )
             _align_selected_quote_dataset(result)
+        if profit_shadow is not None:
+            try:
+                profit_refs.append(profit_shadow.publish(result, quote_from_morning(result, live_data),
+                    phase='MORNING', snapshot_id=f'{run_id}:MORNING:{profit_ordinal}', persist=False))
+            except Exception as exc:
+                profit_errors.append({'ticker': ticker, 'reason': str(exc)[:300]})
+                log.warning("PHANTOM profit shadow observation unavailable for %s: %s", ticker, exc)
         results.append(result)
+
+    if profit_shadow is not None:
+        from contracts.phantom_profit_shadow import write_packet, now as profit_now
+        try:
+            profit_forecast_packet = profit_shadow.flush()
+            write_packet(profit_shadow.store/'cycles', 'CYCLE', {'run_id': run_id,
+                'recorded_at_utc': profit_now().isoformat(), 'phase': 'MORNING',
+                'forecast_packet': profit_forecast_packet, 'captured_candidates': len(profit_refs),
+                'errors': profit_errors, 'rows': [],
+                'status': 'INCOMPLETE' if profit_errors else 'COMPLETE_SHADOW_CAPTURE'})
+        except Exception as exc:
+            log.warning("PHANTOM profit shadow cycle receipt FAILED: %s", exc)
 
     # Structure is intentionally calculated after the Morning decision.  It is
     # advisory context for the trader and therefore cannot alter GO/BLOCK,
