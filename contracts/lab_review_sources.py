@@ -202,12 +202,19 @@ def prepare_review_publication(book: Mapping[str, Any], run_dir: Path | str, *, 
     context = _context(root, run_id, issues, watches)
     receipt = {"overlay_state": "NOT_PUBLISHED", "issues": issues, "watch_inputs": watches,
                "validation_events_applied": 0, "validation_event_state": "NOT_PUBLISHED"}
+    evening_packet = root / 'intelligence_lab' / f'evening_monetisation_clock_{run_id}.json'
+    if monetisation_packet is None and evening_packet.is_file():
+        monetisation_packet = json.loads(evening_packet.read_text(encoding='utf-8'))
+        _watch(root, evening_packet, watches)
     if monetisation_packet is not None:
         from contracts.monetisation_clock import attach_clock
-        morning = root / 'morning_validation' / f'morning_validated_trades_{run_id}.csv'
+        kind = monetisation_packet.get('source_kind', 'morning')
+        if kind not in {'morning','evening'}: raise ValueError('MONETISATION_SOURCE_KIND_INVALID')
+        morning = (root / 'intelligence_lab' / f'evening_clock_source_{run_id}.json' if kind=='evening' else
+                   root / 'morning_validation' / f'morning_validated_trades_{run_id}.csv')
         if (not morning.is_file() or hashlib.sha256(morning.read_bytes()).hexdigest()
                 != monetisation_packet.get('source_rows_sha256')):
-            raise ValueError('MONETISATION_MORNING_SOURCE_HASH_MISMATCH')
+            raise ValueError('MONETISATION_EVENING_SOURCE_HASH_MISMATCH' if kind=='evening' else 'MONETISATION_MORNING_SOURCE_HASH_MISMATCH')
         output['rows'], receipt['monetisation_clock'] = attach_clock(
             output['rows'], monetisation_packet, run_id=run_id)
         _watch(root, morning, watches)

@@ -25,6 +25,7 @@ import zlib
 from contracts.lab_review_display import display_sector, display_policy, valuation_disclosure
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from domain.evening_assessment import FIELDS as EVENING_ASSESSMENT_FIELDS, HOME_FIELDS as EVENING_HOME_FIELDS
 from canonical_data.instrument_identity import IDENTITY_FIELDS
 
 SCHEMA = "lab_review_projection_v1"
@@ -41,6 +42,8 @@ HOME_FIELDS = (*HOME_FIELDS, 'instrument_type', 'instrument_identity_state', 'in
 CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *IDENTITY_FIELDS)))
 from contracts.lab_control import CROSSING_BOOK_FIELDS
 CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *CROSSING_BOOK_FIELDS)))
+HOME_FIELDS = tuple(dict.fromkeys((*HOME_FIELDS, *EVENING_HOME_FIELDS)))
+CARD_FIELDS = tuple(dict.fromkeys((*CARD_FIELDS, *EVENING_ASSESSMENT_FIELDS)))
 
 
 class ReviewRevisionConflict(ValueError):
@@ -238,6 +241,7 @@ def publish_review_projection(book: Mapping[str, Any], runs_dir: Path | str, *,
         if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise ReviewIntegrityError("Projection index integrity failed")
     manifest = {"schema": SCHEMA, "run_id": run_id, "revision": revision,
+        "evening_assessment_version": "evening_opportunity_assessment_v1",
         "snapshot_disclosure_version": "lab_snapshot_disclosure_v1",
         "publication_state": "COMPLETE", "authority": "DISPLAY_ONLY", "row_count": len(rows),
         "card_fields": list(CARD_FIELDS), "display_policy_version": display_policy()["version"],

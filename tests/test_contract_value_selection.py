@@ -41,7 +41,8 @@ EVIDENCE_RUNWAY = oi.contract_runway_policy(None, evidence_hold=20, evidence_bas
 
 def _ctx(valuer=None) -> dict:
     ctx = {"ticker": "TEST", "direction": "CALL", "spot": 100.0, "horizon_bucket": "1_5d",
-           "structural_target": 110.0, "invalidation_spot": 95.0, "hold_days": 5,
+           "structural_target": 110.0, "entry": 100.0, "stop": 95.0,
+           "stop_authoritative": True, "stop_source": "GOVERNED_TEST", "hold_days": 5,
            # Step 3 (ACK 4 Oct 2026): valuation holds come from the evidence runway (no fixed window).
            "evidence_runway_sessions": 20,
            "dte_window": oi.governed_dte_window("1_5d"), "dte_config": oi.governed_dte_config("1_5d"),

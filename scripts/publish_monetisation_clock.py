@@ -32,20 +32,29 @@ def _digest(path):
         for part in iter(lambda:stream.read(1024*1024),b''):h.update(part)
     return h.hexdigest()
 
-def publish_saved_clock(run_dir,database,*,as_of,decision_cutoff,observation_sessions=None):
+def publish_saved_clock(run_dir,database,*,as_of,decision_cutoff,observation_sessions=None,
+                        source_kind='morning', source_path=None):
     root=Path(run_dir).resolve();rid=root.name;db=Path(database).resolve()
     cfg=json.loads((ROOT/'config/monetisation_clock_v1.json').read_text(encoding='utf-8'))
     horizon=cfg['observation_sessions'] if observation_sessions is None else observation_sessions
     if type(horizon) is not int or horizon<1:raise ValueError('Positive observation sessions required')
     if decision_cutoff is None or decision_cutoff.tzinfo is None:raise ValueError('Decision cutoff must have a timezone')
     if as_of>decision_cutoff.date():raise ValueError('Evidence session cannot follow the decision cutoff')
-    source=root/'morning_validation'/f'morning_validated_trades_{rid}.csv'
+    if source_kind not in {'morning','evening'}:raise ValueError('Invalid monetisation source kind')
+    source=(Path(source_path).resolve() if source_path else
+            root/('intelligence_lab' if source_kind=='evening' else 'morning_validation')/
+            (f'evening_clock_source_{rid}.json' if source_kind=='evening' else f'morning_validated_trades_{rid}.csv'))
+    if not source.is_relative_to(root):raise ValueError('Measurement source must belong to the selected run')
     pol=valuation_policy();before={str(p):_metadata(p) for p in (db,Path(str(db)+'-wal'),source)}
     source_hash=_digest(source);records=[];cache={};start=time.monotonic()
     old=csv.field_size_limit();csv.field_size_limit(max(old,64*1024*1024))
     try:
         with source.open(encoding='utf-8-sig',newline='') as stream:
-            inputs=list(csv.DictReader(stream))
+            if source_kind=='evening':
+                frozen=json.load(stream)
+                if frozen.get('run_id')!=rid:raise ValueError('EVENING_SOURCE_RUN_MISMATCH')
+                inputs=frozen['rows']
+            else:inputs=list(csv.DictReader(stream))
         reader=None
         try:
             for i,row in enumerate(inputs):
@@ -55,7 +64,12 @@ def publish_saved_clock(run_dir,database,*,as_of,decision_cutoff,observation_ses
                     reader.__enter__()
                 ticker=row.get('ticker','');symbol=row.get('contract_symbol') or ''
                 stamp=instant(row.get('validation_evidence_cutoff_utc') or row.get('quote_provider_timestamp_utc') or row.get('anticipated_valued_at_utc'))
-                cutoff=min(stamp,decision_cutoff) if stamp else decision_cutoff
+                # Evening uses the frozen assessment cutoff: a saved close
+                # quote may legitimately have landed after that close but
+                # before the research decision. Morning's legacy source keeps
+                # its own observation cutoff. Never use future receipts.
+                cutoff=(decision_cutoff if source_kind=='evening' else
+                        min(stamp,decision_cutoff) if stamp else decision_cutoff)
                 bar=str(row.get('bar_data_asof') or '')[:10]
                 bad_reference=False
                 try:observed=min(as_of,date.fromisoformat(bar)) if bar else as_of
@@ -87,7 +101,7 @@ def publish_saved_clock(run_dir,database,*,as_of,decision_cutoff,observation_ses
         'decision_cutoff_utc':decision_cutoff.isoformat(),'observation_sessions':horizon,
         'observation_window_is_not_a_hold_limit':True,'expiry_selection_owner':'CLAUDE_LANE_B',
         'fees':{'open_per_contract':pol['fee_usd_per_contract_open'],'close_per_contract':pol['fee_usd_per_contract_close'],'basis':pol['fee_basis']},
-        'config':cfg,'source_rows_sha256':source_hash,'source_rows_path':str(source),
+        'config':cfg,'source_kind':source_kind,'source_rows_sha256':source_hash,'source_rows_path':str(source),
         'source_database_before':before,'source_database_after':after,'sources_unchanged':True,
         'row_count':len(records),'summary':summary,'records':records,
         'limitations':['No actual fill or intraday first-passage proof.',

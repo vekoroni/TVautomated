@@ -5910,7 +5910,10 @@ def _l3_forecast_file(run_id: str) -> Dict[str, Tuple[float, str]]:
     if run_id in _L3_FORECAST_CACHE:
         return _L3_FORECAST_CACHE[run_id]
     table: Dict[str, Tuple[float, str]] = {}
-    path = _L3_RUNS_DIR / run_id / "qomega" / f"garch_forecasts_{run_id}.csv"
+    pre_options = _L3_RUNS_DIR / run_id / 'qomega' / 'pre_options' / f'garch_forecasts_{run_id}.csv'
+    # The current run freezes this before Options Intelligence. Prefer it to
+    # an older run's late-stage forecast; never rerun the model here.
+    path = pre_options if pre_options.is_file() else _L3_RUNS_DIR / run_id / "qomega" / f"garch_forecasts_{run_id}.csv"
     if path.exists():
         import csv as _csv
         with path.open(encoding="utf-8") as handle:
@@ -5974,7 +5977,9 @@ def _l3_forecast_on_disk(ticker: str) -> Optional[Dict[str, Any]]:
         else:
             from avshunter.shared.xnys_calendar import xnys_sessions_between
             age = int(xnys_sessions_between(source_date, active_date))
-        return {"forecast_vol": raw, "source_run_id": run_id, "age_sessions": age}
+        pre_path = _L3_RUNS_DIR / run_id / 'qomega' / 'pre_options' / f'garch_forecasts_{run_id}.csv'
+        return {"forecast_vol": raw, "source_run_id": run_id, "age_sessions": age,
+                "forecast_source": "L3_PRE_OPTIONS_ON_DISK" if pre_path.is_file() else "L3_ON_DISK"}
     return None
 
 
@@ -6002,7 +6007,12 @@ def _default_contract_valuer(ctx: Dict):
     inputs = model["module"].path_inputs_from_options_row(
         {**row, "final_direction": ctx.get('direction')}, thesis_window_sessions=planned_hold_from_evidence(ctx))
     side = inputs["side"]
-    spot, target, stop = ctx.get('spot'), ctx.get('structural_target'), ctx.get('invalidation_spot')
+    spot, target = ctx.get('spot'), ctx.get('structural_target')
+    # The production context owns `stop`; `invalidation_spot` is an OUTPUT
+    # alias. Reuse its governed resolver, including authority and side checks.
+    # Never substitute an unqualified stop merely to obtain a numerical value.
+    governed_stop = _ev3_handoff_fields(ctx)
+    stop = governed_stop['invalidation_spot'] if governed_stop['invalidation_state']=='AVAILABLE' else None
     # B1 (ACK 25 Sep 2026): the signal row never carries the Layer 3 forecast at this stage (it is
     # produced in Phase 10a); read the newest usable forecast on disk, flagged with source and age.
     forecast_source, forecast_run_id, forecast_age = "SIGNAL_ROW_L3", _ACTIVE_RUN_ID, 0
@@ -6010,8 +6020,9 @@ def _default_contract_valuer(ctx: Dict):
         on_disk = _l3_forecast_on_disk(ctx.get('ticker') or row.get('ticker'))
         if on_disk is not None:
             inputs["forecast_vol"], inputs["forecast_source"] = on_disk["forecast_vol"], "L3_ON_DISK"
-            forecast_source, forecast_run_id, forecast_age = "L3_ON_DISK", on_disk["source_run_id"], on_disk["age_sessions"]
-    if not side or inputs["forecast_vol"] is None or not spot or target is None or stop is None:
+            forecast_source, forecast_run_id, forecast_age = on_disk.get('forecast_source','L3_ON_DISK'), on_disk["source_run_id"], on_disk["age_sessions"]
+    if (not side or inputs["forecast_vol"] is None or not spot or target is None or stop is None
+            or not all(math.isfinite(float(v)) and float(v)>0 for v in (spot,target,stop))):
         return None
     settings = model["settings"]
 
@@ -6208,6 +6219,8 @@ def _record_contracts_tested(
         "selected_contract_symbol": (selected or {}).get('symbol', ''),
         **{key: value for key, value in taxonomy.items() if key != "contracts_tested"},
         "contracts_tested": taxonomy.get("contracts_tested", []),
+        "available_contracts_both_sides": taxonomy.get("available_contracts_both_sides", {}),
+        "quote_inventory_authority": "OBSERVED_CONTRACT_COMPARISON_ONLY_NO_SELECTION_OR_DIRECTION",
     }
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

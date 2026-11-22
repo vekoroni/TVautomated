@@ -1,0 +1,58 @@
+{
+  "schema": "codex_evening_fix_handoff_v1",
+  "date": "2026-11-22",
+  "status": "CODEX_IMPLEMENTED_TESTED_CLAUDE_RECEIVER_ACCEPTANCE_REQUIRED",
+  "replay_runs_dir": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_HANDOFF_REPLAY_20261122_FINAL\\runs",
+  "run_id": "20261121_222919",
+  "publication_manifest": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_HANDOFF_REPLAY_20261122_FINAL\\runs\\20261121_222919\\intelligence_lab\\review_projection\\manifest.json",
+  "receipt": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_HANDOFF_REPLAY_20261122_FINAL\\REPLAY_RECEIPT.json",
+  "field_contract": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_HANDOFF_CONTRACT_20261122.json",
+  "field_contract_in_repository": "Enhancements/EVENING_HANDOFF_CONTRACT_20261122.json",
+  "branch_isolation": "Evening-only patch from published b5afb23; excludes Lane B commits, manual-basket implementation, lane filters, Phantom changes and saved replay data. Receiving-side acceptance remains separate.",
+  "manual_selection_sample": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_HANDOFF_REPLAY_20261122_FINAL\\manual_selection_receiver_sample.json",
+  "scoped_both_side_quote_inventory": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_HANDOFF_REPLAY_20261122_FINAL\\runs\\20261121_222919\\intelligence_lab\\available_contracts_both_sides_20261121_222919.jsonl",
+  "isolated_ui": "http://127.0.0.1:5013/",
+  "isolated_ui_server_script": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\serve_evening_replay_20261122.py",
+  "population": 2716,
+  "test_result": "Isolated Evening branch: 174 passed, 9 subtests passed; both JavaScript syntax checks passed. Publication/API/indexed-card and lossless full-handoff payload checks passed without the unrelated manual-basket implementation.",
+  "tests_xml": "C:\\Users\\ACKVerissimo\\Documents\\Codex\\2026-07-24\\a\\EVENING_PUSH_TESTS_20261122.xml",
+  "original_full_checkout_test_result": "201 passed, 9 subtests passed before isolation; includes earlier basket and lane-filter tests not included on this Evening-only branch.",
+  "compatibility": {
+    "lab_verdict_rank_and_selected_contract": "UNCHANGED; new Evening assessment fields are additive",
+    "long_horizon": "Human-review label, never population deletion or a hold cap",
+    "entry_authority": "Unchanged; Morning-versus-Lane-B ownership undecided",
+    "trigger_rules": "Existing trigger_rules_v1.json untouched; no daily-close-only rule added",
+    "value_selection_mode": "SHADOW unchanged",
+    "receiver_instruction": "Pin the current replay manifest revision; do not read or republish the live Lab for these checks"
+  },
+  "valuer_stop_fix": "The production context stop is resolved through _ev3_handoff_fields; missing, unauthorised, nonpositive and wrong-side stops cannot produce a valuer. No unconditional raw-stop fallback.",
+  "valuer_forecast_fix": "Prefer the active run's saved qomega/pre_options forecast before older/late-stage files. The new provenance value L3_PRE_OPTIONS_ON_DISK identifies this source; no model is rerun here.",
+  "canonical_comparison_basis": "Shared American valuation for stock/ETF checkpoint cases, actual XNYS exit dates to calendar expiry, saved ask plus opening fee, model exit less half spread and closing fee. IV stress is governed relative change, not fixed ten points.",
+  "legacy_shadow_warning": "Existing stochastic contract_value_* metrics remain legacy shadow diagnostics with their own path assumptions. They are not aliases of the new conditional checkpoint cases or calibrated expected returns.",
+  "remaining_evidence_limits": {
+    "published_rows_with_20_percent_historical_n": 41,
+    "published_rows_with_30_percent_historical_n": 29,
+    "historical_clock_identity_unassessed_rows": 705,
+    "frozen_evening_to_morning_identity_unassessed_rows": 566,
+    "interpretation": "Preserved missing/ambiguous historical identity and path evidence, not invented ticker-only joins or forecasts"
+  },
+  "claude_checks_required": [
+    "Build handoff from this replay and compare population and ordering with the unchanged legacy verdict/rank rule",
+    "Run triage prefill; verify exact thesis/contract/reference-date/assessment version and state",
+    "Run trade preparation; compare identical checkpoint prices, dates, IV and net-cost cases against the card",
+    "Run manual-selection receive on the six-entry frozen sample; retain same-ticker/exact-contract identities and evidence",
+    "Use raw both-side quotes only where actually present; preserve missing IV, scope and truncation",
+    "Return receiver PASS or exact field/calculation mismatches before any production release or Lane B population-rule change"
+  ],
+  "safety_scope": "The following safety receipt describes replay generation, before the separately requested Evening-only commit and push. Replay files and data are not included in that commit.",
+  "safety": {
+    "providers_called": false,
+    "pipeline_run": false,
+    "live_databases_written": false,
+    "historical_snapshots_changed": false,
+    "live_lab_republished": false,
+    "lane_b_changed": false,
+    "isolated_production_release_updated": false,
+    "commit_or_push": false
+  }
+}

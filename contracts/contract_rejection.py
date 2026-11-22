@@ -136,6 +136,17 @@ def classify_contract(
         "spread_pct": spread,
         "mid": mid,
         "gate_failed": None if gate == ACCEPTED else gate,
+        # Raw observed sides are indispensable for independent repricing. Never
+        # manufacture bid/ask from a midpoint or fill absent IV with a proxy.
+        "right": _side_of(row.get('right')),
+        "strike": _number(row.get('strike')),
+        "expiry": row.get('expiration_date') or row.get('expiry'),
+        "bid": _number(row.get('bid')),
+        "ask": _number(row.get('ask')),
+        "iv": _number(row.get('iv') if row.get('iv') is not None else row.get('implied_vol')),
+        "open_interest": _number(row.get('open_interest')),
+        "volume": _number(row.get('volume')),
+        "quote_timestamp_utc": row.get('quote_timestamp_utc'),
     }
 
 
@@ -251,9 +262,19 @@ def classify_chain(
     # other side and recording it would bury the evidence in noise.
     recorded = [entry for entry in classified if entry["gate_failed"] != REJECT_WRONG_SIDE]
     truncated = len(recorded) > max_recorded
+    both_sides = {}
+    for side in ('CALL','PUT'):
+        inventory = [classify_contract(r, direction=side, dte_min=dte_min, dte_max=dte_max,
+            delta_min=delta_min, delta_max=delta_max, spread_limit=spread_limit)
+            for r in rows if _side_of(r.get('right'))==side]
+        both_sides[side] = {'state':'AVAILABLE' if inventory else 'NOT_PRESENT_IN_SAVED_CHAIN',
+            'total_contracts':len(inventory),'recorded_contracts':min(len(inventory),max_recorded),
+            'truncated':len(inventory)>max_recorded,'contracts':inventory[:max_recorded],
+            'basis':'OBSERVED_CHAIN_SAME_REQUEST_WINDOW_NOT_AN_OPPOSITE_SIDE_THESIS'}
 
     return {
         "contracts_tested": recorded[:max_recorded],
+        "available_contracts_both_sides": both_sides,
         "contracts_tested_count": len(recorded),
         "contracts_tested_truncated": truncated,
         "contracts_side_correct_count": side_correct,

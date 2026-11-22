@@ -94,7 +94,9 @@ class SingleContractClassification(unittest.TestCase):
     def test_evidence_is_recorded_for_every_contract(self) -> None:
         result = classify_contract(contract("EV"), direction="CALL", **BANDS)
         self.assertEqual(
-            set(result), {"symbol", "dte", "delta", "spread_pct", "mid", "gate_failed"}
+            set(result), {"symbol", "dte", "delta", "spread_pct", "mid", "gate_failed",
+                          "right", "strike", "expiry", "bid", "ask", "iv", "open_interest",
+                          "volume", "quote_timestamp_utc"}
         )
 
 

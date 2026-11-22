@@ -843,6 +843,8 @@ FINAL_BOOK_FIELDS += [f for f in (*_WALL_FIELDS, *_GOVERNED_WALL_FIELDS, "gamma_
 # Compact shared handoff consumed by both Intelligence Lab and Pipeline Interpreter.
 from contracts.handoff_reliability import RELIABILITY_FIELDS, reliability_fields
 from contracts.monetisation_clock import MONETISATION_FIELDS, clock_fields
+from domain.evening_assessment import FIELDS as EVENING_ASSESSMENT_FIELDS, assess_evening
+FINAL_BOOK_FIELDS += [f for f in EVENING_ASSESSMENT_FIELDS if f not in FINAL_BOOK_FIELDS]
 from canonical_data.instrument_identity import IDENTITY_FIELDS, attach_identities, load_registry
 FINAL_BOOK_FIELDS += [f for f in IDENTITY_FIELDS if f not in FINAL_BOOK_FIELDS]
 FINAL_BOOK_FIELDS += [f for f in MONETISATION_FIELDS if f not in FINAL_BOOK_FIELDS]
@@ -4259,6 +4261,12 @@ def opportunity_book_row(
     row.update(reliability_fields({**sig, **row}))
     row.update({f:sig.get(f) for f in MONETISATION_FIELDS} if sig.get('monetisation_clock_state') else clock_fields())
     row.update({f: sig.get(f, "") for f in CROSSING_BOOK_FIELDS})   # as recorded upstream; blank is not available
+    # A separate research assessment must never grant/relax execution authority.
+    # Morning carries the frozen Evening packet instead of re-estimating it.
+    for field in EVENING_ASSESSMENT_FIELDS:
+        if sig.get(field) not in (None, ''):
+            row[field] = sig[field]
+    row.update(assess_evening({**sig, **row}, run_id=run_id))
     for field in ('scenario_exit_date', 'valuation_time_basis', 'anticipated_reach_state',
                   'exit_clock_as_of', 'exit_clock_state', 'exit_target_basis'):
         row[field] = first(sig, field)
@@ -5116,6 +5124,20 @@ def write_final_opportunity_book(
             raise RuntimeError("C8 valuation packet does not reconcile with C5/C6")
     forecast_population_before = len(rows)
     rows[:] = project_lab_descriptive_rows(rows, packet, expression_packet, valuation_packet)
+    # All hydration is complete before source-bound Evening economics are made.
+    # This does not select a contract or promote an execution permission.
+    evening_clock_receipt = {'state': 'NOT_APPLICABLE_MORNING'}
+    from contracts.evening_assessment_handoff import freeze_assessments, carry_frozen_assessments
+    evening_mode = _u((run_manifest or {}).get('pipeline_mode')) in {'EOD','LIVE_EOD','INTRADAY_EOD'}
+    if evening_mode:
+        from contracts.monetisation_clock import complete_evening_history
+        rows[:], evening_clock_receipt = complete_evening_history(
+            rows, packet_root, Path(runs_dir).parent.parent / 'phantom' / 'phantom_history.db')
+    else:
+        rows[:], evening_clock_receipt = carry_frozen_assessments(rows, packet_root)
+    from domain.evening_assessment import attach_assessments
+    rows[:], evening_assessment_counts = attach_assessments(rows, run_id=run_id)
+    evening_freeze_receipt = freeze_assessments(rows, packet_root) if evening_mode else {'state':'READ_ONLY_MORNING'}
     for row in rows:
         provenance = json.loads(row.get("field_provenance_json") or "{}")
         for field in FINAL_BOOK_FIELDS:
@@ -5240,6 +5262,9 @@ def write_final_opportunity_book(
                 if row.get("doi_projection_state") not in {"CALIBRATED", "DETERMINISTIC_UNCALIBRATED"}
             ),
             "doi_population_preserved": len(rows) == doi_population_before,
+            "evening_assessment_counts": evening_assessment_counts,
+            "evening_monetisation_history": evening_clock_receipt,
+            "evening_assessment_freeze": evening_freeze_receipt,
             "economics_comparable_rows": sum(
                 1 for row in rows if row.get("economics_comparable") is True
             ),
