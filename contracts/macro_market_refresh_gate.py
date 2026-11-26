@@ -34,6 +34,7 @@ def verify_refresh(directory, *, not_before, now=None):
         raise ValueError('MARKET_REFRESH_GROUPS_INCOMPLETE')
     for group in GROUPS:
         for row in (doc.get('groups') or {}).get(group, []):
+            if not row.get('last_bar_utc'): continue  # Missing clocks are assessed as group degradation below.
             stamp = datetime.fromisoformat(str(row.get('last_bar_utc')).replace('Z', '+00:00'))
             if stamp.tzinfo is None or stamp > now:
                 raise ValueError('MARKET_SOURCE_TIMESTAMP_INVALID:' + group)
@@ -46,13 +47,15 @@ def verify_refresh(directory, *, not_before, now=None):
         raise ValueError('MARKET_REFRESH_PARENT_HASH_MISMATCH')
     health = assess_macro_health({'extras': {'overnight': {'document': doc}}}, now=now)
     groups = {g: health['source_health'][g] for g in GROUPS}
-    unavailable = [g for g, item in groups.items() if item['status'] != 'AVAILABLE']
+    unavailable = [g for g, item in groups.items() if item['status'] not in {'AVAILABLE','AVAILABLE_WITH_LIMITATIONS'}]
     if unavailable:
         raise ValueError('MARKET_SOURCE_NOT_READY:' + ','.join(unavailable))
-    return {'status': 'READY_FOR_FULL', 'snapshot': str(path),
+    limited=any(g['status']=='AVAILABLE_WITH_LIMITATIONS' for g in groups.values())
+    return {'status': 'READY_FOR_FULL_WITH_LIMITATIONS' if limited else 'READY_FOR_FULL', 'snapshot': str(path),
             'snapshot_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
             'captured_at_utc': captured.isoformat(), 'checked_at_utc': now.isoformat(),
             'groups': {g: item['status'] for g, item in groups.items()},
             'source_assessments': {g: item['instruments'] for g, item in groups.items()},
             'collection_assessment': collection, 'warnings': collection['warnings'],
+            'closed_market':health['source_health'].get('closed_market'),
             'policy': 'SOURCE_TIMESTAMPS_UNCHANGED; USMI_ASSESSED_SEPARATELY'}

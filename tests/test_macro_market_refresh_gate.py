@@ -62,7 +62,7 @@ def test_verified_current_refresh_is_read_only_and_keeps_closed_session_dates(tm
     ('old_quote','MARKET_SOURCE_NOT_READY'),
     ('missing_quote','MARKET_SOURCE_NOT_READY'),
     ('future_quote','MARKET_SOURCE_TIMESTAMP_INVALID'),
-    ('no_quote_clock','Invalid isoformat'),
+    ('no_quote_clock','MARKET_SOURCE_NOT_READY'),
 ])
 def test_recent_fetch_cannot_hide_failed_old_incomplete_or_future_evidence(tmp_path,case,marker):
     path, doc = saved_snapshot(tmp_path)

@@ -5,6 +5,23 @@ Pure assessment; no score, rank, gate, capital or execution authority.
 from datetime import datetime, timezone, timedelta
 from typing import Mapping
 
+# Limitations never grant trading or execution authority.
+NON_BLOCKING_LIMITATIONS = {
+    'USMI_PARTIAL_EVIDENCE', 'VIX_PRIMARY_SOURCE_FAILED_FALLBACK_VALIDATED',
+    'CLOSED_MARKET_VIX_REFERENCE', 'CLOSED_MARKET_INPUT_LIMITATIONS',
+}
+
+def health_exit_code(health, *, schema_valid=True):
+    """Fail closed for genuine degradation, including older saved health objects."""
+    if not schema_valid:
+        return 1
+    if health.get('status') == 'DEGRADED' or health.get('blocking_issues'):
+        return 2
+    if health.get('status') not in {'AVAILABLE', 'AVAILABLE_WITH_LIMITATIONS'}:
+        return 2
+    return 0
+
+
 def timestamp_health(value, now=None):
     now = now or datetime.now(timezone.utc)
     try:
@@ -23,6 +40,9 @@ def assess_macro_health(macro, *, report=None, now=None):
     source_health = {}
     overnight = (extras.get('overnight') or {}).get('document') or {}
     groups = overnight.get('groups') or {}
+    from contracts.macro_closed_market import assess as assess_closed_market
+    closed_market=assess_closed_market(overnight,now)
+    closed_nonblocking=set()
     from contracts.futures_freshness import classify_futures_quote, CONFIG
     for group in ('us_futures', 'rates_commodities', 'fx', 'volatility', 'us_premarket', 'asia', 'europe'):
         rows = groups.get(group) or []
@@ -88,6 +108,23 @@ def assess_macro_health(macro, *, report=None, now=None):
         if incomplete: issues.append(prefix+'_MISSING')
         if any(x['stale'] for x in details): issues.append(prefix+'_STALE')
         if any(x['state']=='REOPEN_PENDING' for x in details): issues.append(prefix+'_REOPEN_PENDING')
+        if closed_market['active'] and group in closed_market['limited_groups'] and not incomplete:
+            # Only the named stale observations may be unavailable. Never excuse
+            # an open FX pair, future clock, missing value or invalid timestamp.
+            eligible={x['symbol'] for x in closed_market['observations'] if x['group']==group}
+            bad=[x for x in details if x['stale']]
+            if all(x['symbol'] in eligible and x['state'] not in {'FUTURE_QUOTE','INVALID_TIMESTAMP','TIMESTAMP_MISSING','INVALID_VALUE'} for x in bad):
+                if bad:
+                    source_health[group]['status']='AVAILABLE_WITH_LIMITATIONS'
+                    closed_nonblocking.add(prefix+'_STALE')
+                    issues.append('CLOSED_MARKET_INPUT_LIMITATIONS')
+                source_health[group]['closed_market_limitations']=[x for x in closed_market['observations'] if x['group']==group]
+                for detail in details:
+                    if detail['symbol'] in eligible and (detail['stale'] or group=='volatility'):
+                        detail['not_live']=True
+                        detail['analysis_eligibility']='COMPLETED_SESSION_REFERENCE' if group=='volatility' else 'CURRENT_OBSERVATION_UNAVAILABLE'
+                if group=='volatility':source_health[group]['completed_session_reference']=closed_market['vix_reference']
+    source_health['closed_market']=closed_market
     from contracts.macro_collection_health import assess_collection
     collection = assess_collection(overnight, now)
     source_health['collection'] = collection
@@ -193,11 +230,18 @@ def assess_macro_health(macro, *, report=None, now=None):
     stamp = timestamp_health(macro.get('as_of_utc'), now)
     if stamp != 'DATED':
         issues.append(stamp)
+    issues = list(dict.fromkeys(issues))
+    limitations=NON_BLOCKING_LIMITATIONS|closed_nonblocking
+    warnings = [issue for issue in issues if issue in limitations]
+    blocking = [issue for issue in issues if issue not in limitations]
     return {'contract_version': 'macro_health_v1', 'authority': 'ADVISORY_ONLY',
-            'status': 'DEGRADED' if issues else 'AVAILABLE',
+            'status': 'DEGRADED' if blocking else 'AVAILABLE_WITH_LIMITATIONS' if warnings else 'AVAILABLE',
+            'blocking_issues': blocking, 'warnings': warnings,
+            'build_readiness': 'BLOCKED' if blocking else 'READY_WITH_LIMITATIONS' if warnings else 'READY',
+            'research_limitations': {'usmi': usmi.get('quality_issues', [])},
             'schema_status': macro.get('_builder_metadata', {}).get('schema_validation', 'NOT_ASSESSED'),
             'fred_series_retrieved': coverage_count,
-            'issues': list(dict.fromkeys(issues)),
+            'issues': issues,
             'source_health': source_health,
             'feeds': {'usmi': 'PARTIAL' if usmi and usmi.get('quality_issues') else 'AVAILABLE' if usmi else 'UNAVAILABLE',
                       'news': 'AVAILABLE' if extras.get('macro_enrichment_delta') else 'UNAVAILABLE',

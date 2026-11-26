@@ -32,6 +32,7 @@
 #   .\Run-MacroInputs.ps1 -Sequential               # producers one after another (v1 behaviour)
 #   .\Run-MacroInputs.ps1 -Now                      # manual run: readiness report, then start at once (asks Y/N)
 #   .\Run-MacroInputs.ps1 -Now -Yes                 # same without the question
+#   .\Run-MacroInputs.ps1 -Now -Yes -AllowHolidayOffSession  # explicit manual holiday build; last completed session, never scored PostClose
 #   .\Run-MacroInputs.ps1 -SkipGex / -SkipBonds / -SkipRotationFlag   # leave out a default step
 #   (-WithGex / -WithBonds are still accepted; GEX and bonds run by default since 19 Oct 2026)
 #   .\Run-MacroInputs.ps1 -SkipMacroJson / -SkipBoard
@@ -97,6 +98,7 @@ param(
     [switch]$SkipMacroJson,
     [switch]$SkipBoard,
     [switch]$AllowIntraday,
+    [switch]$AllowHolidayOffSession, # opt-in only on a calendar-confirmed non-session; schedule remains unchanged
     [switch]$Force,              # late run: start now and ignore -LatestStartET (see header)
     [int]$ProducerTimeoutMinutes = 60,
     [string]$NowET = ""          # testing only: pretend it is this US Eastern time, "yyyy-MM-dd HH:mm"
@@ -218,6 +220,10 @@ $startAt  = Get-ETOnDate $etNow $StartAtET
 $latestAt = Get-ETOnDate $etNow $LatestStartET
 $startAtLocal = [TimeZoneInfo]::ConvertTime($startAt, $etZone, [TimeZoneInfo]::Local)
 $isSessionDay = Test-XnysSession $etNow
+if ($AllowHolidayOffSession -and $isSessionDay -ne $false) {
+    Write-Host "[STOPPED] Holiday off-session mode requires a calendar-confirmed XNYS non-session day; trading days or unknown calendar state are not allowed."
+    exit 6
+}
 if ($isSessionDay -eq $true) {
     $hours = Get-XnysSessionHours $etNow
     if ($null -ne $hours) {
@@ -230,8 +236,10 @@ if ($isSessionDay -eq $true) {
 }
 # Weekends (ACK 10 Oct 2026): no US session, so no window, no regular-hours guard and no skip. The run
 # measures from the last completed session and is labelled OffSession (producers print it; the board
-# files an off-session build, never the scored evening record). Weekday XNYS holidays still skip.
-$offSession = ($etNow.DayOfWeek -eq [DayOfWeek]::Saturday -or $etNow.DayOfWeek -eq [DayOfWeek]::Sunday) -and ($isSessionDay -ne $true)
+# files an off-session build, never the scored evening record). Weekday XNYS holidays still skip unless explicitly opted into holiday off-session mode.
+$weekendOffSession = ($etNow.DayOfWeek -eq [DayOfWeek]::Saturday -or $etNow.DayOfWeek -eq [DayOfWeek]::Sunday) -and ($isSessionDay -ne $true)
+$holidayOffSession = $AllowHolidayOffSession -and ($isSessionDay -eq $false) -and -not $weekendOffSession
+$offSession = $weekendOffSession -or $holidayOffSession
 $runLabel = if ($offSession) { "OffSession" } else { $Session }
 if (-not $offSession -and ($Now -or $AllowIntraday) -and $etNow.TimeOfDay -ge $RegularOpen -and $etNow.TimeOfDay -lt $RegularGuard) { $runLabel = "Intraday" }
 if ($Now) { $Force = $true }                   # -Now: a manual run starts at once (see header)
@@ -282,8 +290,9 @@ if ($PlanOnly) {
     Write-Host "Run-MacroInputs plan (nothing is run):"
     Write-Host ("  session        : {0}{1}" -f $runLabel, $(if ($forced) { "  (FORCED)" } else { "" }))
     Write-Host ("  now            : {0:yyyy-MM-dd HH:mm} ET{1}" -f $etNow, $(if ($NowET) { "  (simulated by -NowET)" } else { "" }))
-    Write-Host ("  trading day    : {0}" -f $(if ($isSessionDay -eq $true) { "yes (XNYS session)" } elseif ($offSession) { "NO - weekend: off-session run (no window, no regular-hours guard)" } elseif ($isSessionDay -eq $false) { "NO - the run would be skipped" } else { "unknown (calendar check unavailable)" }))
-    if ($offSession) { Write-Host "  start window   : none (weekend - starts immediately)" }
+    Write-Host ("  trading day    : {0}" -f $(if ($isSessionDay -eq $true) { "yes (XNYS session)" } elseif ($holidayOffSession) { "NO - explicitly authorised holiday: off-session run" } elseif ($offSession) { "NO - weekend: off-session run (no window, no regular-hours guard)" } elseif ($isSessionDay -eq $false) { "NO - the run would be skipped" } else { "unknown (calendar check unavailable)" }))
+    if ($holidayOffSession) { Write-Host "  start window   : none (explicit holiday off-session - starts immediately)" }
+    elseif ($offSession) { Write-Host "  start window   : none (weekend - starts immediately)" }
     elseif ($Now) { Write-Host "  start window   : NOW (manual run) - readiness report and Y/N first, then starts at once" }
     elseif ($forced) { Write-Host ("  start window   : FORCED - starts now; window was {0:HH:mm} - {1:HH:mm} ET{2}" -f $startAt, $latestAt, $(if ($lateBy -gt [TimeSpan]::Zero) { ", now {0:hh\:mm} late" -f $lateBy } else { "" })) }
     else { Write-Host ("  start window   : {0:HH:mm} - {1:HH:mm} ET   (start = {2:HH:mm} local time)" -f $startAt, $latestAt, $startAtLocal) }
@@ -539,7 +548,7 @@ try {
     }
     Set-Location $repoRoot
     if ($offSession) {
-        Write-Host ("Run-MacroInputs OffSession (weekend): starts now, producers {0}" -f $(if ($Sequential) { "in order" } else { "in parallel" }))
+        Write-Host ("Run-MacroInputs OffSession ({0}): starts now, producers {1}" -f $(if ($holidayOffSession) { "explicitly authorised holiday" } else { "weekend" }), $(if ($Sequential) { "in order" } else { "in parallel" }))
     } elseif ($forced) {
         Write-Host ("[FORCED] Run-MacroInputs {0}: starts now at {1:HH:mm} ET; window was {2:HH:mm}-{3:HH:mm} ET{4}; producers {5}" -f `
                     $Session, $etNow, $startAt, $latestAt,

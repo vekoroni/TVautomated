@@ -23,8 +23,15 @@ def packet():
     return raw
 
 
-def test_partial_producer_description_is_preserved_but_never_promoted():
+@pytest.mark.parametrize('label', [
+    'PARTIAL_VERIFIED_REUTERS_16_50Z_CBOE_UNCONFIRMED_GEX_OPTIONS',
+    'PARTIAL_PRIMARY_RULE_VERIFIED_REPORTED_SHIPMENT_HALT_LAGGED_MARKET_FUNDING_NO_CHAIN',
+    'PARTIAL_SOURCE_CHECKED_HISTORY_INCOMPLETE',
+])
+def test_partial_producer_description_is_preserved_but_never_promoted(label):
     raw = packet(); frozen = deepcopy(raw)
+    raw['data_quality']['overall'] = label
+    frozen = deepcopy(raw)
     out = normalise_us_money_index_sidecar(raw)
     assert raw == frozen and out['source_payload'] == frozen
     assert out['quality_status'] == 'PARTIAL_UNVERIFIED'
@@ -36,7 +43,9 @@ def test_partial_producer_description_is_preserved_but_never_promoted():
     assert 'NEW_BASELINE_HISTORY_INCOMPLETE' in out['quality_issues']
 
 
-@pytest.mark.parametrize('label', ['VERIFIED', 'FULL_VERIFIED', 'HISTORY_RECOVERED', '', 'PARTIAL_VERIFIED_'])
+@pytest.mark.parametrize('label', ['VERIFIED', 'FULL_VERIFIED', 'HISTORY_RECOVERED', '',
+    'PARTIAL', 'PARTIAL_VERIFIED_', 'PARTIAL_PRIMARY__VERIFIED', 'PARTIAL_primary_VERIFIED',
+    'PARTIAL_PRIMARY_VERIFIED\n'])
 def test_nonpartial_or_malformed_quality_still_fails(label):
     raw = packet(); raw['data_quality']['overall'] = label
     with pytest.raises(USMoneyIndexValidationError):
@@ -54,7 +63,9 @@ def test_nonpartial_or_malformed_quality_still_fails(label):
     ('current_state', 'automatic_execution', True),
 ])
 def test_compatibility_does_not_relax_rebaseline_safety(section,key,value):
-    raw = packet(); raw[section][key] = value
+    raw = packet()
+    raw['data_quality']['overall'] = 'PARTIAL_PRIMARY_RULE_VERIFIED_REPORTED_SHIPMENT_HALT_LAGGED_MARKET_FUNDING_NO_CHAIN'
+    raw[section][key] = value
     with pytest.raises(USMoneyIndexValidationError):
         normalise_us_money_index_sidecar(raw)
 

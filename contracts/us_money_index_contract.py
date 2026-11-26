@@ -355,10 +355,11 @@ def _validate_v2(state: Mapping[str, Any]) -> tuple[datetime, datetime, list[str
             raise USMoneyIndexValidationError("rebaseline score must remain explicitly null and unassessed; no invented components")
         # ACK 16 Nov 2026: later exports describe which observations were
         # checked in this field; that text is not recovered baseline history
-        # or independent verification. All lineage/null-score/execution guards
-        # above still apply, and the normalizer always emits PARTIAL_UNVERIFIED.
+        # or independent verification. Descriptive tokens after PARTIAL are
+        # producer narrative, not an evidence-status enum. All lineage/null-score/
+        # execution guards above still apply; normalization remains unverified.
         description = quality.get("overall")
-        if not re.fullmatch(r"PARTIAL_(?:UNVERIFIED|VERIFIED)_[A-Z0-9]+(?:_[A-Z0-9]+)*", description):
+        if not re.fullmatch(r"PARTIAL_[A-Z0-9]+(?:_[A-Z0-9]+)+", description):
             raise USMoneyIndexValidationError("rebaseline quality must remain explicitly partial; normalized status is PARTIAL_UNVERIFIED")
         issues = [
             "NEW_BASELINE_HISTORY_INCOMPLETE", "RISK_SCORE_AND_CONFIDENCE_UNASSESSED",

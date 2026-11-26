@@ -5,11 +5,21 @@
     "2026-11-25": {
       "daily_cap_usd": 6.0,
       "authority": "ACK explicit approval 25 November 2026: $6 total today for final macro rebuild; not recurring"
+    },
+    "2026-11-26": {
+      "daily_cap_usd": 10.0,
+      "authority": "ACK explicit approval 26 November 2026: USD10 total today using available credits; not recurring"
     }
   },
   "timezone": "America/New_York",
   "activated_at_utc": "2026-11-18T22:03:00.059532+00:00",
   "max_request_bytes": 750000,
+  "one_off_request_limits": {
+    "2026-11-26": {
+      "max_request_bytes": 900000,
+      "authority": "ACK explicit approval 26 November 2026: test 900000 bytes today before deciding permanent projection; daily spending separately governed"
+    }
+  },
   "max_output_tokens": 16000,
   "automatic_json_repair": false,
   "pricing_source": "https://platform.claude.com/docs/en/about-claude/pricing",

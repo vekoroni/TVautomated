@@ -65,13 +65,24 @@ def assess_collection(document, now):
     fallback_rows=[r for r in (document.get('groups') or {}).get('volatility') or []
                    if r.get('source')=='YFINANCE']
     fallback=validate_vix_fallback(document,now) if primary or fallback_rows else {'status':'NOT_USED'}
+    from contracts.macro_closed_market import assess
+    closed=assess(document,now)
+    closed_vix=closed['active'] and 'volatility' in closed['limited_groups']
+    if closed_vix:
+        fallback={'status':'CLOSED_MARKET_REFERENCE','reference':closed['vix_reference'],
+                  'discarded_intraday_fallback':fallback,'not_live':True}
     recovered=primary if fallback['status']=='VALIDATED' else []
+    if closed_vix:recovered=primary
     fatal=[e for e in raw if e not in recovered]
     if fallback['status']=='INVALID':
         fatal.append('VIX_FALLBACK_INVALID:'+fallback['reason'])
     warnings=[{'code':'VIX_PRIMARY_SOURCE_FAILED_FALLBACK_VALIDATED','primary_error':e,
                'fallback_source':'YFINANCE','fallback_last_bar_utc':fallback['last_bar_utc'],
-               'not_live':fallback['not_live']} for e in recovered]
+               'not_live':fallback['not_live']} for e in recovered if not closed_vix]
+    if closed_vix:
+        warnings.append({'code':'CLOSED_MARKET_VIX_REFERENCE','primary_errors':primary,
+            'fallback_source':closed['vix_reference']['source'],
+            'fallback_last_bar_utc':None,'observed_session':closed['reference_session'],'not_live':True})
     if fallback['status']=='VALIDATED' and not primary:
         warnings.append({'code':'VIX_FALLBACK_USED','fallback_source':'YFINANCE',
                          'fallback_last_bar_utc':fallback['last_bar_utc'],'not_live':fallback['not_live']})

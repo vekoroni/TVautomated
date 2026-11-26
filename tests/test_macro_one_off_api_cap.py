@@ -11,6 +11,11 @@ def root(tmp_path):
     (tmp_path/'config').mkdir()
     for name in ('macro_api_cost_v1.json','macro_build_schedule_v1.json'):
         (tmp_path/'config'/name).write_bytes((original/'config'/name).read_bytes())
+    path=tmp_path/'config/macro_api_cost_v1.json'
+    policy=json.loads(path.read_text())
+    policy['one_off_daily_caps']={'2026-11-25':{'daily_cap_usd':6,'authority':'synthetic dated test approval'}}
+    policy['one_off_request_limits']={}
+    path.write_text(json.dumps(policy))
     return tmp_path
 
 

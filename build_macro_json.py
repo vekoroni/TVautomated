@@ -2103,7 +2103,7 @@ def main():
                 "error": str(_usmi_error),
             }
 
-    from contracts.macro_health import attach_research_context, assess_macro_health
+    from contracts.macro_health import attach_research_context, assess_macro_health, health_exit_code
     macro_json = attach_research_context(macro_json, macro_path, bound=_research_bound)
     # Normalise horizon routing before validation (ensures 11_20d always present)
     macro_json = normalise_horizon_routing(macro_json)
@@ -2142,7 +2142,8 @@ def main():
     if all_pass and macro_json["macro_health"]["status"] == "DEGRADED":
         macro_json["_builder_metadata"]["validation"] = "DEGRADED"
     macro_json["_builder_metadata"]["input_consumption_status"] = (
-        "COMPLETE_WITH_DEGRADED_EVIDENCE" if macro_json["macro_health"]["issues"] else "COMPLETE")
+        "COMPLETE_WITH_DEGRADED_EVIDENCE" if macro_json["macro_health"]["status"] == "DEGRADED"
+        else "COMPLETE_WITH_LIMITATIONS" if macro_json["macro_health"].get("warnings") else "COMPLETE")
 
     # Archive and publish the immutable input identity before advancing the
     # macro latest pointer.
@@ -2211,7 +2212,7 @@ def main():
 
 
     if args.health_exit_code:
-        return 1 if not all_pass else 2 if macro_json['macro_health']['issues'] else 0
+        return health_exit_code(macro_json['macro_health'], schema_valid=all_pass)
     return 0
 
 

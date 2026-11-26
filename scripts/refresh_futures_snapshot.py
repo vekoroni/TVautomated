@@ -54,6 +54,13 @@ def refresh_document(document, *, history=None, now=None, all_market_data=False,
     result['futures_refresh']={'as_of_utc':now.isoformat().replace('+00:00','Z'),
         'authority':'DISPLAY_ONLY','errors':ext.errors}
     if all_market_data:
+        import os
+        if os.environ.get('AVSH_RUN_SESSION')=='OffSession':
+            from contracts.macro_closed_market import capture
+            closed=capture(ROOT/'dropbox/market_data',now)
+            if closed:result['closed_market']=closed
+        else:
+            result.pop('closed_market',None)
         from contracts.macro_collection_health import assess_collection
         result['market_refresh']['collection_assessment']=assess_collection(result,now)
     return result
@@ -101,7 +108,7 @@ def main(argv=None):
     temporary.replace(target)
     print('FUTURES '+result['futures_refresh']['status']+': '+str(target))
     for warning in (result.get('market_refresh',{}).get('collection_assessment') or {}).get('warnings',[]):
-        print('WARNING: '+warning['code']+'; fallback='+warning['fallback_source']+'; observed='+warning['fallback_last_bar_utc'])
+        print('WARNING: '+warning['code']+'; fallback='+warning['fallback_source']+'; observed='+str(warning.get('observed_session') or warning.get('fallback_last_bar_utc')))
     return 0 if result['futures_refresh']['status']=='AVAILABLE' else 2
 
 if __name__=='__main__': raise SystemExit(main())

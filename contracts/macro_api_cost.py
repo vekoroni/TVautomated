@@ -39,6 +39,18 @@ def policy(root, day=None):
         p['standing_daily_cap_usd'] = p['daily_cap_usd']
         p['daily_cap_usd'] = float(cap)
         p['one_off_cap_day'] = day
+    limits=p.get('one_off_request_limits',{})
+    if not isinstance(limits,dict):raise ApiCostLimit('Invalid one-off request limit policy')
+    if day in limits:
+        grant=limits[day]
+        if not isinstance(grant,dict) or not grant.get('authority'):
+            raise ApiCostLimit('One-off request limit authority missing')
+        maximum=grant.get('max_request_bytes')
+        if type(maximum) is not int or maximum<=0:
+            raise ApiCostLimit('Invalid one-off request byte limit')
+        p['standing_max_request_bytes']=p['max_request_bytes']
+        p['max_request_bytes']=maximum
+        p['one_off_request_limit_day']=day
     return p
 
 
