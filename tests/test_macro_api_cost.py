@@ -25,6 +25,12 @@ def root(tmp_path):
     (tmp_path/'data/macro/delivery').mkdir(parents=True)
     for name in ('macro_api_cost_v1.json', 'macro_build_schedule_v1.json'):
         (tmp_path/'config'/name).write_bytes((ROOT/'config'/name).read_bytes())
+    # These are standing-cap tests, independent of real one-day approvals and
+    # the host date. Date-scoped grants have their own expiry/reservation tests.
+    path=tmp_path/'config/macro_api_cost_v1.json'
+    baseline=json.loads(path.read_text())
+    baseline.pop('one_off_daily_caps',None)
+    path.write_text(json.dumps(baseline))
     return tmp_path
 
 

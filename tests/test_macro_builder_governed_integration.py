@@ -86,7 +86,22 @@ def _model_macro() -> dict:
 def test_current_market_data_builds_complete_governed_prompt() -> None:
     payload = builder.load_data_payload(ROOT / "dropbox" / "market_data")
     prompt = builder.format_data_for_prompt(payload)
-    context_text = prompt.split("=== GOVERNED MACRO INPUT CONTEXT ===", 1)[1]
+    # The prompt is now a lossless JSON projection rather than a prose banner.
+    document = json.loads(prompt.split('\n', 1)[1])
+    def expand(value):
+        if isinstance(value, dict):
+            if set(value) == {'$ref'}:
+                target = document
+                for key in value['$ref'][2:].split('/'):
+                    key = key.replace('~1', '/').replace('~0', '~')
+                    target = target[int(key)] if isinstance(target, list) else target[key]
+                return expand(target)
+            return {key: expand(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [expand(item) for item in value]
+        return value
+    decoded = expand(document['document'] if set(document) == {'defs', 'document'} else document)
+    context_text = json.dumps(decoded['GOVERNED MACRO INPUT CONTEXT'])
 
     assert payload["input_manifest"]["gex_validation"]["status"] in {
         "VALIDATED", "SOURCE_UNAVAILABLE",

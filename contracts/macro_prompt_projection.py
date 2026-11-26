@@ -5,6 +5,7 @@ producer packet and does not claim omitted details were read by the model.
 """
 import hashlib
 import json
+from collections import Counter
 
 
 def encode(value):
@@ -29,6 +30,11 @@ def select(value, fields):
 def research_view(feed, packet):
     if feed == 'events':
         out = {k: v for k, v in packet.items() if k != 'events'}
+        # Raw-byte transport proof belongs in the immutable archive, not in an
+        # analysis prompt. Keep its checksum, length, clocks and limitations.
+        for key in ('source_export_lineage', 'latest_source_export_lineage'):
+            if isinstance(out.get(key), dict):
+                out[key] = select(out[key], set(out[key]) - {'original_base64'})
         # Keep heterogeneous release clocks, revised values, qualitative results,
         # transmission, limitations and every unknown/new substantive field.
         # A whitelist would silently lose later producers' alternate field names.
@@ -59,7 +65,7 @@ def compact_context(context):
     return out
 
 
-def deduplicate(value):
+def _backward_references(value):
     """Lossless exact subtree references; all unique values remain in this document.
 
     Only sizeable containers/strings are referenced. References always point
@@ -80,6 +86,45 @@ def deduplicate(value):
     return walk(value, '')
 
 
+def deduplicate(value):
+    """Choose the smaller lossless reference layout, never truncate evidence.
+
+    Deep provenance paths made the old references almost as long as repeated
+    values. A shared-definition table uses the same RFC6901 reference protocol
+    with short addresses. Definitions refer only to earlier definitions.
+    """
+    baseline = _backward_references(value)
+    if len(encode(baseline)) < 100000:
+        return baseline
+    counts = Counter()
+    def eligible(item, raw):
+        return isinstance(item, (dict, list, str)) and len(raw) >= 64
+    def count(item):
+        raw = encode(item)
+        if eligible(item, raw):counts[raw] += 1
+        if isinstance(item, dict):
+            for child in item.values():count(child)
+        elif isinstance(item, list):
+            for child in item:count(child)
+    count(value)
+    definitions, indices = [], {}
+    def children(item):
+        if isinstance(item, dict):return {k:pack(v) for k,v in item.items()}
+        if isinstance(item, list):return [pack(v) for v in item]
+        return item
+    def pack(item):
+        raw = encode(item)
+        if eligible(item, raw) and counts[raw] > 1:
+            if raw not in indices:
+                body = children(item)
+                indices[raw] = len(definitions)
+                definitions.append(body)
+            return {'$ref':'#/defs/'+str(indices[raw])}
+        return children(item)
+    document = pack(value)
+    pooled = {'defs':definitions, 'document':document}
+    return pooled if len(encode(pooled)) < len(encode(baseline)) * .98 else baseline
+
 def columnar_records(value):
     """Lossless column/row encoding for uniform record arrays; nulls stay explicit."""
     if isinstance(value, list):
@@ -98,3 +143,5 @@ def columnar_records(value):
     if isinstance(value, dict):
         return {k: columnar_records(v) for k, v in value.items()}
     return value
+
+

@@ -1,7 +1,7 @@
 """Atomic local USD reservations and provider usage receipts. Never calls a provider itself."""
 from datetime import datetime, timezone
 from contextlib import contextmanager
-from decimal import Decimal, ROUND_CEILING
+from decimal import Decimal, ROUND_CEILING, InvalidOperation
 import hashlib
 import json
 import logging
@@ -19,10 +19,26 @@ class ApiCostLimit(RuntimeError):
     pass
 
 
-def policy(root):
+def policy(root, day=None):
     p = json.loads((Path(root) / 'config/macro_api_cost_v1.json').read_text())
     if Decimal(str(p['daily_cap_usd'])) <= 0:
         raise ApiCostLimit('Invalid daily USD cap')
+    day = day or datetime.now(timezone.utc).astimezone(ET).date().isoformat()
+    from datetime import date
+    date.fromisoformat(day)
+    overrides = p.get('one_off_daily_caps', {})
+    if not isinstance(overrides, dict):raise ApiCostLimit('Invalid one-off USD cap policy')
+    if day in overrides:
+        grant = overrides[day]
+        if not isinstance(grant, dict) or not grant.get('authority'):
+            raise ApiCostLimit('One-off USD cap authority missing')
+        try:cap = Decimal(str(grant.get('daily_cap_usd')))
+        except (InvalidOperation,TypeError,ValueError) as error:
+            raise ApiCostLimit('Invalid one-off daily USD cap') from error
+        if not cap.is_finite() or cap <= 0:raise ApiCostLimit('Invalid one-off daily USD cap')
+        p['standing_daily_cap_usd'] = p['daily_cap_usd']
+        p['daily_cap_usd'] = float(cap)
+        p['one_off_cap_day'] = day
     return p
 
 
@@ -55,8 +71,8 @@ def _legacy_spend_unknown(root, day, activation):
             (day, activation)).fetchone())
 
 
-def _quote(root, request, input_token_estimate=None):
-    p = policy(root)
+def _quote(root, request, input_token_estimate=None, *, day=None):
+    p = policy(root, day)
     if set(request) - {'model', 'max_tokens', 'system', 'messages', 'timeout'}:
         raise ApiCostLimit('Unsupported API request options: no unpriced routing/tools')
     model = request['model']
@@ -89,11 +105,11 @@ def reserve_request(root, stage, request, *, now=None, input_token_estimate=None
     Without a free provider count, use the more conservative UTF-8 byte bound.
     Failed/unknown usage keeps the reservation, including across process restarts.
     """
-    p, raw, prices, bound, maximum = _quote(root, request, input_token_estimate)
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None or now.utcoffset() is None:
         raise ApiCostLimit('Aware clock required')
     day = now.astimezone(ET).date().isoformat()
+    p, raw, prices, bound, maximum = _quote(root, request, input_token_estimate, day=day)
     from contracts.macro_postclose_exception import build_authorization
     exception = build_authorization(root, os.environ.get('AVSH_FULL_BUILD_ID'), now=now)
     if exception and stage != 'MACRO_SYNTHESIS':
@@ -172,8 +188,8 @@ def record_response(root, token, response):
 def budgeted_message(root, stage, request, client_factory, *, authorize=True):
     # Validate the request and stop an exhausted/unknown day before even making
     # the free token-count call. The later SQLite reservation handles races.
-    p, _, prices, _, _ = _quote(root, request)
     day = datetime.now(timezone.utc).astimezone(ET).date().isoformat()
+    p, _, prices, _, _ = _quote(root, request, day=day)
     state = usage_status(root, day)
     from contracts.macro_postclose_exception import build_authorization
     exception = build_authorization(root, os.environ.get('AVSH_FULL_BUILD_ID'))
@@ -214,8 +230,8 @@ def budgeted_message(root, stage, request, client_factory, *, authorize=True):
 
 def usage_status(root, day):
     path = Path(root) / 'data/macro/delivery/api_usage.sqlite'
-    result = {'day': day, 'daily_cap_usd': policy(root)['daily_cap_usd'], 'requests': [], 'accounted_usd': 0}
-    result['legacy_usage_unknown'] = _legacy_spend_unknown(root, day, policy(root)['activated_at_utc'])
+    result = {'day': day, 'daily_cap_usd': policy(root, day)['daily_cap_usd'], 'requests': [], 'accounted_usd': 0}
+    result['legacy_usage_unknown'] = _legacy_spend_unknown(root, day, policy(root, day)['activated_at_utc'])
     result['scope'] = 'LOCAL_MACRO_ANTHROPIC_REQUESTS_ONLY_NOT_ORGANISATION_BILLING'
     result['remaining_usd'] = None if result['legacy_usage_unknown'] else result['daily_cap_usd']
     if not path.exists():

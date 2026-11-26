@@ -346,21 +346,32 @@ def current_usmi_prompt_view(packet: dict) -> dict:
     """Complete current fields/revision; old revision blocks remain in archived source."""
     revision=(packet.get('source_payload') or {}).get('packet_revision')
     import re
-    def current(value):
+    omissions=[]
+    def current(value, path=''):
         if isinstance(value,dict):
             out={}
             for key,item in value.items():
                 if key in ('source_payload','timeline_since_monday','revision_history','historical_revisions'):
+                    omissions.append(path+'/'+key)
                     continue
                 match=re.match(r'^rev[_ ]?(\d+)(?:_|$)',key,re.I)
-                if match and revision is not None and int(match.group(1))!=revision: continue
-                out[key]=current(item)
+                if match and revision is not None and int(match.group(1))!=revision:
+                    omissions.append(path+'/'+key)
+                    continue
+                archive=re.match(r'^(?:archived_.*?rev(?:ision)?[_ ]?(\d+)|historical_rev(?:ision)?[_ ]?(\d+))',key,re.I)
+                if archive and isinstance(item,(dict,list)) and revision is not None:
+                    old_revision=int(next(v for v in archive.groups() if v is not None))
+                    if old_revision < revision:
+                        omissions.append(path+'/'+key)
+                        continue
+                out[key]=current(item,path+'/'+key)
             return out
-        if isinstance(value,list): return [current(x) for x in value]
+        if isinstance(value,list): return [current(x,path+'/'+str(i)) for i,x in enumerate(value)]
         return value
     view=current(packet)
     view['source_revision']=revision
     view['projection_policy']='CURRENT_FIELDS_AND_LATEST_REVISION; FULL_HISTORY_RETAINED_IN_SOURCE_ARCHIVE'
+    view['projection_omitted_paths']=omissions
     return view
 
 def format_data_for_prompt(payload: dict) -> str:
@@ -368,7 +379,7 @@ def format_data_for_prompt(payload: dict) -> str:
     data = payload["data"]
     document = {"authority": "ADVISORY_ONLY",
                 "instructions": "must not replace canonical market-data values; missing remains missing. "
-                "Exact duplicate subtrees use backward JSON-pointer $ref references within this document. Record tables use lossless columns_and_rows arrays, or indexed_records with string column indices as row keys; absent cells remain absent, null stays null.",
+                "Exact duplicate subtrees use backward JSON-pointer $ref references within this document. An outer defs/document envelope stores shared evidence in defs; resolve references before interpreting record tables. Record tables use lossless columns_and_rows arrays, or indexed_records with string column indices as row keys; absent cells remain absent, null stays null.",
                 "projection": "Full original evidence remains archived; omitted fields are explicitly named."}
     if "prior_macro_json" in data:
         document["PRIOR MACRO JSON"] = data["prior_macro_json"]

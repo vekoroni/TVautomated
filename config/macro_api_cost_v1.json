@@ -1,6 +1,12 @@
 {
   "contract_version": "macro_api_cost_v1",
   "daily_cap_usd": 4.0,
+  "one_off_daily_caps": {
+    "2026-11-25": {
+      "daily_cap_usd": 6.0,
+      "authority": "ACK explicit approval 25 November 2026: $6 total today for final macro rebuild; not recurring"
+    }
+  },
   "timezone": "America/New_York",
   "activated_at_utc": "2026-11-18T22:03:00.059532+00:00",
   "max_request_bytes": 750000,
