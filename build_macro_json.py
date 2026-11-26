@@ -342,41 +342,14 @@ def load_data_payload(market_dir: Path, update_keys=None, prior_macro: dict | No
     return payload
 
 
-def current_usmi_prompt_view(packet: dict) -> dict:
-    """Complete current fields/revision; old revision blocks remain in archived source."""
-    revision=(packet.get('source_payload') or {}).get('packet_revision')
-    import re
-    omissions=[]
-    def current(value, path=''):
-        if isinstance(value,dict):
-            out={}
-            for key,item in value.items():
-                if key in ('source_payload','timeline_since_monday','revision_history','historical_revisions'):
-                    omissions.append(path+'/'+key)
-                    continue
-                match=re.match(r'^rev[_ ]?(\d+)(?:_|$)',key,re.I)
-                if match and revision is not None and int(match.group(1))!=revision:
-                    omissions.append(path+'/'+key)
-                    continue
-                archive=re.match(r'^(?:archived_.*?rev(?:ision)?[_ ]?(\d+)|historical_rev(?:ision)?[_ ]?(\d+))',key,re.I)
-                if archive and isinstance(item,(dict,list)) and revision is not None:
-                    old_revision=int(next(v for v in archive.groups() if v is not None))
-                    if old_revision < revision:
-                        omissions.append(path+'/'+key)
-                        continue
-                out[key]=current(item,path+'/'+key)
-            return out
-        if isinstance(value,list): return [current(x,path+'/'+str(i)) for i,x in enumerate(value)]
-        return value
-    view=current(packet)
-    view['source_revision']=revision
-    view['projection_policy']='CURRENT_FIELDS_AND_LATEST_REVISION; FULL_HISTORY_RETAINED_IN_SOURCE_ARCHIVE'
-    view['projection_omitted_paths']=omissions
-    return view
+def current_usmi_prompt_view(packet: dict, *, audit=None) -> dict:
+    from contracts.macro_prompt_policy import usmi_view
+    return usmi_view(packet,audit=audit)
 
 def format_data_for_prompt(payload: dict) -> str:
     from contracts.macro_prompt_projection import compact_context, deduplicate, encode, columnar_records
     data = payload["data"]
+    audit=[]
     document = {"authority": "ADVISORY_ONLY",
                 "instructions": "must not replace canonical market-data values; missing remains missing. "
                 "Exact duplicate subtrees use backward JSON-pointer $ref references within this document. An outer defs/document envelope stores shared evidence in defs; resolve references before interpreting record tables. Record tables use lossless columns_and_rows arrays, or indexed_records with string column indices as row keys; absent cells remain absent, null stays null.",
@@ -384,12 +357,16 @@ def format_data_for_prompt(payload: dict) -> str:
     if "prior_macro_json" in data:
         document["PRIOR MACRO JSON"] = data["prior_macro_json"]
     if "us_money_index_advisory" in data:
-        advisory = current_usmi_prompt_view(data["us_money_index_advisory"])
+        advisory = current_usmi_prompt_view(data["us_money_index_advisory"],audit=audit)
         document["US MONEY INDEX CONSOLIDATED ADVISORY"] = advisory
     if payload.get("input_manifest"):
-        document["GOVERNED MACRO INPUT CONTEXT"] = compact_context(build_macro_prompt_context(payload))
+        document["GOVERNED MACRO INPUT CONTEXT"] = compact_context(build_macro_prompt_context(payload),audit=audit)
     else:
         document["inputs"] = {k: v for k, v in data.items() if k not in ("us_money_index_advisory", "prior_macro_json")}
+    from contracts.macro_prompt_policy import VERSION,digest,policy
+    payload['prompt_projection_audit']={'policy_version':VERSION,'policy_sha256':digest(policy()),
+        'analysis_as_of_utc':payload.get('loaded_at'),'input_manifest_sha256':(payload.get('input_manifest') or {}).get('manifest_sha256'),
+        'omissions':audit}
     return "AUTHORITY: ADVISORY_ONLY\n" + encode(deduplicate(columnar_records(document)))
 
 
@@ -644,6 +621,8 @@ def build_synthesis_request(data_str: str) -> dict:
                "system": system + "\nPerform the analysis internally. Return only the final JSON.",
                "messages": [{"role": "user", "content": data_str +
                    "\nAnalyse all blocks internally:" + analysis + "\n" + PROMPT_3}]}
+    from contracts.macro_prompt_policy import enforce_request_budget
+    enforce_request_budget(request)
     return request
 
 
@@ -1885,6 +1864,14 @@ def main():
             manifest_receipt.get("evidence_bytes", "0"),
         )
 
+    # Persist the full omission audit outside the bounded analysis prompt.
+    if not args.dry_run:
+        from contracts.macro_prompt_policy import persist_audit
+        payload['prompt_projection_receipt']=persist_audit(
+            PIPELINE_MACRO_DIR/'prompt_projection_audits',payload['prompt_projection_audit'])
+        log.info('Prompt projection audit: %s (%s archived sections/events; current evidence not truncated)',
+            payload['prompt_projection_receipt']['path'],payload['prompt_projection_receipt']['omitted_count'])
+
     # The API wrapper reserves dollars before authorising the existing FULL slot.
     log.info("Calling Anthropic API (single consolidated synthesis request)...")
     try:
@@ -2138,6 +2125,7 @@ def main():
     if isinstance(raw_report, str):
         raw_report = json.loads(raw_report)
     macro_json["_builder_metadata"]["schema_validation"] = "PASS" if all_pass else "FAIL"
+    macro_json["_builder_metadata"]["prompt_projection"]=payload.get('prompt_projection_receipt')
     macro_json["macro_health"] = assess_macro_health(macro_json, report=raw_report)
     if all_pass and macro_json["macro_health"]["status"] == "DEGRADED":
         macro_json["_builder_metadata"]["validation"] = "DEGRADED"

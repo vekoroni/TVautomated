@@ -100,6 +100,8 @@ def build_fingerprint(root,reason,day):
     for name in ('config/macro_build_schedule_v1.json','contracts/macro_market_refresh_gate.py',
                  'contracts/macro_health.py','contracts/macro_source_sessions.py',
                  'contracts/macro_build_budget.py','scripts/scheduled_macro_builds.py',
+                 'contracts/macro_prompt_projection.py','contracts/macro_prompt_policy.py',
+                 'config/macro_prompt_projection_v2.json','domain/macro_input_governance.py','build_macro_json.py',
                  'Enhancements/colab/avshunter_market_intelligence_v5_4_3.py',
                  'dropbox/macro/avshunter_us_money_index.json',
                  'dropbox/macro/avshunter_macro_enrichment_delta.json',

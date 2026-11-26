@@ -27,8 +27,10 @@ def select(value, fields):
     return out
 
 
-def research_view(feed, packet):
+def research_view(feed, packet, *, as_of_utc=None, audit=None):
     if feed == 'events':
+        from contracts.macro_prompt_policy import event_window
+        packet=event_window(packet,as_of_utc=as_of_utc,audit=audit)
         out = {k: v for k, v in packet.items() if k != 'events'}
         # Raw-byte transport proof belongs in the immutable archive, not in an
         # analysis prompt. Keep its checksum, length, clocks and limitations.
@@ -50,7 +52,7 @@ def research_view(feed, packet):
     return packet
 
 
-def compact_context(context):
+def compact_context(context, *, audit=None):
     """Replace only named research mirrors; preserve all governed market records."""
     out = dict(context)
     out['sources'] = dict(context['sources'])
@@ -58,10 +60,10 @@ def compact_context(context):
     for feed in ('news', 'events'):
         key = feed + '_research_advisory'
         if key in out['sources']:
-            out['sources'][key] = research_view(feed, out['sources'][key])
+            out['sources'][key] = research_view(feed, out['sources'][key],as_of_utc=context.get('analysis_as_of_utc'),audit=audit)
             if key in out['input_consumption_ledger']:
                 out['input_consumption_ledger'][key]['mode'] = 'CURRENT_EVIDENCE_PROJECTION'
-    out['projection_policy'] = 'Research details omitted by name, never character-truncated; all market records retained'
+    out['projection_policy'] = 'macro_prompt_projection_v2; current, active, upcoming and undated evidence retained; historical context archived with complete omission audit; all governed market records retained'
     return out
 
 
@@ -125,6 +127,7 @@ def deduplicate(value):
     pooled = {'defs':definitions, 'document':document}
     return pooled if len(encode(pooled)) < len(encode(baseline)) * .98 else baseline
 
+
 def columnar_records(value):
     """Lossless column/row encoding for uniform record arrays; nulls stay explicit."""
     if isinstance(value, list):
@@ -143,5 +146,3 @@ def columnar_records(value):
     if isinstance(value, dict):
         return {k: columnar_records(v) for k, v in value.items()}
     return value
-
-

@@ -526,6 +526,7 @@ def build_macro_prompt_context(payload: Mapping[str, Any]) -> dict[str, Any]:
         sources["report_json"] = dict(report)
     context = {
         "contract_version": MACRO_PROMPT_CONTEXT_VERSION,
+        "analysis_as_of_utc": payload.get("loaded_at"),
         "authority": MACRO_AUTHORITY,
         "manifest_id": manifest.get("manifest_id", ""),
         "manifest_sha256": manifest.get("manifest_sha256", ""),

@@ -1,0 +1,7 @@
+{
+  "contract_version": "macro_prompt_projection_v2",
+  "completed_session_lookback": 5,
+  "max_synthesis_request_bytes": 700000,
+  "max_inline_omission_paths": 8,
+  "policy": "Preserve recent, future, explicitly active and undated evidence. Archive only dated historical event context and explicit superseded revision containers. Never truncate current evidence to fit."
+}
