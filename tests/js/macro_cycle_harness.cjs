@@ -6,7 +6,12 @@ const binding=doc.macro_operating_cycle||doc;
 const host={innerHTML:''};context.MacroCycleView.render(host,binding);
 assert(host.innerHTML.includes(binding.narrative_id));
 assert(host.innerHTML.includes(binding.narrative_sha256));
-assert(host.innerHTML.includes('INCOMPLETE_AUTHORED_INPUT'));
+assert(host.innerHTML.includes(binding.status));
+if(binding.status==='RESEARCH_DRAFT'){
+ assert(host.innerHTML.includes('Approval: RESEARCH_DRAFT'));
+ assert(host.innerHTML.includes('OPTION_PAYOFF_UNASSESSED'));
+ assert(host.innerHTML.includes('separate clocks'));
+}
 for(const s of binding.narrative.sections)assert(host.innerHTML.includes(s.key.replaceAll('_',' ')));
 assert(host.innerHTML.includes('WIDE_WARNING'));
 const hostile=JSON.parse(JSON.stringify(binding));hostile.narrative.sections[2].data.statement='<img src=x onerror=attack()>';

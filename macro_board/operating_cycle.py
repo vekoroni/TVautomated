@@ -69,7 +69,7 @@ def _documents(raw):
 def _authored(path, cutoff):
     if not path.exists(): return None
     author = json.loads(path.read_text(encoding='utf-8-sig')); validate_author_input(author)
-    if instant(author['as_of_utc']) > instant(cutoff): raise ValueError('Authored input is newer than the cycle cutoff')
+    if instant(author.get('evidence_cutoff_utc', author['as_of_utc'])) > instant(cutoff): raise ValueError('Authored evidence is newer than the cycle cutoff')
     return author
 
 
@@ -87,8 +87,18 @@ def _run_cycle(payload, *, opens, closes, fred, raw, board_config, output_dir, p
     cutoff = payload['built_at_utc']; instant(cutoff)
     if author:
         validate_author_input(author)
-        if instant(author['as_of_utc']) > instant(cutoff): raise ValueError('Future authored input')
+        if instant(author.get('evidence_cutoff_utc', author['as_of_utc'])) > instant(cutoff): raise ValueError('Future authored evidence')
+        assembly = payload.get('cycle_assembly_utc', cutoff)
+        if instant(author.get('authored_at_utc', author['as_of_utc'])) > instant(assembly): raise ValueError('Authorship newer than assembly; supply an explicit assembly clock')
     raw = dict(raw)
+    for expression in (author or {}).get('etf_book', []):
+        quote = expression.get('saved_option_quote') or {}
+        path = quote.get('source_path')
+        if not path or str(path).startswith(('http:', 'https:', '\\\\')): continue
+        try:
+            data = Path(path).read_bytes(); sha = hashlib.sha256(data).hexdigest()
+            if sha == quote.get('source_sha256'): raw['option_quote_' + sha] = (Path(path).name, data)
+        except OSError: pass  # Explicit OPTION_PAYOFF_UNASSESSED below, not a fabricated quote.
     for observation in observations or []:
         source = observation.get('source_path')
         if not source or str(source).startswith(('http:', 'https:', '\\\\')):
@@ -97,6 +107,12 @@ def _run_cycle(payload, *, opens, closes, fred, raw, board_config, output_dir, p
         sha = hashlib.sha256(data).hexdigest()
         if sha != observation.get('source_sha256'):
             raise ValueError('Authored outcome saved-source hash mismatch')
+        if 'outcome' not in observation:
+            saved = json.loads(data.decode('utf-8-sig'))
+            rows = saved if isinstance(saved, list) else saved.get('observations', [saved])
+            fields = ('series', 'unit', 'source', 'value', 'observed_at_utc', 'published_at_utc', 'status', 'vintage', 'benchmark', 'contract', 'roll_rule', 'settlement')
+            if not any(all(r.get(k) == observation.get(k) for k in fields) for r in rows):
+                raise ValueError('Typed outcome values disagree with archived source rows')
         raw['outcome_evidence_' + sha] = (Path(source).name, data)
     as_of = date.fromisoformat(payload['as_of_session'])
     from avshunter.shared.xnys_calendar import is_xnys_session, session_bounds
@@ -134,8 +150,13 @@ def _run_cycle(payload, *, opens, closes, fred, raw, board_config, output_dir, p
             report = json.loads((output_dir / 'runs' / (previous['narrative_id'] + '.json')).read_text())
             return {**report, 'idempotent': True}
     narrative = assemble(payload, sources, windows, calendar, policy, manifest, author, previous)
+    from .cycle_governance import classify_saved
+    narrative['market_scenario_outcome'] = classify_saved((author or {}).get('market_scenarios') or {}, closes, cutoff, manifest['selected_close_rows']['sha256'])
     measurements = {}
-    for series in ('DGS2', 'DGS10', 'WALCL', 'WTREGEN', 'RRPONTSYD', 'VIXCLS', 'DEXUSEU', 'SPREAD_2Y10Y'):
+    for series in ('DGS2', 'DGS10', 'WALCL', 'WTREGEN', 'RRPONTSYD', 'VIXCLS', 'DEXUSEU', 'SPREAD_2Y10Y', 'BAMLH0A0HYM2'):
+        if series not in board_config.get('fred_publication_lag_days', {}):
+            measurements[series] = {'value': None, 'status': 'UNASSESSED_PUBLICATION_POLICY', 'source': 'saved_FRED'}
+            continue
         aligned = conditions.fred_point_in_time(fred, series, 'weekly' if series in ('WALCL', 'WTREGEN') else 'daily', closes.index, board_config)
         value = aligned.iloc[-1] if len(aligned) else None
         from .cycle_evidence import number
@@ -168,7 +189,10 @@ def _run_cycle(payload, *, opens, closes, fred, raw, board_config, output_dir, p
         rid = call['record_id']
         if rid in existing_calls:
             old = existing_calls[rid]
-            if {k: v for k, v in old.items() if k != 'known_at_utc'} != {k: v for k, v in call.items() if k != 'known_at_utc'}:
+            # Identical captured forecast remains frozen under its ORIGINAL policy.
+            # Unrelated governance/runtime changes are not new forecast evidence.
+            provenance = {'known_at_utc', 'calc_version', 'policy_sha256'}
+            if {k: v for k, v in old.items() if k not in provenance} != {k: v for k, v in call.items() if k not in provenance}:
                 raise ValueError('Forward call identity conflict')
             if instant(call['known_at_utc']) < instant(old['known_at_utc']):
                 raise ValueError('Earlier publication evidence found; explicit clock correction required')
@@ -181,11 +205,14 @@ def _run_cycle(payload, *, opens, closes, fred, raw, board_config, output_dir, p
     outcomes = score_forward(calls, bars, cutoff)
     append_records(output_dir / 'forward_scores.jsonl', outcomes)
     authored_calls = []
-    for kind in ('wrong_worlds', 'event_calls', 'playbook_choices', 'forced_flow_predictions'):
+    for kind in ('wrong_worlds', 'event_calls', 'playbook_choices', 'forced_flow_predictions', 'event_forecasts'):
         for call in (author or {}).get(kind, []):
+            if kind == 'event_forecasts':
+                call = {**call, 'due_at_utc': call['resolution']['window_end_utc']}
             authored_calls.append({**call, 'record_id': digest([manifest['authored_input']['sha256'], call['call_id']]),
-                                   'kind': kind, 'known_at_utc': author['as_of_utc'],
+                                   'kind': kind, 'known_at_utc': author.get('authored_at_utc', author['as_of_utc']),
                                    'authored_input_sha256': manifest['authored_input']['sha256'],
+                                   'approval_state': narrative['governance']['approval_state'],
                                    'authority': 'ADVISORY_ONLY'})
     existing_authored = read_records(output_dir / 'authored_calls.jsonl')
     previous_calls = {c['call_id']: c for c in existing_authored}
@@ -251,6 +278,8 @@ def board_adapter(payload, *, opens, closes, fred, external, board_config, outpu
                                                           'us_money_index', 'enrichment', 'enrichment_delta', 'event_payload', 'forward_bias')}
     policy = load_policy()
     author = _authored(ROOT / policy['author_input'], payload['built_at_utc'])
+    if author and author.get('input_contract_version') == 'macro_research_input_v2':
+        payload = {**payload, 'cycle_assembly_utc': datetime.now(timezone.utc).isoformat()}
     obs_path = ROOT / policy['outcome_input']
     observations = json.loads(obs_path.read_text(encoding='utf-8-sig')) if obs_path.exists() else []
     folder = Path(output_dir) / 'operating_cycle'

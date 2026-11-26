@@ -111,6 +111,7 @@ def score_calls(calls, observations, as_of_utc):
     now = instant(as_of_utc)
     by = {}
     for obs in observations:
+        if 'outcome' not in obs: continue  # Typed numeric observations are resolved below, never coerced to bool.
         if not obs.get('source') or not obs.get('source_sha256') or len(obs['source_sha256']) != 64:
             raise ValueError('Outcome requires saved-source identity and hash')
         if not isinstance(obs.get('outcome'), bool): raise ValueError('Outcome must be an observed boolean, not a text inference')
@@ -121,8 +122,18 @@ def score_calls(calls, observations, as_of_utc):
     result = []
     for call in calls:
         row = {'call_id': call['call_id'], 'assessed_at_utc': as_of_utc, 'status': 'PENDING',
+               'approval_state': call.get('approval_state', 'LEGACY_NOT_ASSERTED'), 'authority': 'ADVISORY_ONLY',
                'calc_version': 'macro_authored_call_scoring_v1',
                'outcome': None, 'brier_score': None}
+        if call.get('resolution'):
+            from .cycle_governance import resolve
+            row['calc_version'] = 'macro_typed_call_scoring_v2'
+            resolved = resolve(call['resolution'], observations, as_of_utc)
+            row.update(resolved)
+            if row['status'] == 'MATURED' and call.get('probability') is not None:
+                row['brier_score'] = (call['probability'] - int(row['outcome'])) ** 2
+            row['record_id'] = digest(row); result.append(row)
+            continue
         if instant(call['due_at_utc']) <= now:
             obs = by.get(call['call_id'])
             if obs is None:

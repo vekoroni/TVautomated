@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:avshunter:macro_research_input_v2",
+  "description": "Structural schema; cycle_governance.validate_input additionally enforces clocks, exact-content approval, probability relationships, scenario precedence, resolution and ETF contracts.",
+  "type": "object",
+  "required": ["input_contract_version", "authority", "author", "as_of_utc", "authored_at_utc", "evidence_cutoff_utc", "approval", "event_forecasts", "market_scenarios", "etf_book"],
+  "properties": {
+    "input_contract_version": {"const": "macro_research_input_v2"},
+    "authority": {"const": "ADVISORY_ONLY"},
+    "author": {"type": "string", "minLength": 1},
+    "as_of_utc": {"type": "string", "format": "date-time"},
+    "authored_at_utc": {"type": "string", "format": "date-time"},
+    "evidence_cutoff_utc": {"type": "string", "format": "date-time"},
+    "approval": {"type": "object", "required": ["state"], "properties": {"state": {"enum": ["RESEARCH_DRAFT", "ACK_APPROVED_ADVISORY"]}}},
+    "event_forecasts": {"type": "array", "items": {"type": "object", "required": ["call_id", "probability", "resolution"], "properties": {"probability": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "resolution": {"type": "object", "required": ["series", "source", "unit", "operator", "level", "sampling", "vintage", "window_start_utc", "window_end_utc"]}}}},
+    "market_scenarios": {"type": "object", "required": ["partition"], "properties": {"partition": {"enum": ["NOT_ASSERTED", "ORDERED_EXHAUSTIVE"]}}},
+    "etf_book": {"type": "array", "items": {"type": "object", "required": ["expression_id", "etf", "forecast_basis", "deadline_utc", "invalidation", "killer_event", "covering_position", "world_marks"]}}
+  }
+}

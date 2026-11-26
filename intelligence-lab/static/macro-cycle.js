@@ -11,6 +11,7 @@ function render(host,b){
  if(b.authority!=='ADVISORY_ONLY'||n?.authority!=='ADVISORY_ONLY'||b.narrative_id!==n.narrative_id||b.status!==n.status||JSON.stringify((n.sections||[]).map(s=>s.key))!==JSON.stringify(keys))throw Error('Macro narrative binding invalid');
  const drivers=Object.entries(n.driver_readings||{}).map(([k,r])=>'<tr><td>'+esc(k)+'</td><td>'+esc(r.state)+'</td><td>'+esc(r.status)+'<br>'+esc(r.evidence_status)+'</td><td>'+esc(r.freshness?.status)+' · '+esc(r.freshness?.oldest_observation_date)+'<br>'+esc(r.age_days)+' days</td></tr>').join('');
  let html='<h2>Macro operating cycle · canonical advisory record</h2><p><strong>'+esc(n.status)+'</strong> · ADVISORY ONLY — no ticker score, veto, contract or execution authority.</p>'+
+ '<p><strong>Approval: '+esc(n.governance?.approval_state||'LEGACY — NOT ASSERTED')+'</strong> · evidence: '+esc(n.governance?.evidence_completeness||'UNASSESSED')+' · option valuation: '+esc(n.governance?.valuation_readiness||'UNASSESSED')+'</p>'+
  '<p>Reference close '+esc(n.as_of_session)+' · information cutoff '+esc(n.information_cutoff_utc)+' · '+esc(n.calc_version)+'</p>'+
  '<p>Narrative <code>'+esc(n.narrative_id)+'</code><br>SHA-256 <code>'+esc(b.narrative_sha256)+'</code></p>'+
  '<p>Accepted feeds → analysis → narrative: <strong>'+esc(b.feed_chain?.status||'UNASSESSED')+'</strong></p>'+
@@ -24,7 +25,8 @@ function render(host,b){
   else content='<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto">'+esc(text(s.data))+'</pre>';
   html+='<details><summary><strong>'+(i+1)+'. '+esc(s.key.replaceAll('_',' '))+'</strong></summary>'+content+'</details>';
  });
- html+='<details><summary>Tripwires — advisory alerts, not trade instructions</summary><pre style="white-space:pre-wrap">'+esc(text(n.tripwire_observations||[]))+'</pre></details>'+
+ html+='<details><summary>Research governance, separate clocks, event forecasts and market scenarios</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(text({clocks:n.clocks,governance:n.governance}))+'</pre></details>'+
+ '<details><summary>Tripwires — advisory alerts, not event resolution or trade instructions</summary><pre style="white-space:pre-wrap">'+esc(text(n.tripwire_observations||[]))+'</pre></details>'+
  '<details><summary>Input hashes, sources and limitations</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(text({feed_chain:b.feed_chain,input_manifest:n.input_manifest,limitations:n.limitations}))+'</pre></details>';
  host.innerHTML=html;
 }

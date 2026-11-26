@@ -14,7 +14,7 @@
     "policy_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "input_manifest": {"type": "object", "minProperties": 1},
     "driver_readings": {"type": "object", "required": ["policy", "inflation", "growth_labour", "credit", "liquidity", "oil", "dollar", "volatility", "positioning_breadth", "rates", "rotation"]},
-    "status": {"enum": ["COMPLETE", "COMPLETE_WITH_EVIDENCE_LIMITATIONS", "INCOMPLETE_AUTHORED_INPUT"]},
+    "status": {"enum": ["COMPLETE", "COMPLETE_WITH_EVIDENCE_LIMITATIONS", "INCOMPLETE_AUTHORED_INPUT", "RESEARCH_DRAFT"]},
     "sections": {
       "type": "array", "minItems": 9, "maxItems": 9,
       "prefixItems": [

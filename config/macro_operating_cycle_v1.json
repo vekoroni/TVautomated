@@ -1,10 +1,12 @@
 {
   "version": "macro_operating_cycle_v1",
-  "calc_version": "mac_phase1_20261126_v1",
+  "calc_version": "mac_phase1_20261126_v2",
+  "etf_registry": ["SPY", "QQQ", "IWM", "DIA", "RSP", "TLT", "IEF", "HYG", "LQD", "GLD", "USO", "UUP", "XLP", "XLV", "XLU", "XLRE", "XLK", "XLF", "XLE", "XLI", "XLY", "XLB", "XLC", "SMH", "KRE"],
   "business_owner": "ACK",
   "effective_from": "2026-11-26",
   "authority": "ADVISORY_ONLY",
   "validation_state": "PROVISIONAL_SOURCE_REPLAY",
+  "max_option_stress_scenarios": 16,
   "approval": "ACK 26 November: macro and ETFs only; no ticker authority; authored calls remain explicit unknowns until supplied.",
   "windows_sessions": [5, 20],
   "percentile_history_sessions": 252,
