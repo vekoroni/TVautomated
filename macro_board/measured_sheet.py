@@ -36,7 +36,7 @@ def _value(v, unit):
         return "MISSING"
     if unit == "bp":
         return f"{v:+.0f} bp"
-    if unit == "%":
+    if unit in ("%", "percent"):
         return f"{v:+.2f}%"
     if unit == "share":
         return f"{v * 100:.1f}%"
@@ -198,5 +198,21 @@ def render(payload: Mapping, cfg: Mapping) -> str:
     _money_index(payload, lines)
     _market(payload, cfg, lines)
     _calendar(payload, cfg, lines)
+    short = payload.get("macro_short_windows") or {}
+    if short:
+        lines += ["## 5. Short-window changes — measured, not continuation forecasts", "",
+                  "Percentiles use trailing saved history. Turning-point flags describe unusualness, not reversal probability.", "",
+                  "| Series | Sessions | Change | Signed percentile | Absolute unusualness | Samples | Status |",
+                  "|---|---|---|---|---|---|---|"]
+        for name, windows in short.items():
+            if not isinstance(windows, Mapping):
+                continue
+            for horizon, row in windows.items():
+                if not isinstance(row, Mapping):
+                    continue
+                lines.append(f"| {name} | {horizon} | {_value(row.get('change'), row.get('unit'))} | "
+                             f"{_ordinal(row.get('signed_percentile'))} | {_ordinal(row.get('unusualness_percentile'))} | "
+                             f"{row.get('evidence_count', 0)} | {row.get('status')}"
+                             + (" / TURNING_POINT" if row.get('turning_point') else "") + " |")
     lines.append("End of measured sheet. Everything above was measured by AVSHUNTER from market data, FRED and Cboe; no LLM wrote it.")
     return "\n".join(lines) + "\n"

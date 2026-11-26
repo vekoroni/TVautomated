@@ -24,6 +24,10 @@ async function load(){
     if(!response.ok)throw Error(data.reason||data.state);
     if(data.schema_version!=='lab_market_mentality_v2')throw Error('Market Mentality publication requires an update.');
     const mentality=data.mentality;
+    if(data.macro_operating_cycle&&!globalThis.MacroCycleView)throw Error('Macro cycle renderer requires refresh');
+    globalThis.MacroCycleView?.render($('macro-operating-cycle'),data.macro_operating_cycle);
+    const boardLink=$('macro-board-link');
+    if(boardLink){boardLink.hidden=!data.macro_publication_id;boardLink.href='/api/lab/macro-board?publication='+encodeURIComponent(data.macro_publication_id||'');}
     $('status').textContent=(pinned?'Archived assessment · ':'Latest published assessment · ')+data.freshness+' · '+data.publication_age_hours+' hours since board build. Observations are saved, not live.';
     $('identity').textContent='Cash session '+data.as_of_session+' · Board built '+data.built_at_utc+' · Interpretation published '+data.published_at_utc+' · Revision '+data.revision.slice(0,12);
     $('headline').textContent=mentality.headline;$('summary').textContent=mentality.summary;
@@ -43,6 +47,8 @@ async function load(){
   }catch(error){
     $('status').textContent='Market Mentality unavailable: '+error.message+'. No fallback, provider call or pipeline run was started.';
     $('headline').textContent='Assessment unavailable';
+    if($('macro-operating-cycle'))$('macro-operating-cycle').innerHTML='';
+    if($('macro-board-link'))$('macro-board-link').hidden=true;
     [...sections,'method'].forEach(id=>{$(id).innerHTML='';$(id).textContent=''});
   }finally{clearTimeout(timer);busy=false;$('refresh').disabled=false}
 }

@@ -55,6 +55,12 @@ def project(payload, previous=None):
                'Latest post-run mentality was not used to create the frozen trade decisions.',
            ]}
     out['source_revision'] = digest({key: out[key] for key in ('calculation_version', 'methodology', 'board_version', 'as_of_session', 'built_at_utc', 'evidence', 'source_quality')})
+    if payload.get('macro_operating_cycle') is not None:
+        from macro_board.cycle_publication import verify_binding
+        binding = verify_binding(payload['macro_operating_cycle'], session, payload['built_at_utc'])
+        out['macro_operating_cycle'] = json.loads(canonical(binding))
+        out['source_revision'] = digest({'legacy_source_revision': out['source_revision'],
+                                         'macro_operating_cycle': binding})
     out['changes'] = compare_previous(out, previous)
     out['revision'] = digest(out)
     return out
@@ -68,6 +74,9 @@ def verify(document):
     identity = {key: value for key, value in document.items() if key not in ('revision', 'published_at_utc')}
     if document.get('revision') != digest(identity):
         raise ValueError('Market Mentality revision integrity check failed')
+    if document.get('macro_operating_cycle') is not None:
+        from macro_board.cycle_publication import verify_binding
+        verify_binding(document['macro_operating_cycle'], document['as_of_session'], document['built_at_utc'])
     return document
 
 
@@ -82,6 +91,12 @@ def _atomic(path, document):
 
 def publish(payload, output_dir):
     root = Path(output_dir)
+    if payload.get('macro_operating_cycle') is not None:
+        from macro_board.cycle_publication import publish_bundle
+        publish_bundle(payload, root)
+        return read_publication(root)
+    if (root / 'macro_publication_latest.json').exists():
+        raise ValueError('Coordinated macro publication cannot be downgraded to a narrative-free view')
     root.mkdir(parents=True, exist_ok=True)
     target, lock = root / 'lab_macro_latest.json', root / 'lab_mentality_publish.lock'
     with lock.open('x', encoding='utf-8') as handle:
@@ -138,12 +153,27 @@ def read_publication(output_dir, revision=None):
             raise ValueError('Invalid mentality revision')
         path = root / 'mentality_history' / (revision + '.json')
     else:
+        if (root / 'macro_publication_latest.json').exists():
+            from macro_board.cycle_publication import read_bundle
+            return verify(read_bundle(root)['lab_document'])
         path = root / 'lab_macro_latest.json'
     return verify(json.loads(path.read_text(encoding='utf-8')))
 
 
 def register_routes(app, output_dir, runs_dir=None):
     from flask import jsonify, request, send_from_directory
+
+    @app.get('/api/lab/macro-board')
+    def committed_macro_board():
+        from flask import send_file
+        try:
+            from macro_board.cycle_publication import read_bundle
+            bundle = read_bundle(output_dir, request.args.get('publication'))
+            response = send_file(bundle['board'], mimetype='text/html')
+            response.headers['Cache-Control'] = 'no-store'
+            return response
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            return {'state': 'MACRO_PUBLICATION_UNAVAILABLE', 'reason': str(exc)}, 503
 
     @app.get('/market-mentality')
     @app.get('/macro-scenarios')

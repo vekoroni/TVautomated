@@ -156,6 +156,7 @@ table.corr th,table.corr td{text-align:center;padding:4px 6px;font-variant-numer
 <div class="wrap">
   <div class="authority" id="authority"></div>
   <div class="fresh-strip" id="fresh"></div>
+  <section id="macro-operating-cycle" class="card" aria-label="Canonical macro operating cycle"></section>
   <section class="page" id="p-review"></section>
   <section class="page" id="p-story"></section>
   <section class="page" id="p-overview"></section>
@@ -174,6 +175,8 @@ table.corr th,table.corr td{text-align:center;padding:4px 6px;font-variant-numer
 <script>
 const BOARD=/*__BOARD_PAYLOAD__*/null;
 </script>
+<script>/*__MACRO_CYCLE_RENDERER__*/</script>
+<script>if(globalThis.MacroCycleView)globalThis.MacroCycleView.render(document.getElementById('macro-operating-cycle'),BOARD.macro_operating_cycle);</script>
 <script>
 (function(){
 "use strict";

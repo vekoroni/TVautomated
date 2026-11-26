@@ -94,8 +94,9 @@ def test_worker3_is_retained_but_intake_refuses_and_pipeline_does_not_call_it():
     assert (root / 'worker3/integration/browser_launch.py').exists()
 
 
-def test_board_publication_is_after_html_and_not_historical_replay():
+def test_board_publication_is_coordinated_and_not_historical_replay():
     root = Path(__file__).resolve().parents[1]
     text = (root / 'macro_board/build_board.py').read_text(encoding='utf-8')
-    assert text.index('target.write_text(html') < text.index('publish_lab_macro(payload, output_dir)')
-    assert 'if not as_of:\n        # Independent advisory publication' in text
+    assert text.index('cycle = board_adapter(') < text.index('publication = publish_bundle(bound, output_dir)')
+    assert 'if not as_of:\n        # Assemble before rendering' in text
+    assert 'publish_lab_macro(payload, output_dir)' not in text

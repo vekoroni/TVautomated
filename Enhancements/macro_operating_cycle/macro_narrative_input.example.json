@@ -1,0 +1,25 @@
+{
+  "authority": "ADVISORY_ONLY",
+  "author": "ACK / Claude — replace before use",
+  "as_of_utc": "2026-11-26T11:35:33Z",
+  "input_revision": 1,
+  "worlds_partition": "NOT_ASSERTED",
+  "transmission": null,
+  "house_view": {"statement": null, "probability": null},
+  "wrong_worlds": [],
+  "central_bank_vs_price": {
+    "our_call": null,
+    "priced_call": null,
+    "gap": null,
+    "evidence": [],
+    "status": "MISSING_PRICED_PATH_AND_AUTHORED_CALL"
+  },
+  "event_calls": [],
+  "playbook_choices": [],
+  "forced_flow_predictions": [],
+  "confirmation_divergence": null,
+  "etf_book": [],
+  "what_changes_our_mind": null,
+  "supersedes": null,
+  "correction_reason": null
+}

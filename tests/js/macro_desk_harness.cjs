@@ -5,10 +5,12 @@ let documentData=JSON.parse(fs.readFileSync(process.argv[2],'utf8')),fail=false,
 const context={document:{getElementById:element,hidden:false},location:{search:''},URLSearchParams,AbortController,setTimeout,clearTimeout,
 setInterval(fn,ms){assert.equal(ms,60000);interval=fn},
 fetch:async url=>{assert.equal(url,'/api/lab/macro-context');calls++;return{ok:!fail,json:async()=>fail?{reason:'test failure'}:{...documentData,freshness:'TEST',publication_age_hours:1}}}};
+vm.runInNewContext(fs.readFileSync('intelligence-lab/static/macro-cycle.js','utf8'),context);
 vm.runInNewContext(fs.readFileSync('intelligence-lab/static/macro-desk.js','utf8'),context);
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 (async()=>{
 await settle();assert.equal(calls,1);assert(elements.axes.innerHTML.includes('Supporting observations'));
+if(documentData.macro_publication_id){assert.equal(elements['macro-board-link'].hidden,false);assert(elements['macro-board-link'].href.endsWith(encodeURIComponent(documentData.macro_publication_id)))}
 assert(elements.evidence.innerHTML.includes('credit'));assert(elements.summary.textContent);
 assert(elements.axes.innerHTML.includes('positioning'));assert.equal(elements.refresh.disabled,false);
 const original=elements.identity.textContent;documentData={...documentData,revision:'NEWREVISION123456'};
@@ -18,6 +20,8 @@ interval();await settle();assert(!elements.axes.innerHTML.includes('<img'));asse
 context.document.hidden=true;const prior=calls;interval();await settle();assert.equal(calls,prior);
 context.document.hidden=false;fail=true;interval();await settle();
 for(const id of ['axes','summary','evidence','attempts','changes','sensitivities'])assert.equal(elements[id].innerHTML,'');
+assert.equal(elements['macro-operating-cycle'].innerHTML,'');
+assert.equal(elements['macro-board-link'].hidden,true);
 assert(elements.status.textContent.includes('unavailable'));assert.equal(elements.refresh.disabled,false);
 console.log('PASS: mentality renderer, evidence links, unknown positioning, refresh, visible-only 60-second polling, XSS escaping, failure clearing');
 })().catch(error=>{console.error(error);process.exitCode=1});

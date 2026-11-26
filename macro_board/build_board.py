@@ -409,6 +409,9 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
                                            lows=lows, sessions=sessions, metrics=metrics, proposals=proposals["rows"],
                                            external=external, latest=latest, kind=kind,
                                            record=kind in ("EVENING", "MORNING") and not as_of, as_of=as_of)
+    # MAC-04: additive measured context, never an input to an ETF/ticker rank or gate.
+    from macro_board.operating_cycle import make_windows, load_policy
+    payload["macro_short_windows"] = make_windows(fred, closes, config, load_policy())
     payload["measured_sheet"] = write_measured_sheet(payload, config, output_dir, kind=kind, as_of=as_of)
     print(f"[board] next session plan: {payload['session_plan']['call']['key']}, "
           f"agreement {payload['session_plan']['jigsaw']['agreement']['all']}")
@@ -441,17 +444,35 @@ def build(config_path: Path = DEFAULT_CONFIG, as_of: str | None = None, output_d
     if not as_of:
         (snapshot_dir / snapshot_name(payload["as_of_session"], kind)).write_text(json.dumps(snapshot, indent=1), encoding="utf-8")
 
-    html = TEMPLATE.read_text(encoding="utf-8")
-    blob = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")
-    html = html.replace("/*__BOARD_PAYLOAD__*/null", blob)
     name = "etf_macro_board.html" if not as_of else f"etf_macro_board_asof_{as_of}.html"
     target = output_dir / name
-    target.write_text(html, encoding="utf-8")
     if not as_of:
-        # Independent advisory publication: no pipeline or Worker 3 rerun.
-        # Publish only after the matching board HTML has been saved successfully.
-        from contracts.lab_macro_desk import publish as publish_lab_macro
-        publish_lab_macro(payload, output_dir)
+        # Assemble before rendering: both consumers receive this exact narrative.
+        # No new provider/model work and no ticker/contract/rank changes.
+        from macro_board.operating_cycle import board_adapter
+        try:
+            cycle = board_adapter(payload, opens=opens, closes=closes, fred=fred, external=external,
+                                  board_config=config, output_dir=output_dir)
+            from macro_board.cycle_publication import bind_cycle, publish_bundle
+            narrative = json.loads(Path(cycle['narrative']).read_bytes())
+            bound = bind_cycle(payload, narrative)
+            publication = publish_bundle(bound, output_dir)
+            print(f"[macro-cycle] {publication['status']} {cycle['status']} {cycle['narrative_id']} (ADVISORY_ONLY)")
+            for warning in publication['compatibility_warnings']:
+                print(f"[macro-cycle] WARNING: {warning}")
+        except Exception as exc:
+            # Keep the previous committed board/Lab pair; never publish a newly
+            # unbound view or fall back to another narrative. This is macro-only,
+            # not a ticker veto or a pipeline restart.
+            print(f"[macro-cycle] FAILED — {type(exc).__name__}: {exc}")
+            from macro_board.cycle_io import atomic, encoded
+            atomic(output_dir / 'operating_cycle' / 'last_failure.json', encoded({
+                'status': 'FAILED', 'board_built_at_utc': payload['built_at_utc'],
+                'error_type': type(exc).__name__, 'reason': str(exc), 'authority': 'ADVISORY_ONLY'}))
+            raise RuntimeError('Macro publication failed; previous committed views retained') from exc
+    else:
+        from macro_board.cycle_publication import render_board
+        target.write_text(render_board(payload, TEMPLATE.read_text(encoding='utf-8')), encoding='utf-8')
     print(f"[board] wrote {target} ({target.stat().st_size / 1024:.0f} KB) in {time.time() - started:.1f}s")
     return target
 

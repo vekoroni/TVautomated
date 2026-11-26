@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:avshunter:macro_narrative_v1",
+  "title": "Advisory macro operating cycle — JSON is the record",
+  "type": "object",
+  "required": ["contract_version", "calc_version", "narrative_id", "authority", "as_of_session", "information_cutoff_utc", "policy_sha256", "input_manifest", "driver_readings", "sections", "status", "limitations"],
+  "properties": {
+    "contract_version": {"const": "macro_narrative_v1"},
+    "authority": {"const": "ADVISORY_ONLY"},
+    "calc_version": {"type": "string", "minLength": 1},
+    "narrative_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "information_cutoff_utc": {"type": "string", "format": "date-time"},
+    "as_of_session": {"type": "string", "format": "date"},
+    "policy_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "input_manifest": {"type": "object", "minProperties": 1},
+    "driver_readings": {"type": "object", "required": ["policy", "inflation", "growth_labour", "credit", "liquidity", "oil", "dollar", "volatility", "positioning_breadth", "rates", "rotation"]},
+    "status": {"enum": ["COMPLETE", "COMPLETE_WITH_EVIDENCE_LIMITATIONS", "INCOMPLETE_AUTHORED_INPUT"]},
+    "sections": {
+      "type": "array", "minItems": 9, "maxItems": 9,
+      "prefixItems": [
+        {"properties": {"key": {"const": "what_changed"}}},
+        {"properties": {"key": {"const": "transmission"}}},
+        {"properties": {"key": {"const": "house_view"}}},
+        {"properties": {"key": {"const": "wrong_worlds"}}},
+        {"properties": {"key": {"const": "central_bank_vs_price"}}},
+        {"properties": {"key": {"const": "forced_flows"}}},
+        {"properties": {"key": {"const": "confirmation_divergence"}}},
+        {"properties": {"key": {"const": "etf_book"}}},
+        {"properties": {"key": {"const": "what_changes_our_mind"}}}
+      ],
+      "items": false
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}
