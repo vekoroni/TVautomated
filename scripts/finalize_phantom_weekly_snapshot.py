@@ -145,6 +145,7 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
                        "iv_cache_rows": int(len(atm)),
                        "benchmark_eligible_rows": int(benchmark_mask(frame).sum()),
                        "iv_eligibility_policy": "US_OPTIONS_TWO_SIDED_UNADJUSTED_1_TO_500_PERCENT_V1"})
+        report.update(surface_committed=False, cache_committed=False, queue_acknowledged=False)
         if execute:
             conn.execute("BEGIN")
             conn.executemany("DELETE FROM iv_surface_history WHERE quote_date = ? AND ticker = ?",
@@ -155,7 +156,15 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
                  skew_25d,put_call_iv_spread,median_spread_pct,total_open_interest,total_volume,created_at_utc)
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", surface_rows)
             conn.commit()
-            _write_iv_cache(iv_cache_path, quote_date, atm, built_at, replace_tickers=derived)
+            report['surface_committed'] = True
+            cache_report = _write_iv_cache(iv_cache_path, quote_date, atm, built_at,
+                                          replace_tickers=derived, reconcile_conflicts=True)
+            report['cache_committed'] = True
+            conflicts = (cache_report or {}).get('conflicts', [])
+            report['conflicts'] = conflicts
+            conflicted = {r['ticker'] for r in conflicts}
+            report['cache_rows_written'] = (cache_report or {}).get('rows_written', 0)
+            report['cache_rows_preserved'] = (cache_report or {}).get('rows_preserved', 0)
             # Acknowledge only after BOTH stores committed. A cache failure
             # leaves durable work pending, so a later saved-data retry is safe.
             has_queue = conn.execute("SELECT 1 FROM sqlite_master WHERE name='phantom_maintenance_pairs'").fetchone()
@@ -165,6 +174,8 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
                 verification = sqlite3.connect(Path(iv_cache_path).resolve().as_uri() + '?mode=ro', uri=True)
                 try:
                     for t in derived:
+                        if t in conflicted:
+                            continue  # Retained vendor evidence is not a derived receipt.
                         stored = verification.execute('SELECT atm_iv FROM iv_history WHERE ticker=? AND sample_date=?', (t, quote_date)).fetchone()
                         expected = expected_iv.get(t)
                         if (expected is None and stored is not None) or (expected is not None and (stored is None or stored[0] != float(expected))):
@@ -177,29 +188,50 @@ def derive_iv_history(phantom_path: Path, iv_cache_path: Path, quote_date: str, 
                         WHERE ticker=? AND quote_date=? AND status='PENDING_IV' ''', [
                         ('COMPLETE' if t in valid_tickers else 'IV_UNAVAILABLE', built_at,
                          None if t in valid_tickers else 'NO_VALID_ATM_INPUT', t, quote_date)
-                        for t in derived])
-                report['queue_complete'] = len(valid_tickers)
-                report['queue_unavailable'] = len(set(derived) - valid_tickers)
+                        for t in derived if t not in conflicted])
+                    conn.executemany('''UPDATE phantom_maintenance_pairs
+                        SET status='IV_CONFLICT',updated_at_utc=?,last_error=?,attempts=attempts+1
+                        WHERE ticker=? AND quote_date=? AND status='PENDING_IV' ''',
+                        [(built_at, json.dumps(r, sort_keys=True), r['ticker'], quote_date) for r in conflicts])
+                report['queue_complete'] = len(valid_tickers - conflicted)
+                report['queue_unavailable'] = len(set(derived) - valid_tickers - conflicted)
+                report['queue_conflicts'] = len(conflicted)
+                report['queue_acknowledged'] = True
+            if conflicts:
+                report['status'] = 'COMPLETE_WITH_CONFLICTS'
         return report
+    except Exception as exc:
+        # A surface commit cannot be rolled back by a later cache/receipt failure.
+        # Preserve that fact for the bounded runner's durable failure report.
+        partial = dict(locals().get('report', {}))
+        partial.update(status='STOPPED_PARTIAL', error=str(exc))
+        exc.partial_report = partial
+        raise
     finally:
         conn.close()
 
 
-def _write_iv_cache(iv_cache_path: Path, quote_date: str, atm: pd.DataFrame, built_at: str, *, replace_tickers=None) -> None:
+def _write_iv_cache(iv_cache_path: Path, quote_date: str, atm: pd.DataFrame, built_at: str, *, replace_tickers=None, reconcile_conflicts=False) -> dict:
     cache = sqlite3.connect(str(iv_cache_path), timeout=60)
     try:
         cache.execute("PRAGMA journal_mode=WAL")
         cache.execute("BEGIN")
         protected = set()
+        conflicts = []
         expected = {row.ticker: float(row.iv) for row in atm.itertuples(index=False)}
-        for ticker in set(replace_tickers or []) | set(expected):
+        for ticker in sorted(set(replace_tickers or []) | set(expected)):
             prior = cache.execute('SELECT atm_iv,source FROM iv_history WHERE ticker=? AND sample_date=?',
                                   (ticker,quote_date)).fetchone()
             if prior is not None and prior[1] != 'phantom_history':
                 # Do not replace a vendor/unknown-origin observation with a
                 # computed benchmark. A disagreement requires explicit review.
                 if ticker not in expected or prior[0] != expected[ticker]:
-                    raise RuntimeError('IV_CACHE_NON_DERIVED_VALUE_CONFLICT: '+ticker)
+                    if not reconcile_conflicts:
+                        raise RuntimeError('IV_CACHE_NON_DERIVED_VALUE_CONFLICT: '+ticker)
+                    conflicts.append({'ticker': ticker, 'quote_date': quote_date,
+                                      'reason': 'NO_QUALIFIED_DERIVED_IV' if ticker not in expected else 'VENDOR_DERIVED_IV_DISAGREEMENT',
+                                      'preserved_iv': prior[0], 'preserved_source': prior[1],
+                                      'derived_iv': expected.get(ticker)})
                 protected.add(ticker)
         if replace_tickers:
             cache.executemany("DELETE FROM iv_history WHERE ticker=? AND sample_date=? AND source='phantom_history'",
@@ -215,6 +247,8 @@ def _write_iv_cache(iv_cache_path: Path, quote_date: str, atm: pd.DataFrame, bui
             [(str(ticker), quote_date) for ticker in atm["ticker"] if ticker not in protected],
         )
         cache.commit()
+        return {'conflicts': conflicts, 'rows_preserved': len(protected),
+                'rows_written': len(set(expected) - protected)}
     finally:
         cache.close()
 
