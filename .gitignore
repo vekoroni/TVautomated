@@ -257,3 +257,12 @@ data/canonical/
 
 # Release-private append-only forecast ledger and recovered training artifacts.
 /runtime/phantom_profit_shadow/
+
+# Shared-store evidence and exact operator documents are not executable source.
+# Deliberately do not ignore these directories or any *.py/*.js/*.ps1 files.
+/data/phantom/shadow_profit/cycles/cycle-*.json
+/data/phantom/shadow_profit/forecasts/forecasts-*.json
+/data/phantom/shadow_profit/outcomes/outcomes-*.json
+/data/phantom/Claude outputs/CODEX_PROMPTS_DEEP_DIVE_AND_CLOSURE_20261126.md
+/data/phantom/Claude outputs/CODEX_PROMPT_MACRO_OPERATING_CYCLE_20261126.md
+/data/phantom/Claude outputs/macro_narrative_input.json

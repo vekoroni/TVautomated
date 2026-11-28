@@ -85,6 +85,7 @@ def main(argv=None):
     p.add_argument('--execute-local',action='store_true',help='Local stored-data repairs only. Never makes paid calls.')
     p.add_argument('--max-local-pairs',type=int,default=5000,help='Bound IV drain work; pending work stays visible.')
     p.add_argument('--max-label-rows',type=int,default=20000,help='Bound latest-session provenance label work, without scanning historical sessions.')
+    p.add_argument('--max-assessment-rows',type=int,default=20000,help='Bound new/stale exact-session model assessments; existing vendor values are never changed.')
     args=p.parse_args(argv)
     tickers=load_roster(args.universe_path)
     days=args.sessions or [latest_friday()]
@@ -108,16 +109,36 @@ def main(argv=None):
         except ImportError:
             from phantom_provenance_labels import repair_sessions
         result['provenance_labels']=repair_sessions(args.db_path,days,tickers,max_rows=args.max_label_rows)
+        from scripts.phantom_greek_assessment import assess_session
+        result['greek_assessments']=[assess_session(args.db_path,d,tickers,max_rows=args.max_assessment_rows) for d in days]
         remaining=args.max_local_pairs
         while remaining>0:
-            report=drain_pending(args.db_path,args.iv_cache_path,max_pairs=min(500,remaining))
+            try:
+                report=drain_pending(args.db_path,args.iv_cache_path,max_pairs=min(500,remaining))
+            except Exception as exc:
+                result['status']='STOPPED_PARTIAL'
+                result['error']=str(exc)
+                result['local_reports'].append(getattr(exc,'drain_report',{'status':'STOPPED','error':str(exc)}))
+                args.report.parent.mkdir(parents=True,exist_ok=True)
+                args.report.write_text(json.dumps(result,indent=2),encoding='utf-8')
+                raise
             result['local_reports'].append(report)
+            result['status']='RUNNING'
+            args.report.parent.mkdir(parents=True,exist_ok=True)
+            args.report.write_text(json.dumps(result,indent=2),encoding='utf-8')
             if not report.get('pairs'):
                 break
             remaining-=report['pairs']
     result['health']=[session_health(args.db_path,d,tickers) for d in days]
     with sqlite3.connect(args.db_path.as_uri()+'?mode=ro',uri=True,timeout=60) as c:
         result['provenance_after']=[provenance_health(c,d,tickers) for d in days]
+        result['iv_queue_statuses']=dict(c.execute('SELECT status,COUNT(*) FROM phantom_maintenance_pairs GROUP BY status').fetchall()) if c.execute("SELECT 1 FROM sqlite_master WHERE name='phantom_maintenance_pairs'").fetchone() else {}
+        result['iv_conflicts']=[dict(ticker=r[0],quote_date=r[1],details=json.loads(r[2])) for r in c.execute("SELECT ticker,quote_date,last_error FROM phantom_maintenance_pairs WHERE status='IV_CONFLICT' ORDER BY quote_date,ticker")] if result['iv_queue_statuses'].get('IV_CONFLICT') else []
+    result['status']='COMPLETE_WITH_EXCLUSIONS' if result['iv_conflicts'] or any(s['missing_pairs'] for s in sessions) else 'COMPLETE'
+    if (any(h.get('known_needs_greeks_rows') or h.get('unassessed_ticker_sessions') or h.get('pending_iv_pairs') for h in result['health'])
+        or any(a['status']=='ASSESSMENT_BATCH_LIMIT_REMAINDER' for a in result.get('greek_assessments',[]))
+        or result.get('provenance_labels',{}).get('status')=='BATCH_LIMIT_REMAINDER_UNASSESSED'):
+        result['status']='NEEDS_LOCAL_FOLLOW_UP'
     args.report.parent.mkdir(parents=True,exist_ok=True)
     args.report.write_text(json.dumps(result,indent=2),encoding='utf-8')
     print(json.dumps({'mode':result['mode'],'provider_calls':0,'missing_pairs':sum(r['missing_pairs'] for r in sessions),'report':str(args.report)}))

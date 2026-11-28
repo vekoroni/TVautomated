@@ -180,6 +180,21 @@ def complete_greeks_and_queue_iv(c, rows):
         touched.add(key[:2])
     for ticker,day in touched:
         refresh_pair_health(c,ticker,day)
+    # Complete assessment is independent of protected raw fields. Never splice
+    # computed IV into a vendor vector; persist a separate coherent result.
+    from scripts.phantom_greek_assessment import assess_and_store,FIELDS
+    exact=[]
+    for incoming in rows:
+        cur=c.execute('SELECT '+','.join(FIELDS)+' FROM chain_snapshots WHERE ticker=? AND quote_date=? AND option_symbol=?',tuple(incoming[k] for k in KEY))
+        values=cur.fetchone()
+        if values is not None:exact.append(dict(zip(FIELDS,values)))
+    assessment=assess_and_store(c,exact)
+    if assessment['changed']:
+        for t,d in sorted({(r['ticker'],r['quote_date']) for r in exact}):
+            c.execute('''INSERT INTO phantom_maintenance_pairs(ticker,quote_date,status,updated_at_utc)
+               VALUES(?,?,'PENDING_IV',?) ON CONFLICT(ticker,quote_date) DO UPDATE SET
+               status='PENDING_IV',updated_at_utc=excluded.updated_at_utc
+               WHERE phantom_maintenance_pairs.status!='IV_CONFLICT' ''',(t,d,now()))
     return {'changed':changed,'computed':computed}
 
 def refresh_pair_health(c,ticker,day):
@@ -221,14 +236,23 @@ def session_health(db_path,day,tickers):
             else:
                 needs+=h[0]; incomplete+=h[1]
         pending=c.execute("SELECT COUNT(*) FROM phantom_maintenance_pairs WHERE status='PENDING_IV'").fetchone()[0] if has_queue else 0
+        conflicts=c.execute("SELECT COUNT(*) FROM phantom_maintenance_pairs WHERE status='IV_CONFLICT'").fetchone()[0] if has_queue else 0
         unavailable=c.execute("SELECT COUNT(*) FROM phantom_maintenance_pairs WHERE status='IV_UNAVAILABLE' AND quote_date=?",(day,)).fetchone()[0] if has_queue else 0
-    state='NEEDS_GREEKS' if needs else 'NEEDS_AUDIT' if unassessed else 'PENDING_IV' if pending else 'INCOMPLETE_COVERAGE' if missing else 'FRESH'
+        from scripts.phantom_greek_assessment import session_assessment
+        assessment=session_assessment(c,day,tickers)
+        raw_needs=needs
+        if assessment is not None:
+            needs=assessment['unassessed_rows']
+            unassessed=0 if not needs else unassessed
+    state='NEEDS_GREEKS' if needs else 'NEEDS_AUDIT' if unassessed else 'PENDING_IV' if pending else 'IV_CONFLICT' if conflicts else 'INCOMPLETE_COVERAGE' if missing else 'FRESH'
     return {'state':state,'latest':day,'lag_sessions':0,'expected_tickers':len(set(tickers)),
       'tickers_with_chains':present,'tickers_without_chains':missing,'audited_no_data_tickers':resolved_no_data,
       'no_data_scope':'Request-scoped result, not proof that a ticker has no listed options',
       'unassessed_ticker_sessions':unassessed,
       'needs_greeks_rows':needs if not unassessed else None,'known_needs_greeks_rows':needs,
-      'known_incomplete_greek_rows':incomplete,'pending_iv_pairs':pending,'iv_unavailable_pairs':unavailable}
+      'known_incomplete_greek_rows':incomplete,'pending_iv_pairs':pending,'iv_unavailable_pairs':unavailable,
+      'unresolved_iv_conflict_pairs':conflicts,'raw_needs_greeks_rows':raw_needs,
+      'greek_assessment':assessment}
 
 def cache_path_for(db_path):
     path=Path(db_path)
@@ -266,11 +290,25 @@ def drain_pending(db_path, iv_cache_path=None, *, max_pairs=500, min_free_gib=15
         for start in range(0,len(tickers),50):
             selected=tickers[start:start+50]
             if shutil.disk_usage(db_path.parent).free < min_free_gib*1024**3:
-                raise RuntimeError('IV maintenance stopped at disk reserve; pending receipts retained')
-            report=derive_iv_history(db_path,cache,day,selected,execute=True)
-            # The derivation owner acknowledges committed pairs. Missing raw
-            # chains are not terminal no-data: retain their pending receipt.
-            if report['tickers_derived'] != len(selected):
-                raise RuntimeError('IV maintenance missing stored chains; unmatched receipts remain pending')
+                error=RuntimeError('IV maintenance stopped at disk reserve; pending receipts retained')
+                error.drain_report={'status':'STOPPED_PARTIAL','pairs':len(pairs),
+                    'reports':reports,'failed_pairs':[(t,day) for t in selected],
+                    'failed_batch':{'surface_committed':False,'cache_committed':False,
+                                    'queue_acknowledged':False},'error':str(error)}
+                raise error
+            try:
+                report=derive_iv_history(db_path,cache,day,selected,execute=True)
+                # Missing chains remain pending, never terminal no-data.
+                if report['tickers_derived'] != len(selected):
+                    error=RuntimeError('IV maintenance missing stored chains; unmatched receipts remain pending')
+                    error.partial_report=report
+                    raise error
+            except Exception as exc:
+                exc.drain_report={'status':'STOPPED_PARTIAL','pairs':len(pairs),
+                    'reports':reports,'failed_batch':getattr(exc,'partial_report',{}),
+                    'failed_pairs':[(t,day) for t in selected], 'error':str(exc)}
+                raise
             reports.append(report)
-    return {'status':'FINISHED_BOUNDED_BATCH','pairs':len(pairs),'reports':reports}
+    conflicts=[r for batch in reports for r in batch.get('conflicts',[])]
+    return {'status':'FINISHED_WITH_CONFLICTS' if conflicts else 'FINISHED_BOUNDED_BATCH',
+            'pairs':len(pairs),'reports':reports,'conflicts':conflicts}

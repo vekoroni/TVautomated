@@ -371,21 +371,15 @@ class PhantomDatabase:
                     """,
                     (ticker_up, ticker_up),
                 )
-            return [dict(r) for r in cur.fetchall() if benchmark_record_eligible(dict(r))]
+            from scripts.phantom_greek_assessment import effective_rows
+            return [r for r in effective_rows(conn,cur.fetchall()) if benchmark_record_eligible(r)]
 
     def historical_iv_values(self, ticker: str, dte_min: float = 7, dte_max: float = 60) -> List[float]:
         ticker_up = ticker.upper()
         if ticker_up in self._iv_cache:
             return self._iv_cache[ticker_up]
-        with self.read_connection() as conn:
-            cur = conn.execute(
-                """
-                SELECT * FROM chain_snapshots
-                WHERE ticker=? AND iv IS NOT NULL AND dte BETWEEN ? AND ?
-                """,
-                (ticker_up, dte_min, dte_max),
-            )
-            return [float(r['iv']) for r in cur if benchmark_record_eligible(dict(r))]
+        self.preload_tickers([ticker_up],dte_min=dte_min,dte_max=dte_max)
+        return self._iv_cache[ticker_up]
 
     def ensure_scoring_index(self, *, min_free_gib: float = 15) -> bool:
         """One-time covering index; never changes a chain fact or score model.
@@ -440,15 +434,26 @@ class PhantomDatabase:
                 )
                 self._iv_cache[ticker] = [float(row['iv']) for row in history
                                           if benchmark_record_eligible(dict(row))]
+                from scripts.phantom_greek_assessment import assessed_history_rows,effective_rows,FIELDS
+                assessed=assessed_history_rows(conn,ticker,as_of)
+                if assessed:
+                    keys={(r['quote_date'],r['option_symbol']) for r in assessed}
+                    original=[dict(r) for r in conn.execute(
+                        'SELECT '+SCORING_HISTORY_COLUMNS+' FROM chain_snapshots WHERE ticker=? AND '+SCORING_QUALIFICATION_SQL+
+                        ' AND dte BETWEEN ? AND ?'+cutoff+' ORDER BY quote_date,option_symbol',
+                        [ticker,dte_min,dte_max]+([as_of] if as_of else []))
+                        if (r['quote_date'],r['option_symbol']) not in keys and benchmark_record_eligible(dict(r))]
+                    combined=original+[r for r in assessed if benchmark_record_eligible(r) and dte_min<=r['dte']<=dte_max]
+                    self._iv_cache[ticker]=[float(r['iv']) for r in sorted(combined,key=lambda r:(r['quote_date'],r['option_symbol']))]
                 latest = conn.execute(
                     "SELECT MAX(quote_date) FROM chain_snapshots WHERE ticker=?" + cutoff,
                     date_params,
                 ).fetchone()[0]
-                self._chain_cache[ticker] = [dict(row) for row in conn.execute(
-                    "SELECT " + columns +
+                self._chain_cache[ticker] = [row for row in effective_rows(conn,conn.execute(
+                    "SELECT " + ','.join(FIELDS)+',open_interest,volume' +
                     " FROM chain_snapshots WHERE ticker=? AND quote_date=? ORDER BY option_symbol",
                     (ticker, latest),
-                ) if benchmark_record_eligible(dict(row))] if latest else []
+                ).fetchall()) if benchmark_record_eligible(row)] if latest else []
                 if not hasattr(self, '_coverage_cache'):
                     self._coverage_cache = {}
                 self._coverage_cache[ticker] = {

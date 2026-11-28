@@ -446,7 +446,7 @@ def read_review_evidence(runs_dir, run_id, row_key, family, revision=None):
     return _record(runs_dir, run_id, row_key, revision, family)
 
 
-def register_review_routes(app, runs_dir):
+def register_review_routes(app, runs_dir, coverage_overlay=None):
     """Additive routes: never call _load_run or launch a background build."""
     from flask import jsonify, request
 
@@ -454,6 +454,10 @@ def register_review_routes(app, runs_dir):
         try:
             root = runs_dir() if callable(runs_dir) else runs_dir
             payload = function(root, *args, **kwargs)
+            if coverage_overlay and function in (read_review_summary,read_review_rows,read_review_card):
+                # Current assessment is a read-only overlay, never a revision
+                # of frozen fields, verdicts, rank or publication identity.
+                payload=coverage_overlay(payload)
             response = jsonify(payload)
             response.headers["Cache-Control"] = "no-store"
             return response
